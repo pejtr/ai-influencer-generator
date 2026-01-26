@@ -4,8 +4,10 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Check, Sparkles, Zap, Crown, Building2 } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Building2, Loader2, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
+import { useSearch } from "wouter";
 
 const TIER_ICONS = {
   free: Sparkles,
@@ -21,12 +23,68 @@ const TIER_COLORS = {
   business: "text-purple-500",
 };
 
+const PACK_IDS = ["credits_100", "credits_500", "credits_1000"] as const;
+
 export default function Pricing() {
   const { user, isAuthenticated } = useAuth();
+  const searchString = useSearch();
+  const searchParams = new URLSearchParams(searchString);
+  
   const { data: pricing } = trpc.credits.getPricing.useQuery();
-  const { data: userCredits } = trpc.credits.getBalance.useQuery(undefined, {
+  const { data: userCredits, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
+
+  // Stripe checkout mutations
+  const subscriptionCheckout = trpc.stripe.createSubscriptionCheckout.useMutation({
+    onSuccess: (data) => {
+      toast.info("Redirecting to checkout...");
+      window.open(data.url, "_blank");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create checkout session");
+    },
+  });
+
+  const creditPackCheckout = trpc.stripe.createCreditPackCheckout.useMutation({
+    onSuccess: (data) => {
+      toast.info("Redirecting to checkout...");
+      window.open(data.url, "_blank");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create checkout session");
+    },
+  });
+
+  const billingPortal = trpc.stripe.getBillingPortal.useMutation({
+    onSuccess: (data) => {
+      window.open(data.url, "_blank");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to open billing portal");
+    },
+  });
+
+  // Handle success/cancel from Stripe redirect
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const canceled = searchParams.get("canceled");
+    const credits = searchParams.get("credits");
+
+    if (success === "true") {
+      if (credits) {
+        toast.success(`Successfully purchased ${credits} credits!`);
+      } else {
+        toast.success("Subscription activated successfully!");
+      }
+      refetchCredits();
+      // Clean URL
+      window.history.replaceState({}, "", "/pricing");
+    } else if (canceled === "true") {
+      toast.info("Checkout was canceled");
+      window.history.replaceState({}, "", "/pricing");
+    }
+  }, [searchString]);
 
   const handleSubscribe = (tier: string) => {
     if (!isAuthenticated) {
@@ -39,18 +97,29 @@ export default function Pricing() {
       return;
     }
 
-    // TODO: Implement Stripe checkout
-    toast.info("Stripe integration coming soon! Contact us for early access.");
+    if (tier === userCredits?.tier) {
+      toast.info("You're already on this plan!");
+      return;
+    }
+
+    subscriptionCheckout.mutate({ 
+      tier: tier as "starter" | "pro" | "business" 
+    });
   };
 
-  const handleBuyCredits = (credits: number, price: number) => {
+  const handleBuyCredits = (packIndex: number) => {
     if (!isAuthenticated) {
       window.location.href = getLoginUrl();
       return;
     }
 
-    // TODO: Implement Stripe checkout for credit packs
-    toast.info("Credit pack purchases coming soon!");
+    creditPackCheckout.mutate({ 
+      packId: PACK_IDS[packIndex] 
+    });
+  };
+
+  const handleManageBilling = () => {
+    billingPortal.mutate();
   };
 
   const tiers = pricing?.tiers ?? {
@@ -65,6 +134,8 @@ export default function Pricing() {
     { credits: 500, price: 60 },
     { credits: 1000, price: 100 },
   ];
+
+  const isLoading = subscriptionCheckout.isPending || creditPackCheckout.isPending;
 
   return (
     <div className="min-h-screen bg-background">
@@ -87,7 +158,18 @@ export default function Pricing() {
             <div className="max-w-md mx-auto mb-8 p-4 rounded-xl bg-card border border-border text-center">
               <p className="text-sm text-muted-foreground mb-1">Your current plan</p>
               <p className="text-lg font-semibold capitalize">{userCredits.tier}</p>
-              <p className="text-sm text-primary">{userCredits.credits} credits remaining</p>
+              <p className="text-sm text-primary mb-3">{userCredits.credits} credits remaining</p>
+              {userCredits.tier !== "free" && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleManageBilling}
+                  disabled={billingPortal.isPending}
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  {billingPortal.isPending ? "Loading..." : "Manage Billing"}
+                </Button>
+              )}
             </div>
           )}
 
@@ -154,9 +236,12 @@ export default function Pricing() {
                       isCurrentPlan && "opacity-50"
                     )}
                     variant={isPopular ? "default" : "outline"}
-                    disabled={isCurrentPlan}
+                    disabled={isCurrentPlan || isLoading}
                     onClick={() => handleSubscribe(key)}
                   >
+                    {isLoading && subscriptionCheckout.variables?.tier === key ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : null}
                     {isCurrentPlan ? "Current Plan" : tier.price === 0 ? "Get Started" : "Subscribe"}
                   </Button>
                 </div>
@@ -188,13 +273,24 @@ export default function Pricing() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => handleBuyCredits(pack.credits, pack.price)}
+                    disabled={!isAuthenticated || isLoading}
+                    onClick={() => handleBuyCredits(i)}
                   >
+                    {isLoading && creditPackCheckout.variables?.packId === PACK_IDS[i] ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : null}
                     Buy Now
                   </Button>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Test mode notice */}
+          <div className="max-w-2xl mx-auto mt-8 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-center">
+            <p className="text-sm text-yellow-500">
+              <strong>Test Mode:</strong> Use card number <code className="bg-background px-1 rounded">4242 4242 4242 4242</code> with any future expiry date and CVC to test payments.
+            </p>
           </div>
 
           {/* FAQ or additional info */}

@@ -98,3 +98,15 @@
 - [ ] Add SEO structured data
 - [x] Write unit tests (credits.test.ts)
 
+
+## Stripe Integration (New)
+- [x] Add Stripe feature to project
+- [x] Create Stripe products and prices for tiers
+- [x] Implement subscription checkout flow
+- [x] Implement one-time credit pack checkout
+- [x] Handle Stripe webhooks (subscription created/updated/cancelled)
+- [x] Handle payment success/failure callbacks
+- [x] Update user credits on successful payment
+- [ ] Add payment history to user profile
+- [x] Test subscription flow (unit tests passing)
+- [x] Test credit pack purchase flow (unit tests passing)

@@ -10,8 +10,18 @@ import {
   getGenerationById, createCreditTransaction, getUserCreditTransactions,
   createAffiliate, getAffiliateByUserId, getAffiliateByCode, getAffiliateCommissions,
   getAdminMetrics, getAllUsers, getUserCount, getGenerationCount,
-  TIER_CREDITS, TIER_PRICES, CREDIT_PACKS
+  TIER_CREDITS, TIER_PRICES, CREDIT_PACKS,
+  updateUserStripeCustomerId
 } from "./db";
+import { 
+  getOrCreateCustomer, 
+  createSubscriptionCheckout, 
+  createCreditPackCheckout,
+  createBillingPortalSession,
+  cancelSubscription,
+  resumeSubscription
+} from "./stripe/stripe";
+import { TierName } from "./stripe/products";
 import { generateInfluencerImage, buildPromptFromSettings } from "./imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
@@ -213,6 +223,114 @@ export const appRouter = router({
         const affiliate = await getAffiliateByCode(input.code);
         return { valid: !!affiliate };
       }),
+  }),
+
+  // Stripe payments
+  stripe: router({
+    createSubscriptionCheckout: protectedProcedure
+      .input(z.object({
+        tier: z.enum(["starter", "pro", "business"]),
+        affiliateCode: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Get or create Stripe customer
+        const customerId = await getOrCreateCustomer(
+          ctx.user.id,
+          user.email || "",
+          user.name,
+          user.stripeCustomerId
+        );
+
+        // Save customer ID if new
+        if (!user.stripeCustomerId) {
+          await updateUserStripeCustomerId(ctx.user.id, customerId);
+        }
+
+        const origin = ctx.req.headers.origin || "http://localhost:3000";
+        const { url, sessionId } = await createSubscriptionCheckout(
+          ctx.user.id,
+          user.email || "",
+          user.name,
+          input.tier as TierName,
+          customerId,
+          origin,
+          input.affiliateCode
+        );
+
+        return { url, sessionId };
+      }),
+
+    createCreditPackCheckout: protectedProcedure
+      .input(z.object({
+        packId: z.enum(["credits_100", "credits_500", "credits_1000"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Get or create Stripe customer
+        const customerId = await getOrCreateCustomer(
+          ctx.user.id,
+          user.email || "",
+          user.name,
+          user.stripeCustomerId
+        );
+
+        // Save customer ID if new
+        if (!user.stripeCustomerId) {
+          await updateUserStripeCustomerId(ctx.user.id, customerId);
+        }
+
+        const origin = ctx.req.headers.origin || "http://localhost:3000";
+        const { url, sessionId } = await createCreditPackCheckout(
+          ctx.user.id,
+          user.email || "",
+          user.name,
+          input.packId,
+          customerId,
+          origin
+        );
+
+        return { url, sessionId };
+      }),
+
+    getBillingPortal: protectedProcedure.mutation(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user?.stripeCustomerId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No billing account found" });
+      }
+
+      const origin = ctx.req.headers.origin || "http://localhost:3000";
+      const url = await createBillingPortalSession(user.stripeCustomerId, `${origin}/pricing`);
+      return { url };
+    }),
+
+    cancelSubscription: protectedProcedure.mutation(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user?.stripeSubscriptionId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No active subscription" });
+      }
+
+      await cancelSubscription(user.stripeSubscriptionId, true);
+      return { success: true };
+    }),
+
+    resumeSubscription: protectedProcedure.mutation(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user?.stripeSubscriptionId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No subscription to resume" });
+      }
+
+      await resumeSubscription(user.stripeSubscriptionId);
+      return { success: true };
+    }),
   }),
 
   // Admin routes

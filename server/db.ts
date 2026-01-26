@@ -107,10 +107,41 @@ export async function updateUserCredits(userId: number, credits: number) {
   await db.update(users).set({ credits }).where(eq(users.id, userId));
 }
 
-export async function updateUserTier(userId: number, tier: 'free' | 'starter' | 'pro' | 'business', credits: number) {
+export async function updateUserTier(userId: number, tier: 'free' | 'starter' | 'pro' | 'business', credits?: number) {
   const db = await getDb();
   if (!db) return;
-  await db.update(users).set({ tier, credits }).where(eq(users.id, userId));
+  const updateData: Record<string, unknown> = { tier };
+  if (credits !== undefined) {
+    updateData.credits = credits;
+  }
+  await db.update(users).set(updateData).where(eq(users.id, userId));
+}
+
+export async function addUserCredits(userId: number, amount: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ 
+    credits: sql`${users.credits} + ${amount}` 
+  }).where(eq(users.id, userId));
+}
+
+export async function getUserByStripeCustomerId(customerId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.stripeCustomerId, customerId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateUserStripeCustomerId(userId: number, stripeCustomerId: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ stripeCustomerId }).where(eq(users.id, userId));
+}
+
+export async function updateUserStripeSubscription(userId: number, stripeSubscriptionId: string | null) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ stripeSubscriptionId }).where(eq(users.id, userId));
 }
 
 export async function deductUserCredits(userId: number, amount: number) {
