@@ -149,12 +149,12 @@ describe("credits.getPricing", () => {
     expect(result.tiers).toBeDefined();
     expect(result.tiers.free.credits).toBe(5);
     expect(result.tiers.free.price).toBe(0);
-    expect(result.tiers.starter.credits).toBe(50);
-    expect(result.tiers.starter.price).toBe(9);
-    expect(result.tiers.pro.credits).toBe(300);
-    expect(result.tiers.pro.price).toBe(29);
-    expect(result.tiers.business.credits).toBe(1000);
-    expect(result.tiers.business.price).toBe(99);
+    expect(result.tiers.basic.credits).toBe(50);
+    expect(result.tiers.basic.price).toBe(9);
+    expect(result.tiers.premium.credits).toBe(300);
+    expect(result.tiers.premium.price).toBe(29);
+    expect(result.tiers.vip.credits).toBe(1000);
+    expect(result.tiers.vip.price).toBe(99);
 
     expect(result.creditPacks).toBeDefined();
     expect(result.creditPacks.length).toBe(3);

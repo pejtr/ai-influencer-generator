@@ -107,7 +107,7 @@ export async function updateUserCredits(userId: number, credits: number) {
   await db.update(users).set({ credits }).where(eq(users.id, userId));
 }
 
-export async function updateUserTier(userId: number, tier: 'free' | 'starter' | 'pro' | 'business', credits?: number) {
+export async function updateUserTier(userId: number, tier: 'free' | 'basic' | 'premium' | 'vip', credits?: number) {
   const db = await getDb();
   if (!db) return;
   const updateData: Record<string, unknown> = { tier };
@@ -375,3 +375,75 @@ export const CREDIT_PACKS = [
   { credits: 500, price: 60 },
   { credits: 1000, price: 100 },
 ] as const;
+
+
+// ============ AFFILIATE LEADERBOARD & NETWORK STATS ============
+
+export async function getAffiliateLeaderboard(limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      id: affiliates.id,
+      userId: affiliates.userId,
+      totalReferrals: affiliates.totalReferrals,
+      totalEarnings: affiliates.totalEarnings,
+      userName: users.name,
+    })
+    .from(affiliates)
+    .leftJoin(users, eq(affiliates.userId, users.id))
+    .orderBy(desc(affiliates.totalEarnings))
+    .limit(limit);
+  
+  return result;
+}
+
+export async function getAffiliateNetworkStats(affiliateId: number) {
+  const db = await getDb();
+  if (!db) {
+    return {
+      level1Count: 0,
+      level2Count: 0,
+      level3Count: 0,
+      level1Earnings: 0,
+      level2Earnings: 0,
+      level3Earnings: 0,
+    };
+  }
+  
+  // Get counts by level from commissions
+  const commissions = await db
+    .select({
+      level: affiliateCommissions.level,
+      count: sql<number>`count(distinct ${affiliateCommissions.referredUserId})`,
+      earnings: sql<number>`sum(${affiliateCommissions.amount})`,
+    })
+    .from(affiliateCommissions)
+    .where(eq(affiliateCommissions.affiliateId, affiliateId))
+    .groupBy(affiliateCommissions.level);
+  
+  const stats = {
+    level1Count: 0,
+    level2Count: 0,
+    level3Count: 0,
+    level1Earnings: 0,
+    level2Earnings: 0,
+    level3Earnings: 0,
+  };
+  
+  for (const row of commissions) {
+    if (Number(row.level) === 1) {
+      stats.level1Count = row.count;
+      stats.level1Earnings = row.earnings || 0;
+    } else if (Number(row.level) === 2) {
+      stats.level2Count = row.count;
+      stats.level2Earnings = row.earnings || 0;
+    } else if (Number(row.level) === 3) {
+      stats.level3Count = row.count;
+      stats.level3Earnings = row.earnings || 0;
+    }
+  }
+  
+  return stats;
+}

@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE affiliates \nADD COLUMN IF NOT EXISTS commissionRateLevel1 DECIMAL(5,2) DEFAULT 0.30,\nADD COLUMN IF NOT EXISTS commissionRateLevel2 DECIMAL(5,2) DEFAULT 0.10,\nADD COLUMN IF NOT EXISTS commissionRateLevel3 DECIMAL(5,2) DEFAULT 0.05,\nADD COLUMN IF NOT EXISTS earningsLevel1 INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS earningsLevel2 INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS earningsLevel3 INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS level2Referrals INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS level3Referrals INT DEFAULT 0;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute ALTER TABLE affiliates \nADD COLUMN IF NOT EXISTS commissionRateLevel1 DECIMAL(5,2) DEFAULT 0.30,\nADD COLUMN IF NOT EXISTS commissionRateLevel2 DECIMAL(5,2) DEFAULT 0.10,\nADD COLUMN IF NOT EXISTS commissionRateLevel3 DECIMAL(5,2) DEFAULT 0.05,\nADD COLUMN IF NOT EXISTS earningsLevel1 INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS earningsLevel2 INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS earningsLevel3 INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS level2Referrals INT DEFAULT 0,\nADD COLUMN IF NOT EXISTS level3Referrals INT DEFAULT 0;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2485
+}

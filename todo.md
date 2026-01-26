@@ -110,3 +110,51 @@
 - [ ] Add payment history to user profile
 - [x] Test subscription flow (unit tests passing)
 - [x] Test credit pack purchase flow (unit tests passing)
+
+
+## Tier System BASIC/PREMIUM/VIP (New)
+- [x] Update subscription tiers from Starter/Pro/Business to BASIC/PREMIUM/VIP
+- [x] Define feature matrix per tier
+- [x] Implement feature gating middleware
+- [x] Update database schema for new tiers
+- [x] Update Stripe products for new tier names
+
+## Feature Gating per Tier
+- [ ] BASIC: Standard generation, watermark, 50 credits/month ($9)
+- [ ] PREMIUM: HD download, no watermark, Fanvue OAuth, 300 credits/month ($29)
+- [ ] VIP: All Premium + Auto-publish, Content Scheduler, Batch Generation, 1000 credits/month ($99)
+
+## Fanvue Integration (PREMIUM/VIP only)
+- [ ] Fanvue OAuth 2.0 flow implementation
+- [ ] Store Fanvue access/refresh tokens
+- [ ] Auto-publish generated images to Fanvue
+- [ ] Fanvue account connection UI
+
+## Content Scheduler (VIP only)
+- [ ] Content calendar UI
+- [ ] Scheduled posts queue
+- [ ] Batch generation (30 images at once)
+- [ ] Auto-posting workflow
+
+
+## Multi-Level Affiliate System (New)
+- [x] Multi-level referral tracking (Level 1: 30%, Level 2: 10%, Level 3: 5%)
+- [x] Affiliate network visualization (tree view)
+- [x] Affiliate dashboard with earnings breakdown by level
+- [x] Referral chain tracking in database
+
+## Affiliate Leaderboard
+- [x] Top affiliates ranking by earnings
+- [x] Top affiliates by referral count
+- [x] Monthly/All-time leaderboard toggle
+- [x] Public leaderboard page
+
+## Affiliate Badges & Achievements
+- [x] Bronze Partner: 10+ referrals
+- [x] Silver Partner: 50+ referrals  
+- [x] Gold Partner: 100+ referrals
+- [x] Diamond Partner: 500+ referrals
+- [x] Rising Star: First $100 earned
+- [x] Top Earner: $1000+ monthly
+- [x] Badge display on profile
+- [x] Achievement notifications

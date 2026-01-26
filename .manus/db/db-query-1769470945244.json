@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE affiliates \nADD COLUMN IF NOT EXISTS badge VARCHAR(64),\nADD COLUMN IF NOT EXISTS achievements TEXT,\nADD COLUMN IF NOT EXISTS paypalEmail VARCHAR(320),\nADD COLUMN IF NOT EXISTS payoutThreshold INT DEFAULT 5000;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute ALTER TABLE affiliates \nADD COLUMN IF NOT EXISTS badge VARCHAR(64),\nADD COLUMN IF NOT EXISTS achievements TEXT,\nADD COLUMN IF NOT EXISTS paypalEmail VARCHAR(320),\nADD COLUMN IF NOT EXISTS payoutThreshold INT DEFAULT 5000;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 998
+}

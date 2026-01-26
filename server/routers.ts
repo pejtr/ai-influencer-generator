@@ -11,7 +11,8 @@ import {
   createAffiliate, getAffiliateByUserId, getAffiliateByCode, getAffiliateCommissions,
   getAdminMetrics, getAllUsers, getUserCount, getGenerationCount,
   TIER_CREDITS, TIER_PRICES, CREDIT_PACKS,
-  updateUserStripeCustomerId
+  updateUserStripeCustomerId,
+  getAffiliateLeaderboard, getAffiliateNetworkStats
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -68,12 +69,16 @@ export const appRouter = router({
     getPricing: publicProcedure.query(() => {
       return {
         tiers: {
-          free: { credits: TIER_CREDITS.free, price: 0, features: ["5 credits/month", "Watermark on images", "Basic support"] },
-          starter: { credits: TIER_CREDITS.starter, price: TIER_PRICES.starter, features: ["50 credits/month", "No watermark", "HD downloads", "Email support"] },
-          pro: { credits: TIER_CREDITS.pro, price: TIER_PRICES.pro, features: ["300 credits/month", "No watermark", "HD downloads", "Priority support", "Commercial license"] },
-          business: { credits: TIER_CREDITS.business, price: TIER_PRICES.business, features: ["1000 credits/month", "No watermark", "HD downloads", "Dedicated support", "API access", "White-label option"] },
+          free: { id: "free", name: "Free", credits: 5, price: 0 },
+          basic: { id: "basic", name: "BASIC", credits: 50, price: 9 },
+          premium: { id: "premium", name: "PREMIUM", credits: 300, price: 29 },
+          vip: { id: "vip", name: "VIP", credits: 1000, price: 99 },
         },
-        creditPacks: CREDIT_PACKS,
+        creditPacks: [
+          { id: "credits_100", credits: 100, price: 15 },
+          { id: "credits_500", credits: 500, price: 60 },
+          { id: "credits_1000", credits: 1000, price: 100 },
+        ],
       };
     }),
   }),
@@ -223,13 +228,32 @@ export const appRouter = router({
         const affiliate = await getAffiliateByCode(input.code);
         return { valid: !!affiliate };
       }),
+
+    getLeaderboard: publicProcedure.query(async () => {
+      return getAffiliateLeaderboard(10);
+    }),
+
+    getNetworkStats: protectedProcedure.query(async ({ ctx }) => {
+      const affiliate = await getAffiliateByUserId(ctx.user.id);
+      if (!affiliate) {
+        return {
+          level1Count: 0,
+          level2Count: 0,
+          level3Count: 0,
+          level1Earnings: 0,
+          level2Earnings: 0,
+          level3Earnings: 0,
+        };
+      }
+      return getAffiliateNetworkStats(affiliate.id);
+    }),
   }),
 
   // Stripe payments
   stripe: router({
     createSubscriptionCheckout: protectedProcedure
       .input(z.object({
-        tier: z.enum(["starter", "pro", "business"]),
+        tier: z.enum(["basic", "premium", "vip"]),
         affiliateCode: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {

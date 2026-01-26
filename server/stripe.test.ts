@@ -4,28 +4,31 @@ import { SUBSCRIPTION_TIERS, CREDIT_PACKS, getTierByName, getCreditPackById, get
 describe("Stripe Products Configuration", () => {
   describe("Subscription Tiers", () => {
     it("should have all required tiers defined", () => {
-      expect(SUBSCRIPTION_TIERS.starter).toBeDefined();
-      expect(SUBSCRIPTION_TIERS.pro).toBeDefined();
-      expect(SUBSCRIPTION_TIERS.business).toBeDefined();
+      expect(SUBSCRIPTION_TIERS.free).toBeDefined();
+      expect(SUBSCRIPTION_TIERS.basic).toBeDefined();
+      expect(SUBSCRIPTION_TIERS.premium).toBeDefined();
+      expect(SUBSCRIPTION_TIERS.vip).toBeDefined();
     });
 
     it("should have correct pricing for each tier", () => {
-      expect(SUBSCRIPTION_TIERS.starter.priceMonthly).toBe(900); // $9.00
-      expect(SUBSCRIPTION_TIERS.pro.priceMonthly).toBe(2900); // $29.00
-      expect(SUBSCRIPTION_TIERS.business.priceMonthly).toBe(9900); // $99.00
+      expect(SUBSCRIPTION_TIERS.free.priceMonthly).toBe(0);
+      expect(SUBSCRIPTION_TIERS.basic.priceMonthly).toBe(900); // $9.00
+      expect(SUBSCRIPTION_TIERS.premium.priceMonthly).toBe(2900); // $29.00
+      expect(SUBSCRIPTION_TIERS.vip.priceMonthly).toBe(9900); // $99.00
     });
 
     it("should have correct credits for each tier", () => {
-      expect(SUBSCRIPTION_TIERS.starter.credits).toBe(50);
-      expect(SUBSCRIPTION_TIERS.pro.credits).toBe(300);
-      expect(SUBSCRIPTION_TIERS.business.credits).toBe(1000);
+      expect(SUBSCRIPTION_TIERS.free.credits).toBe(5);
+      expect(SUBSCRIPTION_TIERS.basic.credits).toBe(50);
+      expect(SUBSCRIPTION_TIERS.premium.credits).toBe(300);
+      expect(SUBSCRIPTION_TIERS.vip.credits).toBe(1000);
     });
 
     it("should return tier by name", () => {
-      const starter = getTierByName("starter");
-      expect(starter).toBeDefined();
-      expect(starter?.name).toBe("starter");
-      expect(starter?.priceMonthly).toBe(900);
+      const basic = getTierByName("basic");
+      expect(basic).toBeDefined();
+      expect(basic?.name).toBe("basic");
+      expect(basic?.priceMonthly).toBe(900);
     });
 
     it("should return undefined for invalid tier name", () => {
@@ -34,9 +37,10 @@ describe("Stripe Products Configuration", () => {
     });
 
     it("should return correct credits for tier", () => {
-      expect(getTierCredits("starter")).toBe(50);
-      expect(getTierCredits("pro")).toBe(300);
-      expect(getTierCredits("business")).toBe(1000);
+      expect(getTierCredits("free")).toBe(5);
+      expect(getTierCredits("basic")).toBe(50);
+      expect(getTierCredits("premium")).toBe(300);
+      expect(getTierCredits("vip")).toBe(1000);
     });
   });
 
