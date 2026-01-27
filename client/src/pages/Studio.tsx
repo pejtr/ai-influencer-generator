@@ -16,7 +16,7 @@ import {
   Sparkles, Shuffle, RotateCcw, Download, Loader2, 
   User, Palette, Eye, Heart, Wand2, Plus, Save, FolderOpen,
   Scissors, Shirt, Video, Edit3, Trash2, ChevronRight, Zap,
-  Camera, Smile, ImageIcon, LayoutGrid, Copy
+  Camera, Smile, ImageIcon, LayoutGrid, Copy, Clapperboard, Image, Film
 } from "lucide-react";
 import {
   ALL_TEMPLATES,
@@ -28,6 +28,9 @@ import {
   type PromptCategory,
   type AspectRatio,
 } from "@shared/promptTemplates";
+import CinematographyPanel from "@/components/CinematographyPanel";
+import SceneGenerator from "@/components/SceneGenerator";
+import ElementsPanel from "@/components/ElementsPanel";
 
 // Character options data
 const CHARACTER_TYPES = [
@@ -698,6 +701,19 @@ export default function Studio() {
                     Generate
                   </Button>
                   
+                  {/* Scene Generator Button */}
+                  <SceneGenerator
+                    basePrompt={buildPrompt}
+                    onGenerateScene={(prompts) => {
+                      // For now, apply the first prompt to the custom prompt field
+                      if (prompts.length > 0) {
+                        updateSetting("customPrompt", prompts[0].prompt);
+                        setActiveTab("prompt");
+                        toast.success(`Storyboard with ${prompts.length} shots ready! First shot applied.`);
+                      }
+                    }}
+                  />
+                  
                   {generatedImage && (
                     <>
                       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
@@ -863,18 +879,26 @@ export default function Studio() {
           <div className="w-80 border-l border-border bg-card/50 flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
               <div className="border-b border-border p-2">
-                <TabsList className="w-full grid grid-cols-3">
-                  <TabsTrigger value="builder" className="gap-2 text-xs">
+                <TabsList className="w-full grid grid-cols-5">
+                  <TabsTrigger value="builder" className="gap-1 text-[10px] px-1">
                     <Wand2 className="w-3 h-3" />
-                    Builder
+                    Build
                   </TabsTrigger>
-                  <TabsTrigger value="prompt" className="gap-2 text-xs">
+                  <TabsTrigger value="prompt" className="gap-1 text-[10px] px-1">
                     <Sparkles className="w-3 h-3" />
                     Prompt
                   </TabsTrigger>
-                  <TabsTrigger value="templates" className="gap-2 text-xs">
+                  <TabsTrigger value="templates" className="gap-1 text-[10px] px-1">
                     <Zap className="w-3 h-3" />
                     Quick
+                  </TabsTrigger>
+                  <TabsTrigger value="cinema" className="gap-1 text-[10px] px-1">
+                    <Clapperboard className="w-3 h-3" />
+                    Cinema
+                  </TabsTrigger>
+                  <TabsTrigger value="elements" className="gap-1 text-[10px] px-1">
+                    <Image className="w-3 h-3" />
+                    Ref
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1257,6 +1281,30 @@ export default function Studio() {
                     Generate Emotion Sheet
                   </Button>
                 </div>
+              </TabsContent>
+
+              {/* Cinema Tab */}
+              <TabsContent value="cinema" className="flex-1 flex flex-col mt-0 overflow-hidden">
+                <CinematographyPanel
+                  onApplySettings={(cinematographyPrompt) => {
+                    const currentPrompt = settings.customPrompt || buildPrompt;
+                    updateSetting("customPrompt", `${currentPrompt}, ${cinematographyPrompt}`);
+                    setActiveTab("prompt");
+                    toast.success("Cinematography settings applied!");
+                  }}
+                />
+              </TabsContent>
+
+              {/* Elements Tab */}
+              <TabsContent value="elements" className="flex-1 flex flex-col mt-0 overflow-hidden">
+                <ElementsPanel
+                  basePrompt={buildPrompt}
+                  onApplyElements={(combinedPrompt) => {
+                    updateSetting("customPrompt", combinedPrompt);
+                    setActiveTab("prompt");
+                    toast.success("Reference elements applied!");
+                  }}
+                />
               </TabsContent>
             </Tabs>
           </div>

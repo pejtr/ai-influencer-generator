@@ -53,6 +53,8 @@ import {
   publishToFanvue, isFanvueConfigured
 } from "./fanvue/fanvue";
 import { generateVideo, queryVideoStatus, CAMERA_MOVEMENTS, buildVideoPrompt } from "./videoGeneration";
+import { generateJSONPrompt, generateCharacterVariation, analyzeReferenceImage, buildConsistentPrompt } from "./aiPromptGenerator";
+import { JSONPromptSchema, JSON_PROMPT_PRESETS, jsonToTextPrompt, validateJSONPrompt } from "@shared/jsonPrompt";
 import { 
   generateChatResponse, generateWelcomeMessage, generateContentOfferMessage,
   calculatePlatformFee, MESSAGE_COST 
@@ -1404,6 +1406,93 @@ export const appRouter = router({
         })),
       };
     }),
+  }),
+
+  // AI Prompt Generator for character consistency
+  promptGenerator: router({
+    // Generate JSON prompt from simple text description
+    generate: protectedProcedure
+      .input(z.object({
+        description: z.string().min(5).max(1000),
+        baseCharacter: z.any().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await generateJSONPrompt(
+          input.description,
+          input.baseCharacter as Partial<JSONPromptSchema> | undefined
+        );
+        return result;
+      }),
+
+    // Generate character variation (same character, new scene)
+    generateVariation: protectedProcedure
+      .input(z.object({
+        baseCharacter: z.any(),
+        newSceneDescription: z.string().min(5).max(500),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await generateCharacterVariation(
+          input.baseCharacter as JSONPromptSchema,
+          input.newSceneDescription
+        );
+        return result;
+      }),
+
+    // Analyze reference image to extract character features
+    analyzeImage: protectedProcedure
+      .input(z.object({
+        imageUrl: z.string().url(),
+      }))
+      .mutation(async ({ input }) => {
+        const features = await analyzeReferenceImage(input.imageUrl);
+        return { features };
+      }),
+
+    // Get available presets
+    getPresets: publicProcedure.query(() => {
+      return {
+        presets: Object.entries(JSON_PROMPT_PRESETS).map(([key, value]) => ({
+          id: key,
+          name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          preview: jsonToTextPrompt(value).substring(0, 100) + '...',
+          jsonPrompt: value,
+        })),
+      };
+    }),
+
+    // Validate JSON prompt
+    validate: publicProcedure
+      .input(z.object({
+        jsonPrompt: z.any(),
+      }))
+      .query(({ input }) => {
+        const validation = validateJSONPrompt(input.jsonPrompt as Partial<JSONPromptSchema>);
+        return validation;
+      }),
+
+    // Convert JSON to text prompt
+    toText: publicProcedure
+      .input(z.object({
+        jsonPrompt: z.any(),
+      }))
+      .query(({ input }) => {
+        const textPrompt = jsonToTextPrompt(input.jsonPrompt as JSONPromptSchema);
+        return { textPrompt };
+      }),
+
+    // Build consistent prompt with reference image
+    buildConsistent: protectedProcedure
+      .input(z.object({
+        jsonPrompt: z.any(),
+        referenceImageUrl: z.string().url().optional(),
+      }))
+      .query(({ input }) => {
+        const result = buildConsistentPrompt(
+          input.jsonPrompt as JSONPromptSchema,
+          input.referenceImageUrl
+        );
+        return result;
+      }),
   }),
 
   // Admin routes

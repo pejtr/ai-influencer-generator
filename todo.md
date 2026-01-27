@@ -383,3 +383,108 @@ Based on Glambase analysis - automatic fan engagement and content monetization
 
 ## Unit Tests Summary
 - [x] 193 unit tests passing across all features
+
+
+## Advanced Marketplace Filtering - New
+- [ ] Filter by category (lifestyle, fashion, fitness, beauty, travel, gaming, art, music)
+- [ ] Filter by follower count range (0-100, 100-1k, 1k-10k, 10k+)
+- [ ] Filter by content price range (free, $1-10, $10-50, $50+)
+- [ ] Sort options (popularity, newest, price low-high, price high-low)
+- [ ] Advanced filter panel UI with sliders and checkboxes
+- [ ] Save filter preferences
+
+## Analytics Dashboard for A/B Testing - New
+- [ ] Create analytics database tables (page_views, conversions, variant_stats)
+- [ ] Track page views per variant
+- [ ] Track conversions per variant (signups, purchases)
+- [ ] Calculate conversion rates
+- [ ] Build analytics dashboard UI
+- [ ] Show charts for variant performance
+- [ ] Statistical significance indicator
+- [ ] Date range selector
+
+## Creator Payout System (Stripe Connect) - New
+- [ ] Integrate Stripe Connect for creator accounts
+- [ ] Creator onboarding flow for Stripe Connect
+- [ ] Track pending payouts per creator
+- [ ] Implement payout request functionality
+- [ ] Automatic weekly/monthly payout option
+- [ ] Payout history page
+- [ ] Minimum payout threshold ($10)
+- [ ] Platform fee deduction (10%)
+
+
+## JSON Structured Prompts & Character Consistency - New
+Based on video: https://www.youtube.com/watch?v=_uI9eGpc_Ts
+
+### JSON Structured Prompt System
+- [ ] Create JSON prompt schema for structured scene description
+- [ ] Define JSON fields: subject, face, hair, outfit, pose, scene, lighting, camera
+- [ ] Build JSON prompt builder UI component
+- [ ] Convert JSON to optimized text prompt for image generation
+- [ ] Add JSON prompt mode toggle in Studio
+
+### Reference Image Lock (Character Identity)
+- [ ] Add reference image upload for character consistency
+- [ ] Store reference images per character preset
+- [ ] Pass reference image to image generation API
+- [ ] Implement face/identity preservation in generation
+
+### AI Prompt Generator (Simple to JSON)
+- [ ] Create LLM-powered prompt generator endpoint
+- [ ] Accept simple text description as input
+- [ ] Output structured JSON prompt
+- [ ] Add "Generate JSON from description" button in Studio
+- [ ] Show generated JSON for user review/edit
+
+### Studio UI Updates
+- [ ] Add JSON Prompt tab in builder panel
+- [ ] Add reference image upload section
+- [ ] Add "Lock Character" toggle
+- [ ] Show JSON preview with syntax highlighting
+- [ ] Add copy JSON button
+
+
+## Nano Banana Pro Cinematography Features - NEW
+Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
+
+### Camera Gear Presets
+- [x] Professional camera body presets (Sony A7, Canon R5, RED, ARRI, Blackmagic)
+- [x] Lens presets (24mm wide, 35mm, 50mm, 85mm portrait, 135mm telephoto)
+- [x] Aperture settings (f/1.4 bokeh, f/2.8 balanced, f/8 sharp)
+- [x] Film stock/sensor emulation (Kodak Portra, Fuji, CineStill, Digital clean)
+
+### Lighting Setups
+- [x] Studio lighting presets (Rembrandt, Butterfly, Split, Loop, Broad)
+- [x] Natural lighting presets (Golden hour, Blue hour, Overcast, Harsh noon)
+- [x] Cinematic lighting (Noir, Neon, Practical, Motivated)
+- [x] Color temperature controls (Warm 3200K, Daylight 5600K, Cool 7000K)
+
+### Film Style Aesthetics
+- [x] Movie director styles (Wes Anderson, Christopher Nolan, Denis Villeneuve, Ridley Scott)
+- [x] Photographer styles (Annie Leibovitz, Peter Lindbergh, Mario Testino)
+- [x] Film genre looks (Noir, Sci-Fi, Romance, Horror, Documentary)
+- [x] Color grading presets (Teal/Orange, Vintage, Desaturated, Vibrant)
+
+### Scene Generator (Storyboard Mode)
+- [x] Multi-angle scene generation (same character, different angles)
+- [x] Action sequence generator (walking, sitting, turning, gesturing)
+- [x] Storyboard grid view (2x2, 3x3, 4x4 layouts)
+- [x] Scene continuity tracking (maintain character across shots)
+- [ ] Export storyboard as PDF/image grid
+
+### Elements Tool (Reference Image Workflow)
+- [x] Character reference upload (lock face/body identity)
+- [x] Outfit reference upload (apply specific clothing)
+- [x] Scene/background reference upload
+- [x] Object reference upload (props, accessories)
+- [x] Reference strength slider (0-100%)
+- [x] Multi-reference blending
+
+### Advanced Prompt Export
+- [ ] Export as JSON structured data
+- [ ] Export as plain text prompt
+- [ ] Copy to clipboard functionality
+- [ ] Prompt history with favorites
+- [ ] Share prompt templates
+

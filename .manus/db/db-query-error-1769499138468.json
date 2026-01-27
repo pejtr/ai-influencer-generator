@@ -1,0 +1,8 @@
+{
+  "query": "\nALTER TABLE character_presets ADD COLUMN IF NOT EXISTS reference_image_url VARCHAR(500);\nALTER TABLE character_presets ADD COLUMN IF NOT EXISTS json_prompt JSON;\nALTER TABLE character_presets ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute \nALTER TABLE character_presets ADD COLUMN IF NOT EXISTS reference_image_url VARCHAR(500);\nALTER TABLE character_presets ADD COLUMN IF NOT EXISTS json_prompt JSON;\nALTER TABLE character_presets ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 2: Table 'dthx6xuqiqvsj7ixumchpd.character_presets' doesn't exist"
+  ]
+}
