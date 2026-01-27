@@ -15,8 +15,19 @@ import { toast } from "sonner";
 import { 
   Sparkles, Shuffle, RotateCcw, Download, Loader2, 
   User, Palette, Eye, Heart, Wand2, Plus, Save, FolderOpen,
-  Scissors, Shirt, Video, Edit3, Trash2, ChevronRight
+  Scissors, Shirt, Video, Edit3, Trash2, ChevronRight, Zap,
+  Camera, Smile, ImageIcon, LayoutGrid, Copy
 } from "lucide-react";
+import {
+  ALL_TEMPLATES,
+  TEMPLATE_CATEGORIES,
+  ASPECT_RATIO_OPTIONS,
+  buildPromptFromTemplate,
+  getTemplatesByCategory,
+  type PromptTemplate,
+  type PromptCategory,
+  type AspectRatio,
+} from "@shared/promptTemplates";
 
 // Character options data
 const CHARACTER_TYPES = [
@@ -166,6 +177,68 @@ const ACCESSORIES = [
   { id: "bracelet", label: "Bracelet" },
 ];
 
+// Template Card Component
+function TemplateCard({ 
+  template, 
+  settings, 
+  onApply, 
+  onCopy 
+}: { 
+  template: PromptTemplate; 
+  settings: CharacterSettings; 
+  onApply: (prompt: string) => void; 
+  onCopy: (prompt: string) => void; 
+}) {
+  const prompt = buildPromptFromTemplate(template, {
+    gender: settings.gender,
+    ethnicity: settings.ethnicity,
+    age: settings.age,
+    hairStyle: settings.hairStyle.replace("-", " "),
+    hairColor: settings.hairColor.replace("-", " "),
+    eyeColor: settings.eyeColor,
+    skinTone: settings.skinTone,
+    bodyType: settings.bodyType,
+    outfit: settings.outfitStyle,
+    outfitColor: settings.outfitColor,
+  });
+
+  return (
+    <div className="p-2 rounded-lg bg-secondary/30 border border-border hover:border-primary/50 transition-all">
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <h4 className="text-xs font-medium">{template.name}</h4>
+          <p className="text-[10px] text-muted-foreground">{template.description}</p>
+        </div>
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+          {template.category}
+        </span>
+      </div>
+      <p className="text-[10px] text-muted-foreground line-clamp-2 mb-2 italic">
+        "{prompt.slice(0, 100)}..."
+      </p>
+      <div className="flex gap-1">
+        <Button
+          variant="default"
+          size="sm"
+          className="flex-1 h-6 text-[10px]"
+          onClick={() => onApply(prompt)}
+        >
+          <Zap className="w-2.5 h-2.5 mr-1" />
+          Apply
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={() => onCopy(prompt)}
+        >
+          <Copy className="w-2.5 h-2.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 interface CharacterSettings {
   type: string;
   gender: string;
@@ -221,6 +294,8 @@ export default function Studio() {
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoTaskId, setVideoTaskId] = useState<string | null>(null);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+  const [selectedTemplateCategory, setSelectedTemplateCategory] = useState<PromptCategory>("portrait");
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>("1:1");
 
   const { data: userCredits, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -788,7 +863,7 @@ export default function Studio() {
           <div className="w-80 border-l border-border bg-card/50 flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
               <div className="border-b border-border p-2">
-                <TabsList className="w-full grid grid-cols-2">
+                <TabsList className="w-full grid grid-cols-3">
                   <TabsTrigger value="builder" className="gap-2 text-xs">
                     <Wand2 className="w-3 h-3" />
                     Builder
@@ -796,6 +871,10 @@ export default function Studio() {
                   <TabsTrigger value="prompt" className="gap-2 text-xs">
                     <Sparkles className="w-3 h-3" />
                     Prompt
+                  </TabsTrigger>
+                  <TabsTrigger value="templates" className="gap-2 text-xs">
+                    <Zap className="w-3 h-3" />
+                    Quick
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1059,6 +1138,124 @@ export default function Studio() {
                   <p className="text-[10px] text-muted-foreground">
                     Your custom prompt will be combined with the builder selections to create the final image.
                   </p>
+                </div>
+              </TabsContent>
+
+              {/* QUICK PROMPTS TAB */}
+              <TabsContent value="templates" className="flex-1 flex flex-col mt-0 overflow-hidden">
+                {/* Category Selector */}
+                <div className="p-2 border-b border-border">
+                  <div className="flex flex-wrap gap-1">
+                    {TEMPLATE_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedTemplateCategory(cat.id)}
+                        className={`px-2 py-1 rounded text-[10px] transition-colors ${
+                          selectedTemplateCategory === cat.id
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary/50 hover:bg-secondary text-muted-foreground"
+                        }`}
+                      >
+                        {cat.icon} {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Aspect Ratio Selector */}
+                <div className="p-2 border-b border-border">
+                  <Label className="text-[10px] mb-1 block text-muted-foreground">Aspect Ratio</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {ASPECT_RATIO_OPTIONS.slice(0, 5).map((ar) => (
+                      <button
+                        key={ar.value}
+                        onClick={() => setSelectedAspectRatio(ar.value)}
+                        className={`px-2 py-1 rounded text-[10px] transition-colors ${
+                          selectedAspectRatio === ar.value
+                            ? "bg-primary/20 text-primary border border-primary"
+                            : "bg-secondary/30 hover:bg-secondary/50 text-muted-foreground border border-transparent"
+                        }`}
+                      >
+                        {ar.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Template List */}
+                <ScrollArea className="flex-1">
+                  <div className="p-2 space-y-2">
+                    {getTemplatesByCategory(selectedTemplateCategory).map((template) => (
+                      <TemplateCard
+                        key={template.id}
+                        template={template}
+                        settings={settings}
+                        onApply={(prompt) => {
+                          updateSetting("customPrompt", prompt);
+                          setActiveTab("prompt");
+                          toast.success(`Applied: ${template.name}`);
+                        }}
+                        onCopy={(prompt) => {
+                          navigator.clipboard.writeText(prompt);
+                          toast.success("Prompt copied to clipboard!");
+                        }}
+                      />
+                    ))}
+                  </div>
+                </ScrollArea>
+
+                {/* Quick Actions */}
+                <div className="p-2 border-t border-border space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs h-8"
+                    onClick={() => {
+                      const charSheetTemplate = ALL_TEMPLATES.find(t => t.id === "sheet_angles");
+                      if (charSheetTemplate) {
+                        const prompt = buildPromptFromTemplate(charSheetTemplate, {
+                          gender: settings.gender,
+                          ethnicity: settings.ethnicity,
+                          age: settings.age,
+                          hairStyle: settings.hairStyle.replace("-", " "),
+                          hairColor: settings.hairColor.replace("-", " "),
+                          eyeColor: settings.eyeColor,
+                          skinTone: settings.skinTone,
+                          bodyType: settings.bodyType,
+                        });
+                        updateSetting("customPrompt", prompt);
+                        setActiveTab("prompt");
+                        toast.success("Character Sheet prompt applied!");
+                      }
+                    }}
+                  >
+                    <LayoutGrid className="w-3 h-3 mr-1" />
+                    Generate Character Sheet
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs h-8"
+                    onClick={() => {
+                      const emotionTemplate = ALL_TEMPLATES.find(t => t.id === "sheet_emotions");
+                      if (emotionTemplate) {
+                        const prompt = buildPromptFromTemplate(emotionTemplate, {
+                          gender: settings.gender,
+                          ethnicity: settings.ethnicity,
+                          age: settings.age,
+                          hairStyle: settings.hairStyle.replace("-", " "),
+                          hairColor: settings.hairColor.replace("-", " "),
+                          eyeColor: settings.eyeColor,
+                        });
+                        updateSetting("customPrompt", prompt);
+                        setActiveTab("prompt");
+                        toast.success("Emotion Sheet prompt applied!");
+                      }
+                    }}
+                  >
+                    <Smile className="w-3 h-3 mr-1" />
+                    Generate Emotion Sheet
+                  </Button>
                 </div>
               </TabsContent>
             </Tabs>
