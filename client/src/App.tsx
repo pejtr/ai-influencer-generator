@@ -13,6 +13,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Scheduler from "./pages/Scheduler";
 import BatchGeneration from "./pages/BatchGeneration";
 import FanvueConnect from "./pages/FanvueConnect";
+import ThemeSwitcher from "./components/ThemeSwitcher";
 
 function Router() {
   return (
@@ -39,6 +40,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <ThemeSwitcher />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

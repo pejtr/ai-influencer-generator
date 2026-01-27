@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE users ADD COLUMN referredByLevel2 VARCHAR(255) DEFAULT NULL;\nALTER TABLE users ADD COLUMN referredByLevel3 VARCHAR(255) DEFAULT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute ALTER TABLE users ADD COLUMN referredByLevel2 VARCHAR(255) DEFAULT NULL;\nALTER TABLE users ADD COLUMN referredByLevel3 VARCHAR(255) DEFAULT NULL;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1060 (42S21) at line 1: Duplicate column name 'referredByLevel2'"
+  ]
+}
