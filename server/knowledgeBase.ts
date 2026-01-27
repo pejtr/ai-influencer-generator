@@ -98,7 +98,7 @@ export async function getKnowledgeItemById(id: number): Promise<KnowledgeBaseIte
 }
 
 // Create new knowledge item
-export async function createKnowledgeItem(input: CreateKnowledgeInput): Promise<number | null> {
+export async function createKnowledgeItem(input: CreateKnowledgeInput, userId?: number): Promise<number | null> {
   const db = await getDb();
   if (!db) return null;
 
@@ -108,7 +108,20 @@ export async function createKnowledgeItem(input: CreateKnowledgeInput): Promise<
       VALUES (${input.title}, ${input.content}, ${input.contentType}, ${input.category}, ${JSON.stringify(input.tags)}, ${input.priority})
     `);
 
-    return (result as any)[0]?.insertId || null;
+    const insertId = (result as any)[0]?.insertId || null;
+
+    // Record history
+    if (insertId && userId) {
+      const { recordHistory } = await import("./knowledgeBaseHistory");
+      await recordHistory({
+        knowledgeId: insertId,
+        userId,
+        action: "create",
+        newData: input,
+      });
+    }
+
+    return insertId;
   } catch (error) {
     console.error("[KnowledgeBase] Error creating item:", error);
     return null;
@@ -116,7 +129,7 @@ export async function createKnowledgeItem(input: CreateKnowledgeInput): Promise<
 }
 
 // Update knowledge item
-export async function updateKnowledgeItem(id: number, input: UpdateKnowledgeInput): Promise<boolean> {
+export async function updateKnowledgeItem(id: number, input: UpdateKnowledgeInput, userId?: number): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
 
@@ -155,6 +168,9 @@ export async function updateKnowledgeItem(id: number, input: UpdateKnowledgeInpu
 
     if (updates.length === 0) return true;
 
+    // Get old data for history
+    const oldData = userId ? await getKnowledgeItemById(id) : null;
+
     values.push(id);
 
     await db.execute(sql.raw(`
@@ -167,6 +183,18 @@ export async function updateKnowledgeItem(id: number, input: UpdateKnowledgeInpu
       return String(val);
     })));
 
+    // Record history
+    if (userId && oldData) {
+      const { recordHistory } = await import("./knowledgeBaseHistory");
+      await recordHistory({
+        knowledgeId: id,
+        userId,
+        action: "update",
+        oldData,
+        newData: input,
+      });
+    }
+
     return true;
   } catch (error) {
     console.error("[KnowledgeBase] Error updating item:", error);
@@ -175,12 +203,27 @@ export async function updateKnowledgeItem(id: number, input: UpdateKnowledgeInpu
 }
 
 // Delete knowledge item
-export async function deleteKnowledgeItem(id: number): Promise<boolean> {
+export async function deleteKnowledgeItem(id: number, userId?: number): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
 
   try {
+    // Get old data for history
+    const oldData = userId ? await getKnowledgeItemById(id) : null;
+
     await db.execute(sql`DELETE FROM knowledge_base WHERE id = ${id}`);
+
+    // Record history
+    if (userId && oldData) {
+      const { recordHistory } = await import("./knowledgeBaseHistory");
+      await recordHistory({
+        knowledgeId: id,
+        userId,
+        action: "delete",
+        oldData,
+      });
+    }
+
     return true;
   } catch (error) {
     console.error("[KnowledgeBase] Error deleting item:", error);

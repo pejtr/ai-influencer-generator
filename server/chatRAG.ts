@@ -223,13 +223,16 @@ export async function initializeKnowledgeBase(): Promise<void> {
   }
 }
 
-// Search knowledge base by keywords
+// Search knowledge base by keywords (now using database only)
 export async function searchKnowledge(
   query: string,
   limit: number = 5
 ): Promise<KnowledgeItem[]> {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) {
+    console.warn("[RAG] Database not available, returning empty results");
+    return [];
+  }
 
   try {
     // Extract keywords from query
@@ -243,16 +246,25 @@ export async function searchKnowledge(
     ).join(' OR ');
 
     const rows = await db.execute(sql.raw(`
-      SELECT * FROM knowledgeBase 
-      WHERE isActive = TRUE AND (${searchConditions})
+      SELECT id, title, content, content_type as contentType, category, tags, priority 
+      FROM knowledge_base 
+      WHERE is_active = TRUE AND (${searchConditions})
       ORDER BY priority DESC
       LIMIT ${limit}
     `));
 
-    return ((rows as any)[0] as any[]).map(row => ({
-      ...row,
-      tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags || []
+    const results = ((rows as any)[0] as any[]).map(row => ({
+      id: row.id,
+      title: row.title,
+      content: row.content,
+      contentType: row.contentType,
+      category: row.category,
+      tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags || [],
+      priority: row.priority
     }));
+
+    console.log(`[RAG] Found ${results.length} knowledge items for query: "${query}"`);
+    return results;
   } catch (error) {
     console.error("[RAG] Error searching knowledge:", error);
     return [];

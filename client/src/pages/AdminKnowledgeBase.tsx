@@ -16,8 +16,10 @@ import { toast } from "sonner";
 import { 
   Plus, Search, Edit, Trash2, BookOpen, FileText, 
   HelpCircle, Lightbulb, TrendingUp, Tag, Filter,
-  ChevronDown, MoreHorizontal, Eye, EyeOff
+  ChevronDown, MoreHorizontal, Eye, EyeOff, Download, Upload, History
 } from "lucide-react";
+import { ImportExportDialog } from "@/components/ImportExportDialog";
+import { HistoryDialog } from "@/components/HistoryDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,6 +91,8 @@ export default function AdminKnowledgeBase() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
@@ -234,14 +238,19 @@ export default function AdminKnowledgeBase() {
               Manage AI chatbot knowledge and responses
             </p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Add Entry
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsImportExportOpen(true)} className="gap-2">
+              <Download className="w-4 h-4" />
+              Import/Export
+            </Button>
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Add Entry
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Knowledge Entry</DialogTitle>
                 <DialogDescription>
@@ -346,6 +355,7 @@ export default function AdminKnowledgeBase() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -553,6 +563,10 @@ export default function AdminKnowledgeBase() {
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setSelectedItem(item); setIsHistoryOpen(true); }}>
+                                <History className="w-4 h-4 mr-2" />
+                                View History
+                              </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => openDeleteDialog(item)}
                                 className="text-red-500"
@@ -705,6 +719,24 @@ export default function AdminKnowledgeBase() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Import/Export Dialog */}
+        <ImportExportDialog
+          open={isImportExportOpen}
+          onOpenChange={setIsImportExportOpen}
+          onSuccess={refetch}
+        />
+
+        {/* History Dialog */}
+        {selectedItem && (
+          <HistoryDialog
+            open={isHistoryOpen}
+            onOpenChange={setIsHistoryOpen}
+            knowledgeId={selectedItem.id}
+            knowledgeTitle={selectedItem.title}
+            onRestore={refetch}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

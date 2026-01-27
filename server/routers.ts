@@ -1671,7 +1671,7 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
         }
         const { createKnowledgeItem } = await import("./knowledgeBase");
-        const id = await createKnowledgeItem(input);
+        const id = await createKnowledgeItem(input, ctx.user.id);
         if (!id) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create knowledge item" });
         }
@@ -1696,7 +1696,7 @@ export const appRouter = router({
         }
         const { updateKnowledgeItem } = await import("./knowledgeBase");
         const { id, ...updates } = input;
-        const success = await updateKnowledgeItem(id, updates);
+        const success = await updateKnowledgeItem(id, updates, ctx.user.id);
         if (!success) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update knowledge item" });
         }
@@ -1711,7 +1711,7 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
         }
         const { deleteKnowledgeItem } = await import("./knowledgeBase");
-        const success = await deleteKnowledgeItem(input.id);
+        const success = await deleteKnowledgeItem(input.id, ctx.user.id);
         if (!success) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to delete knowledge item" });
         }
@@ -1735,6 +1735,129 @@ export const appRouter = router({
       const { getKnowledgeCategories } = await import("./knowledgeBase");
       return getKnowledgeCategories();
     }),
+
+    // ============ KNOWLEDGE BASE IMPORT/EXPORT ============
+
+    // Export as JSON
+    exportKnowledgeJSON: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const { exportAsJSON } = await import("./knowledgeBaseImportExport");
+      const data = await exportAsJSON();
+      if (!data) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to export knowledge base" });
+      }
+      return data;
+    }),
+
+    // Export as CSV
+    exportKnowledgeCSV: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const { exportAsCSV } = await import("./knowledgeBaseImportExport");
+      const csv = await exportAsCSV();
+      if (!csv) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to export knowledge base" });
+      }
+      return csv;
+    }),
+
+    // Preview import from JSON
+    previewImportJSON: protectedProcedure
+      .input(z.object({
+        data: z.any(), // ExportFormat type
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { previewImportJSON } = await import("./knowledgeBaseImportExport");
+        return previewImportJSON(input.data);
+      }),
+
+    // Import from JSON
+    importKnowledgeJSON: protectedProcedure
+      .input(z.object({
+        data: z.any(), // ExportFormat type
+        skipDuplicates: z.boolean().default(true),
+        overwriteDuplicates: z.boolean().default(false),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { importFromJSON } = await import("./knowledgeBaseImportExport");
+        return importFromJSON(input.data, {
+          skipDuplicates: input.skipDuplicates,
+          overwriteDuplicates: input.overwriteDuplicates,
+        });
+      }),
+
+    // Import from CSV
+    importKnowledgeCSV: protectedProcedure
+      .input(z.object({
+        csvContent: z.string(),
+        skipDuplicates: z.boolean().default(true),
+        overwriteDuplicates: z.boolean().default(false),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { importFromCSV } = await import("./knowledgeBaseImportExport");
+        return importFromCSV(input.csvContent, {
+          skipDuplicates: input.skipDuplicates,
+          overwriteDuplicates: input.overwriteDuplicates,
+        });
+      }),
+
+    // ============ KNOWLEDGE BASE HISTORY ============
+
+    // Get history for a knowledge item
+    getKnowledgeHistory: protectedProcedure
+      .input(z.object({ knowledgeId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { getKnowledgeHistory } = await import("./knowledgeBaseHistory");
+        return getKnowledgeHistory(input.knowledgeId);
+      }),
+
+    // Get recent history (all items)
+    getRecentKnowledgeHistory: protectedProcedure
+      .input(z.object({ limit: z.number().default(50) }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { getRecentHistory } = await import("./knowledgeBaseHistory");
+        return getRecentHistory(input.limit);
+      }),
+
+    // Restore a previous version
+    restoreKnowledgeVersion: protectedProcedure
+      .input(z.object({
+        knowledgeId: z.number(),
+        historyId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { restoreVersion } = await import("./knowledgeBaseHistory");
+        const success = await restoreVersion({
+          knowledgeId: input.knowledgeId,
+          historyId: input.historyId,
+          userId: ctx.user.id,
+        });
+        if (!success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to restore version" });
+        }
+        return { success: true };
+      }),
   }),
 });
 

@@ -541,3 +541,31 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Toggle active/inactive status
 - [x] Tags management (comma-separated)
 - [x] Link from Admin Dashboard
+
+
+## Knowledge Base Enhancements - NEW
+
+### RAG Database Integration
+- [x] Update chatRAG.ts to fetch from database instead of hardcoded
+- [x] Update SQL queries to use knowledge_base table
+- [x] Test RAG system with database knowledge
+
+### Bulk Import/Export
+- [x] Create CSV export endpoint
+- [x] Create JSON export endpoint
+- [x] Create CSV import endpoint with validation
+- [x] Create JSON import endpoint with validation
+- [x] Preview import functionality
+- [x] Add export button in admin UI
+- [x] Add import button with file upload in admin UI
+- [x] Handle duplicate entries on import (skip or overwrite options)
+
+### Version History
+- [x] Create knowledge_base_history table
+- [x] Track who made changes (user_id)
+- [x] Track what changed (old/new values)
+- [x] Create history endpoints (get history, get recent, restore)
+- [x] Integrate history tracking into create/update/delete
+- [x] Add "View History" button in admin UI
+- [x] Show history dialog with timeline
+- [x] Add "Restore Version" functionality (backend)
