@@ -120,21 +120,21 @@
 - [x] Update Stripe products for new tier names
 
 ## Feature Gating per Tier
-- [ ] BASIC: Standard generation, watermark, 50 credits/month ($9)
-- [ ] PREMIUM: HD download, no watermark, Fanvue OAuth, 300 credits/month ($29)
-- [ ] VIP: All Premium + Auto-publish, Content Scheduler, Batch Generation, 1000 credits/month ($99)
+- [x] BASIC: Standard generation, watermark, 50 credits/month ($9)
+- [x] PREMIUM: HD download, no watermark, Fanvue OAuth, 300 credits/month ($29)
+- [x] VIP: All Premium + Auto-publish, Content Scheduler, Batch Generation, 1000 credits/month ($99)
 
 ## Fanvue Integration (PREMIUM/VIP only)
-- [ ] Fanvue OAuth 2.0 flow implementation
-- [ ] Store Fanvue access/refresh tokens
-- [ ] Auto-publish generated images to Fanvue
-- [ ] Fanvue account connection UI
+- [x] Fanvue OAuth 2.0 flow implementation
+- [x] Store Fanvue access/refresh tokens
+- [x] Auto-publish generated images to Fanvue
+- [x] Fanvue account connection UI
 
 ## Content Scheduler (VIP only)
-- [ ] Content calendar UI
-- [ ] Scheduled posts queue
-- [ ] Batch generation (30 images at once)
-- [ ] Auto-posting workflow
+- [x] Content calendar UI
+- [x] Scheduled posts queue
+- [x] Batch generation (30 images at once)
+- [x] Auto-posting workflow
 
 
 ## Multi-Level Affiliate System (New)
@@ -158,3 +158,30 @@
 - [x] Top Earner: $1000+ monthly
 - [x] Badge display on profile
 - [x] Achievement notifications
+
+
+## Fanvue OAuth Auto-Publishing (PREMIUM/VIP) - New
+- [x] Research Fanvue API documentation
+- [x] Create Fanvue OAuth 2.0 connection flow
+- [x] Store Fanvue access/refresh tokens securely
+- [x] Create Fanvue connection UI in user settings
+- [x] Implement auto-publish endpoint for generated images
+- [x] Add Fanvue connection status indicator
+- [x] Test OAuth flow and token refresh
+
+## Content Scheduler with Batch Generation (VIP) - New
+- [x] Create content calendar database schema
+- [x] Build calendar UI component for scheduling posts
+- [x] Implement batch generation (up to 30 images at once)
+- [x] Create scheduled posts queue system
+- [x] Add auto-posting workflow to Fanvue
+- [x] Implement post preview before publishing
+- [x] Add scheduling time picker
+
+## Homepage Showcase Gallery - New
+- [x] Create showcase gallery component
+- [x] Add pre-generated AI influencer images
+- [x] Implement carousel/grid display
+- [x] Add hover effects and image details
+- [x] Include social proof elements
+- [x] Make gallery responsive

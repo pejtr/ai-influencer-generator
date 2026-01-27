@@ -12,7 +12,15 @@ import {
   getAdminMetrics, getAllUsers, getUserCount, getGenerationCount,
   TIER_CREDITS, TIER_PRICES, CREDIT_PACKS,
   updateUserStripeCustomerId,
-  getAffiliateLeaderboard, getAffiliateNetworkStats
+  getAffiliateLeaderboard, getAffiliateNetworkStats,
+  // Fanvue integration
+  updateUserFanvueTokens, disconnectUserFanvue, getUserFanvueTokens,
+  markGenerationPublished, getUnpublishedGenerations,
+  // Scheduler
+  createScheduledPost, getScheduledPostsByUserId, getScheduledPostById,
+  updateScheduledPost, deleteScheduledPost,
+  // Batch jobs
+  createBatchJob, getBatchJobById, getBatchJobsByUserId, updateBatchJob, incrementBatchJobProgress
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -26,6 +34,11 @@ import { TierName } from "./stripe/products";
 import { generateInfluencerImage, buildPromptFromSettings } from "./imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import {
+  generatePKCE, generateState, buildAuthorizationUrl,
+  exchangeCodeForTokens, refreshAccessToken, getFanvueUser,
+  publishToFanvue, isFanvueConfigured
+} from "./fanvue/fanvue";
 
 // Character settings schema
 const characterSettingsSchema = z.object({
@@ -38,6 +51,16 @@ const characterSettingsSchema = z.object({
   age: z.number(),
   customPrompt: z.string().optional(),
 });
+
+// Helper to check tier access
+function requireTier(userTier: string, requiredTiers: string[]) {
+  if (!requiredTiers.includes(userTier)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `This feature requires ${requiredTiers.join(" or ")} tier. Please upgrade your plan.`
+    });
+  }
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -192,6 +215,16 @@ export const appRouter = router({
         }
         return { success: true };
       }),
+
+    // Get unpublished generations for Fanvue publishing
+    getUnpublished: protectedProcedure.query(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      requireTier(user.tier, ["premium", "vip"]);
+      return getUnpublishedGenerations(ctx.user.id, 30);
+    }),
   }),
 
   // Affiliate program
@@ -246,6 +279,443 @@ export const appRouter = router({
         };
       }
       return getAffiliateNetworkStats(affiliate.id);
+    }),
+  }),
+
+  // Fanvue Integration (PREMIUM/VIP only)
+  fanvue: router({
+    // Check if Fanvue is configured and user connection status
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      const tokens = await getUserFanvueTokens(ctx.user.id);
+      
+      return {
+        isConfigured: isFanvueConfigured(),
+        isConnected: !!tokens,
+        connectedAt: tokens?.connectedAt || null,
+        fanvueUserId: tokens?.fanvueUserId || null,
+        tierAllowed: ["premium", "vip"].includes(user.tier),
+      };
+    }),
+
+    // Start OAuth flow - returns authorization URL
+    startAuth: protectedProcedure.mutation(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      requireTier(user.tier, ["premium", "vip"]);
+
+      if (!isFanvueConfigured()) {
+        throw new TRPCError({ 
+          code: "PRECONDITION_FAILED", 
+          message: "Fanvue integration is not configured. Please contact support." 
+        });
+      }
+
+      const { codeVerifier, codeChallenge } = generatePKCE();
+      const state = generateState();
+      
+      const origin = ctx.req.headers.origin || "http://localhost:3000";
+      const redirectUri = `${origin}/api/fanvue/callback`;
+      
+      const authUrl = buildAuthorizationUrl(redirectUri, state, codeChallenge);
+
+      // Store PKCE verifier and state in session/cookie
+      // In production, use secure session storage
+      ctx.res.cookie("fanvue_code_verifier", codeVerifier, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 10 * 60 * 1000, // 10 minutes
+        sameSite: "lax",
+      });
+      ctx.res.cookie("fanvue_state", state, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 10 * 60 * 1000,
+        sameSite: "lax",
+      });
+
+      return { authUrl };
+    }),
+
+    // Complete OAuth flow - exchange code for tokens
+    completeAuth: protectedProcedure
+      .input(z.object({
+        code: z.string(),
+        state: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        requireTier(user.tier, ["premium", "vip"]);
+
+        // Verify state
+        const storedState = ctx.req.cookies?.fanvue_state;
+        if (!storedState || storedState !== input.state) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid state parameter" });
+        }
+
+        // Get code verifier
+        const codeVerifier = ctx.req.cookies?.fanvue_code_verifier;
+        if (!codeVerifier) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Missing code verifier" });
+        }
+
+        const origin = ctx.req.headers.origin || "http://localhost:3000";
+        const redirectUri = `${origin}/api/fanvue/callback`;
+
+        try {
+          // Exchange code for tokens
+          const tokens = await exchangeCodeForTokens(input.code, redirectUri, codeVerifier);
+          
+          // Get Fanvue user info
+          const fanvueUser = await getFanvueUser(tokens.accessToken);
+
+          // Store tokens in database
+          await updateUserFanvueTokens(
+            ctx.user.id,
+            tokens.accessToken,
+            tokens.refreshToken,
+            fanvueUser.uuid
+          );
+
+          // Clear cookies
+          ctx.res.clearCookie("fanvue_code_verifier");
+          ctx.res.clearCookie("fanvue_state");
+
+          return {
+            success: true,
+            fanvueUser: {
+              handle: fanvueUser.handle,
+              displayName: fanvueUser.displayName,
+              isCreator: fanvueUser.isCreator,
+            },
+          };
+        } catch (error) {
+          console.error("Fanvue OAuth error:", error);
+          throw new TRPCError({ 
+            code: "INTERNAL_SERVER_ERROR", 
+            message: "Failed to complete Fanvue authentication" 
+          });
+        }
+      }),
+
+    // Disconnect Fanvue account
+    disconnect: protectedProcedure.mutation(async ({ ctx }) => {
+      await disconnectUserFanvue(ctx.user.id);
+      return { success: true };
+    }),
+
+    // Publish a generation to Fanvue
+    publish: protectedProcedure
+      .input(z.object({
+        generationId: z.number(),
+        caption: z.string().max(5000).default(""),
+        hashtags: z.string().optional(),
+        audience: z.enum(["subscribers", "followers-and-subscribers"]).default("subscribers"),
+        price: z.number().min(300).optional(), // cents
+        publishAt: z.string().optional(), // ISO date for scheduled post
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        requireTier(user.tier, ["premium", "vip"]);
+
+        // Get Fanvue tokens
+        const tokens = await getUserFanvueTokens(ctx.user.id);
+        if (!tokens) {
+          throw new TRPCError({ 
+            code: "PRECONDITION_FAILED", 
+            message: "Please connect your Fanvue account first" 
+          });
+        }
+
+        // Get generation
+        const generation = await getGenerationById(input.generationId);
+        if (!generation || generation.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Generation not found" });
+        }
+
+        if (generation.publishedToFanvue) {
+          throw new TRPCError({ code: "CONFLICT", message: "Already published to Fanvue" });
+        }
+
+        if (!tokens.accessToken) {
+          throw new TRPCError({ 
+            code: "PRECONDITION_FAILED", 
+            message: "Fanvue access token not found. Please reconnect your account." 
+          });
+        }
+
+        try {
+          // Publish to Fanvue
+          const post = await publishToFanvue(
+            tokens.accessToken,
+            generation.imageUrl,
+            input.caption,
+            {
+              audience: input.audience,
+              price: input.price,
+              publishAt: input.publishAt,
+              hashtags: input.hashtags,
+            }
+          );
+
+          // Mark as published
+          await markGenerationPublished(generation.id, post.uuid);
+
+          return {
+            success: true,
+            postId: post.uuid,
+            publishedAt: post.publishedAt,
+          };
+        } catch (error) {
+          console.error("Fanvue publish error:", error);
+          
+          // Check if token expired and try refresh
+          if (tokens.refreshToken) {
+            try {
+              const newTokens = await refreshAccessToken(tokens.refreshToken);
+              await updateUserFanvueTokens(
+                ctx.user.id,
+                newTokens.accessToken,
+                newTokens.refreshToken,
+                tokens.fanvueUserId!
+              );
+              
+              // Retry publish with new token
+              const post = await publishToFanvue(
+                newTokens.accessToken,
+                generation.imageUrl,
+                input.caption,
+                {
+                  audience: input.audience,
+                  price: input.price,
+                  publishAt: input.publishAt,
+                  hashtags: input.hashtags,
+                }
+              );
+
+              await markGenerationPublished(generation.id, post.uuid);
+
+              return {
+                success: true,
+                postId: post.uuid,
+                publishedAt: post.publishedAt,
+              };
+            } catch (refreshError) {
+              console.error("Token refresh failed:", refreshError);
+              await disconnectUserFanvue(ctx.user.id);
+              throw new TRPCError({ 
+                code: "UNAUTHORIZED", 
+                message: "Fanvue session expired. Please reconnect your account." 
+              });
+            }
+          }
+          
+          throw new TRPCError({ 
+            code: "INTERNAL_SERVER_ERROR", 
+            message: "Failed to publish to Fanvue" 
+          });
+        }
+      }),
+  }),
+
+  // Content Scheduler (VIP only)
+  scheduler: router({
+    // List scheduled posts
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      requireTier(user.tier, ["vip"]);
+      
+      return getScheduledPostsByUserId(ctx.user.id, 50);
+    }),
+
+    // Create scheduled post
+    create: protectedProcedure
+      .input(z.object({
+        generationId: z.number(),
+        scheduledAt: z.string(), // ISO date
+        caption: z.string().max(5000).default(""),
+        hashtags: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        requireTier(user.tier, ["vip"]);
+
+        // Verify generation exists
+        const generation = await getGenerationById(input.generationId);
+        if (!generation || generation.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Generation not found" });
+        }
+
+        const scheduledAt = new Date(input.scheduledAt);
+        if (scheduledAt <= new Date()) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Scheduled time must be in the future" });
+        }
+
+        const postId = await createScheduledPost({
+          userId: ctx.user.id,
+          generationId: input.generationId,
+          scheduledAt,
+          caption: input.caption,
+          hashtags: input.hashtags,
+        });
+
+        return { success: true, id: postId };
+      }),
+
+    // Update scheduled post
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        scheduledAt: z.string().optional(),
+        caption: z.string().max(5000).optional(),
+        hashtags: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        requireTier(user.tier, ["vip"]);
+
+        const post = await getScheduledPostById(input.id);
+        if (!post || post.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Scheduled post not found" });
+        }
+
+        if (post.status !== "scheduled") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot update non-scheduled post" });
+        }
+
+        const updateData: Record<string, unknown> = {};
+        if (input.scheduledAt) {
+          const scheduledAt = new Date(input.scheduledAt);
+          if (scheduledAt <= new Date()) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Scheduled time must be in the future" });
+          }
+          updateData.scheduledAt = scheduledAt;
+        }
+        if (input.caption !== undefined) updateData.caption = input.caption;
+        if (input.hashtags !== undefined) updateData.hashtags = input.hashtags;
+
+        await updateScheduledPost(input.id, updateData);
+        return { success: true };
+      }),
+
+    // Cancel scheduled post
+    cancel: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        requireTier(user.tier, ["vip"]);
+
+        const post = await getScheduledPostById(input.id);
+        if (!post || post.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Scheduled post not found" });
+        }
+
+        await updateScheduledPost(input.id, { status: "cancelled" });
+        return { success: true };
+      }),
+
+    // Delete scheduled post
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        requireTier(user.tier, ["vip"]);
+
+        const success = await deleteScheduledPost(input.id, ctx.user.id);
+        if (!success) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Scheduled post not found" });
+        }
+        return { success: true };
+      }),
+  }),
+
+  // Batch Generation (VIP only)
+  batch: router({
+    // Create batch generation job
+    create: protectedProcedure
+      .input(z.object({
+        totalImages: z.number().min(1).max(30),
+        basePrompt: z.string().min(10).max(2000),
+        characterSettings: characterSettingsSchema,
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        requireTier(user.tier, ["vip"]);
+
+        // Check credits
+        if (user.credits < input.totalImages) {
+          throw new TRPCError({ 
+            code: "FORBIDDEN", 
+            message: `Not enough credits. You need ${input.totalImages} credits but have ${user.credits}.` 
+          });
+        }
+
+        const jobId = await createBatchJob({
+          userId: ctx.user.id,
+          totalImages: input.totalImages,
+          basePrompt: input.basePrompt,
+          characterSettings: input.characterSettings,
+        });
+
+        return { success: true, jobId };
+      }),
+
+    // Get batch job status
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        requireTier(user.tier, ["vip"]);
+
+        const job = await getBatchJobById(input.id);
+        if (!job || job.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Batch job not found" });
+        }
+        return job;
+      }),
+
+    // List batch jobs
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const user = await getUserById(ctx.user.id);
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      requireTier(user.tier, ["vip"]);
+      
+      return getBatchJobsByUserId(ctx.user.id, 20);
     }),
   }),
 

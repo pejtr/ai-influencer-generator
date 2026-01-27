@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
 import { Link, useLocation } from "wouter";
-import { Sparkles, Menu, X, User, LogOut, CreditCard, LayoutDashboard, Image } from "lucide-react";
+import { Sparkles, Menu, X, User, LogOut, CreditCard, LayoutDashboard, Image, Calendar, Zap, Link2 } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -105,6 +105,33 @@ export default function Navbar() {
                         <span>Upgrade Plan</span>
                       </Link>
                     </DropdownMenuItem>
+                    {(user?.tier === "premium" || user?.tier === "vip") && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/fanvue" className="flex items-center gap-2 cursor-pointer">
+                            <Link2 className="w-4 h-4" />
+                            <span>Fanvue Connect</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {user?.tier === "vip" && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/scheduler" className="flex items-center gap-2 cursor-pointer">
+                            <Calendar className="w-4 h-4" />
+                            <span>Content Scheduler</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/batch" className="flex items-center gap-2 cursor-pointer">
+                            <Zap className="w-4 h-4" />
+                            <span>Batch Generation</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     {user?.role === "admin" && (
                       <>
                         <DropdownMenuSeparator />

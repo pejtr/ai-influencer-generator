@@ -447,3 +447,168 @@ export async function getAffiliateNetworkStats(affiliateId: number) {
   
   return stats;
 }
+
+
+// ============ FANVUE INTEGRATION ============
+
+export async function updateUserFanvueTokens(
+  userId: number,
+  accessToken: string,
+  refreshToken: string,
+  fanvueUserId: string
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({
+    fanvueAccessToken: accessToken,
+    fanvueRefreshToken: refreshToken,
+    fanvueUserId,
+    fanvueConnectedAt: new Date(),
+  }).where(eq(users.id, userId));
+}
+
+export async function disconnectUserFanvue(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({
+    fanvueAccessToken: null,
+    fanvueRefreshToken: null,
+    fanvueUserId: null,
+    fanvueConnectedAt: null,
+  }).where(eq(users.id, userId));
+}
+
+export async function getUserFanvueTokens(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select({
+    accessToken: users.fanvueAccessToken,
+    refreshToken: users.fanvueRefreshToken,
+    fanvueUserId: users.fanvueUserId,
+    connectedAt: users.fanvueConnectedAt,
+  }).from(users).where(eq(users.id, userId)).limit(1);
+  
+  if (result.length === 0 || !result[0].accessToken) return null;
+  return result[0];
+}
+
+// ============ SCHEDULED POSTS (VIP) ============
+
+import { scheduledPosts, InsertScheduledPost, batchJobs, InsertBatchJob } from "../drizzle/schema";
+
+export async function createScheduledPost(data: InsertScheduledPost) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(scheduledPosts).values(data);
+  return result[0].insertId;
+}
+
+export async function getScheduledPostsByUserId(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(scheduledPosts)
+    .where(eq(scheduledPosts.userId, userId))
+    .limit(limit)
+    .orderBy(desc(scheduledPosts.scheduledAt));
+}
+
+export async function getScheduledPostById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(scheduledPosts).where(eq(scheduledPosts.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateScheduledPost(id: number, data: Partial<InsertScheduledPost>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(scheduledPosts).set(data).where(eq(scheduledPosts.id, id));
+}
+
+export async function deleteScheduledPost(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(scheduledPosts).where(and(eq(scheduledPosts.id, id), eq(scheduledPosts.userId, userId)));
+  return true;
+}
+
+export async function getPendingScheduledPosts() {
+  const db = await getDb();
+  if (!db) return [];
+  const now = new Date();
+  return db.select().from(scheduledPosts)
+    .where(and(
+      eq(scheduledPosts.status, 'scheduled'),
+      lte(scheduledPosts.scheduledAt, now)
+    ))
+    .orderBy(scheduledPosts.scheduledAt);
+}
+
+// ============ BATCH JOBS (VIP) ============
+
+export async function createBatchJob(data: InsertBatchJob) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(batchJobs).values(data);
+  return result[0].insertId;
+}
+
+export async function getBatchJobById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(batchJobs).where(eq(batchJobs.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getBatchJobsByUserId(userId: number, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(batchJobs)
+    .where(eq(batchJobs.userId, userId))
+    .limit(limit)
+    .orderBy(desc(batchJobs.createdAt));
+}
+
+export async function updateBatchJob(id: number, data: Partial<InsertBatchJob>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(batchJobs).set(data).where(eq(batchJobs.id, id));
+}
+
+export async function incrementBatchJobProgress(id: number, completed: boolean) {
+  const db = await getDb();
+  if (!db) return;
+  if (completed) {
+    await db.update(batchJobs).set({
+      completedImages: sql`${batchJobs.completedImages} + 1`,
+    }).where(eq(batchJobs.id, id));
+  } else {
+    await db.update(batchJobs).set({
+      failedImages: sql`${batchJobs.failedImages} + 1`,
+    }).where(eq(batchJobs.id, id));
+  }
+}
+
+// ============ GENERATION WITH FANVUE TRACKING ============
+
+export async function markGenerationPublished(generationId: number, fanvuePostId: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(generations).set({
+    publishedToFanvue: true,
+    fanvuePostId,
+  }).where(eq(generations.id, generationId));
+}
+
+export async function getUnpublishedGenerations(userId: number, limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(generations)
+    .where(and(
+      eq(generations.userId, userId),
+      eq(generations.status, 'completed'),
+      eq(generations.publishedToFanvue, false)
+    ))
+    .limit(limit)
+    .orderBy(desc(generations.createdAt));
+}

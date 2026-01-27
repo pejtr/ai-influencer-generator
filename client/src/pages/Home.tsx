@@ -240,8 +240,61 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Showcase Gallery */}
       <section className="py-20 md:py-28">
+        <div className="container">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              See What Our <span className="text-primary">AI Can Create</span>
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Explore stunning AI-generated influencers created by our users. Every image is unique and ready for commercial use.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto mb-8">
+            {[
+              { src: "/showcase/influencer-1.png", name: "Sophia", style: "Elegant" },
+              { src: "/showcase/influencer-2.jpg", name: "Emma", style: "Natural" },
+              { src: "/showcase/influencer-3.jpg", name: "Olivia", style: "Professional" },
+              { src: "/showcase/influencer-4.png", name: "Ava", style: "Glamour" },
+            ].map((item, i) => (
+              <div 
+                key={i} 
+                className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all hover:scale-[1.02] cursor-pointer"
+              >
+                <img 
+                  src={item.src} 
+                  alt={item.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform">
+                  <p className="font-semibold text-white">{item.name}</p>
+                  <p className="text-sm text-white/70">{item.style}</p>
+                </div>
+                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="px-2 py-1 rounded-full bg-primary/90 text-primary-foreground text-xs font-medium">
+                    AI Generated
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Button asChild variant="outline" size="lg">
+              <Link href="/gallery">
+                View More Examples
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 md:py-28 bg-card/30">
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">

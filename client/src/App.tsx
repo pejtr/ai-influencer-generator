@@ -10,6 +10,9 @@ import Gallery from "./pages/Gallery";
 import Pricing from "./pages/Pricing";
 import Affiliate from "./pages/Affiliate";
 import AdminDashboard from "./pages/AdminDashboard";
+import Scheduler from "./pages/Scheduler";
+import BatchGeneration from "./pages/BatchGeneration";
+import FanvueConnect from "./pages/FanvueConnect";
 
 function Router() {
   return (
@@ -20,6 +23,9 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/affiliate" component={Affiliate} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/scheduler" component={Scheduler} />
+      <Route path="/batch" component={BatchGeneration} />
+      <Route path="/fanvue" component={FanvueConnect} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
