@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -72,6 +73,9 @@ export default function Navbar() {
                   <Sparkles className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium">{userCredits?.credits ?? 0} credits</span>
                 </div>
+
+                {/* Notifications */}
+                <NotificationBell />
 
                 {/* User menu */}
                 <DropdownMenu>

@@ -349,3 +349,37 @@ Based on Glambase analysis - automatic fan engagement and content monetization
 
 ### Unit Tests
 - [x] 164 unit tests passing
+
+
+## A/B Testing & Multi-Language Landing Pages - COMPLETED
+- [x] A/B testing context and hooks (ABTestContext.tsx)
+- [x] 6 landing page variants (3 EN + 3 CZ)
+  - [x] EN-A: Dark Neon Lime (current)
+  - [x] EN-B: Luxury Gold NYC
+  - [x] EN-C: Fresh Blue Light
+  - [x] CZ-A: Světlý Čistý
+  - [x] CZ-B: Urgence (countdown + sleva)
+  - [x] CZ-C: Lifestyle Luxury
+- [x] Theme switching system
+- [x] Variant persistence in localStorage
+- [x] Analytics tracking ready
+
+## Influencer Marketplace - COMPLETED
+- [x] Database tables for marketplace (influencer_follows, influencer_tips)
+- [x] Marketplace browse page (/marketplace)
+- [x] Category filtering (lifestyle, fashion, fitness, beauty, travel, gaming, art, music)
+- [x] Search functionality
+- [x] Follow/Unfollow system
+- [x] Tip functionality with Stripe
+- [x] Navbar link added
+
+## Push Notifications - COMPLETED
+- [x] Database table for notifications
+- [x] Notification service with 6 types (new_message, new_follower, content_purchase, tip_received, subscription, system)
+- [x] NotificationBell component in navbar
+- [x] Unread count badge
+- [x] Mark as read functionality
+- [x] Notification dropdown with scroll area
+
+## Unit Tests Summary
+- [x] 193 unit tests passing across all features
