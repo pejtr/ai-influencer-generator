@@ -1243,6 +1243,72 @@ export const appRouter = router({
 
         return { success: true, creatorEarnings };
       }),
+
+    // ============ MEMORY & RAG SYSTEM ============
+    
+    // Get conversation insights (memory count, mood, topics)
+    getConversationInsights: protectedProcedure
+      .input(z.object({
+        conversationId: z.number(),
+        personalityId: z.number(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const conversation = await getChatConversationById(input.conversationId);
+        if (!conversation || conversation.fanUserId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Conversation not found" });
+        }
+
+        const { getConversationInsights } = await import("./chatCompanionEnhanced");
+        return getConversationInsights(
+          input.conversationId,
+          ctx.user.id,
+          input.personalityId,
+          conversation.messageCount
+        );
+      }),
+
+    // Get user's memories for a personality
+    getMemories: protectedProcedure
+      .input(z.object({
+        personalityId: z.number(),
+        limit: z.number().min(1).max(50).default(20),
+      }))
+      .query(async ({ ctx, input }) => {
+        const { getRelevantMemories } = await import("./chatCompanionEnhanced");
+        return getRelevantMemories(ctx.user.id, input.personalityId, undefined, input.limit);
+      }),
+
+    // Delete user's memories (privacy feature)
+    deleteMemories: protectedProcedure
+      .input(z.object({
+        personalityId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { deleteUserMemories } = await import("./chatCompanionEnhanced");
+        const deleted = await deleteUserMemories(ctx.user.id, input.personalityId);
+        return { deleted };
+      }),
+
+    // Get memory stats
+    getMemoryStats: protectedProcedure
+      .input(z.object({
+        personalityId: z.number(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const { getMemoryStats } = await import("./chatCompanionEnhanced");
+        return getMemoryStats(ctx.user.id, input.personalityId);
+      }),
+
+    // Search knowledge base
+    searchKnowledge: publicProcedure
+      .input(z.object({
+        query: z.string().min(1).max(200),
+        limit: z.number().min(1).max(10).default(5),
+      }))
+      .query(async ({ input }) => {
+        const { searchKnowledge } = await import("./chatCompanionEnhanced");
+        return searchKnowledge(input.query, input.limit);
+      }),
   }),
 
   // ============ CREATOR DASHBOARD ============

@@ -411,3 +411,118 @@ export const creatorEarnings = mysqlTable("creatorEarnings", {
 
 export type CreatorEarnings = typeof creatorEarnings.$inferSelect;
 export type InsertCreatorEarnings = typeof creatorEarnings.$inferInsert;
+
+
+// =====================================================
+// CHATBOT MEMORY & RAG SYSTEM
+// =====================================================
+
+// Conversation summaries for long-term memory
+export const conversationSummaries = mysqlTable("conversationSummaries", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull(),
+  fanUserId: int("fanUserId").notNull(),
+  personalityId: int("personalityId").notNull(),
+  // Summary content
+  summary: text("summary").notNull(), // AI-generated summary of conversation
+  keyTopics: json("keyTopics").$type<string[]>(), // Main topics discussed
+  emotionalTone: varchar("emotionalTone", { length: 50 }), // Overall emotional tone
+  // Coverage
+  messageRangeStart: int("messageRangeStart").notNull(), // First message ID in summary
+  messageRangeEnd: int("messageRangeEnd").notNull(), // Last message ID in summary
+  messageCount: int("messageCount").notNull(), // Number of messages summarized
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ConversationSummary = typeof conversationSummaries.$inferSelect;
+export type InsertConversationSummary = typeof conversationSummaries.$inferInsert;
+
+// User facts/preferences extracted from conversations
+export const userMemories = mysqlTable("userMemories", {
+  id: int("id").autoincrement().primaryKey(),
+  fanUserId: int("fanUserId").notNull(),
+  personalityId: int("personalityId").notNull(),
+  // Memory content
+  memoryType: mysqlEnum("memoryType", [
+    "fact", // Factual info about user (name, job, location)
+    "preference", // User preferences (likes, dislikes)
+    "interest", // Topics user is interested in
+    "relationship", // Relationship status, family
+    "goal", // User's goals or aspirations
+    "experience", // Past experiences shared
+    "context" // General context about the user
+  ]).notNull(),
+  category: varchar("category", { length: 100 }), // Sub-category for organization
+  content: text("content").notNull(), // The actual memory
+  confidence: decimal("confidence", { precision: 3, scale: 2 }).default("0.80").notNull(), // How confident AI is (0-1)
+  // Source tracking
+  sourceMessageId: int("sourceMessageId"), // Message where this was extracted
+  sourceConversationId: int("sourceConversationId"),
+  // Usage tracking
+  timesUsed: int("timesUsed").default(0).notNull(), // How often this memory was used
+  lastUsedAt: timestamp("lastUsedAt"),
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  isVerified: boolean("isVerified").default(false).notNull(), // User confirmed this is correct
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserMemory = typeof userMemories.$inferSelect;
+export type InsertUserMemory = typeof userMemories.$inferInsert;
+
+// Knowledge base for RAG system
+export const knowledgeBase = mysqlTable("knowledgeBase", {
+  id: int("id").autoincrement().primaryKey(),
+  // Content
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  contentType: mysqlEnum("contentType", [
+    "platform_feature", // Features of the platform
+    "how_to", // How-to guides
+    "best_practice", // Best practices for creators
+    "faq", // Frequently asked questions
+    "pricing", // Pricing information
+    "policy", // Platform policies
+    "tip", // Tips and tricks
+    "industry" // Industry knowledge about AI influencers
+  ]).notNull(),
+  // Categorization
+  category: varchar("category", { length: 100 }).notNull(),
+  tags: json("tags").$type<string[]>(),
+  // For semantic search
+  embedding: json("embedding").$type<number[]>(), // Vector embedding for similarity search
+  // Metadata
+  priority: int("priority").default(0).notNull(), // Higher = more important
+  isActive: boolean("isActive").default(true).notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type KnowledgeBase = typeof knowledgeBase.$inferSelect;
+export type InsertKnowledgeBase = typeof knowledgeBase.$inferInsert;
+
+// Chat context cache for faster retrieval
+export const chatContextCache = mysqlTable("chatContextCache", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull().unique(),
+  fanUserId: int("fanUserId").notNull(),
+  personalityId: int("personalityId").notNull(),
+  // Cached context
+  recentSummary: text("recentSummary"), // Summary of recent messages
+  activeMemories: json("activeMemories").$type<number[]>(), // IDs of relevant memories
+  activeKnowledge: json("activeKnowledge").$type<number[]>(), // IDs of relevant knowledge
+  conversationMood: varchar("conversationMood", { length: 50 }), // Current mood of conversation
+  engagementLevel: mysqlEnum("engagementLevel", ["low", "medium", "high"]).default("medium").notNull(),
+  // Suggested actions
+  suggestedTopics: json("suggestedTopics").$type<string[]>(), // Topics to potentially bring up
+  suggestedLinks: json("suggestedLinks").$type<{url: string, label: string, reason: string}[]>(), // Internal links to suggest
+  // Timestamps
+  lastUpdated: timestamp("lastUpdated").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ChatContextCache = typeof chatContextCache.$inferSelect;
+export type InsertChatContextCache = typeof chatContextCache.$inferInsert;

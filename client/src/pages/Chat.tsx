@@ -14,6 +14,7 @@ import {
   Send, Heart, Lock, Unlock, DollarSign, ArrowLeft, 
   Sparkles, MessageCircle, Image as ImageIcon
 } from "lucide-react";
+import { MemoryIndicator } from "@/components/MemoryIndicator";
 
 // Personality type colors
 const PERSONALITY_COLORS: Record<string, string> = {
@@ -254,6 +255,14 @@ export default function Chat() {
                   {personality.personalityType}
                 </Badge>
               </div>
+              
+              {startConversation.data?.conversationId && (
+                <MemoryIndicator
+                  conversationId={startConversation.data.conversationId}
+                  personalityId={personalityId}
+                  personalityName={personality.name}
+                />
+              )}
               
               <Button
                 variant="outline"
