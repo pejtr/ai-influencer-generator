@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { ENV } from "../_core/env";
-import { SUBSCRIPTION_TIERS, CREDIT_PACKS, TierName, getTierByName, getCreditPackById } from "./products";
+import { SUBSCRIPTION_TIERS, CREDIT_PACKS, TierName, getTierByName, getCreditPackById, CreditPack } from "./products";
 
 // Initialize Stripe with secret key
 const stripe = new Stripe(ENV.stripeSecretKey || "", {
@@ -116,7 +116,7 @@ export async function createCreditPackCheckout(
   }
 
   // Create or get price for this credit pack
-  const price = await getOrCreateCreditPackPrice(packId, pack.credits, pack.price);
+  const price = await getOrCreateCreditPackPrice(packId, pack.totalCredits, pack.price);
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
@@ -135,9 +135,12 @@ export async function createCreditPackCheckout(
       customer_email: email,
       customer_name: name || "",
       pack_id: packId,
+      pack_slug: pack.slug,
       credits: pack.credits.toString(),
+      bonus_credits: pack.bonusCredits.toString(),
+      total_credits: pack.totalCredits.toString(),
     },
-    success_url: `${origin}/pricing?success=true&credits=${pack.credits}&session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${origin}/pricing?success=true&credits=${pack.totalCredits}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/pricing?canceled=true`,
   });
 
@@ -151,7 +154,8 @@ export async function createCreditPackCheckout(
  * Get or create a subscription price for a tier
  */
 async function getOrCreateSubscriptionPrice(tier: TierName, amountCents: number): Promise<Stripe.Price> {
-  const productName = `AI Influencer Generator - ${tier.charAt(0).toUpperCase() + tier.slice(1)}`;
+  const tierConfig = SUBSCRIPTION_TIERS[tier];
+  const productName = `AI Influencer Generator - ${tierConfig.displayName}`;
   
   // Search for existing product
   const products = await stripe.products.search({
@@ -166,10 +170,10 @@ async function getOrCreateSubscriptionPrice(tier: TierName, amountCents: number)
     // Create new product
     product = await stripe.products.create({
       name: productName,
-      description: SUBSCRIPTION_TIERS[tier].description,
+      description: tierConfig.description,
       metadata: {
         tier: tier,
-        credits: SUBSCRIPTION_TIERS[tier].credits.toString(),
+        monthly_credits: tierConfig.monthlyCredits.toString(),
       },
     });
   }
@@ -206,8 +210,8 @@ async function getOrCreateSubscriptionPrice(tier: TierName, amountCents: number)
 /**
  * Get or create a one-time price for a credit pack
  */
-async function getOrCreateCreditPackPrice(packId: string, credits: number, amountCents: number): Promise<Stripe.Price> {
-  const productName = `AI Influencer Generator - ${credits} Credits`;
+async function getOrCreateCreditPackPrice(packId: string, totalCredits: number, amountCents: number): Promise<Stripe.Price> {
+  const productName = `AI Influencer Generator - ${totalCredits} Credits`;
   
   // Search for existing product
   const products = await stripe.products.search({
@@ -222,10 +226,10 @@ async function getOrCreateCreditPackPrice(packId: string, credits: number, amoun
     // Create new product
     product = await stripe.products.create({
       name: productName,
-      description: `${credits} credits for AI Influencer Generator`,
+      description: `${totalCredits} credits for AI Influencer Generator`,
       metadata: {
         pack_id: packId,
-        credits: credits.toString(),
+        credits: totalCredits.toString(),
       },
     });
   }
@@ -250,7 +254,7 @@ async function getOrCreateCreditPackPrice(packId: string, credits: number, amoun
     currency: "usd",
     metadata: {
       pack_id: packId,
-      credits: credits.toString(),
+      credits: totalCredits.toString(),
     },
   });
 }

@@ -1,14 +1,15 @@
 import { Request, Response } from "express";
 import Stripe from "stripe";
 import { stripe, constructWebhookEvent } from "./stripe";
-import { getTierByName, getTierCredits, getCreditPackById, TierName } from "./products";
+import { getTierByName, getTierMonthlyCredits, getCreditPackBySlug, TierName, CREDIT_PACKS } from "./products";
 import { 
   getUserByStripeCustomerId, 
   updateUserTier, 
-  addUserCredits,
+  addPaidCredits,
   updateUserStripeSubscription,
   createCreditTransaction,
-  getUserById
+  getUserById,
+  resetMonthlyCredits
 } from "../db";
 
 /**
@@ -95,47 +96,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.log(`[Webhook] Subscription created for user ${userId}, tier: ${tier}`);
 
     // Update user tier and subscription
-    await updateUserTier(userId, tier);
+    await updateUserTier(userId, tier as any);
     await updateUserStripeSubscription(userId, subscriptionId);
 
-    // Add monthly credits
-    const credits = getTierCredits(tier);
-    await addUserCredits(userId, credits);
+    // Reset monthly credits for new subscription
+    await resetMonthlyCredits(userId, tier);
 
-    // Log transaction
-    const user = await getUserById(userId);
-    await createCreditTransaction({
-      userId,
-      amount: credits,
-      type: "subscription",
-      description: `${tier.charAt(0).toUpperCase() + tier.slice(1)} subscription - ${credits} credits`,
-      balanceAfter: (user?.credits || 0) + credits,
-    });
-
-    console.log(`[Webhook] Added ${credits} credits to user ${userId}`);
+    console.log(`[Webhook] Reset monthly credits for user ${userId}, tier: ${tier}`);
   }
 
   // Handle one-time credit pack purchase
   if (session.mode === "payment") {
-    const packId = session.metadata?.pack_id;
+    const packSlug = session.metadata?.pack_slug;
     const credits = parseInt(session.metadata?.credits || "0");
+    const bonusCredits = parseInt(session.metadata?.bonus_credits || "0");
+    const totalCredits = credits + bonusCredits;
 
-    if (packId && credits > 0) {
-      console.log(`[Webhook] Credit pack purchased: ${packId} (${credits} credits) for user ${userId}`);
+    if (packSlug && totalCredits > 0) {
+      console.log(`[Webhook] Credit pack purchased: ${packSlug} (${totalCredits} credits) for user ${userId}`);
 
-      await addUserCredits(userId, credits);
+      await addPaidCredits(userId, totalCredits, `Credit pack purchase: ${packSlug} (${credits} + ${bonusCredits} bonus)`);
 
-      // Log transaction
-      const user = await getUserById(userId);
-      await createCreditTransaction({
-        userId,
-        amount: credits,
-        type: "purchase",
-        description: `Credit pack purchase - ${credits} credits`,
-        balanceAfter: (user?.credits || 0) + credits,
-      });
-
-      console.log(`[Webhook] Added ${credits} credits to user ${userId}`);
+      console.log(`[Webhook] Added ${totalCredits} credits to user ${userId}`);
     }
   }
 }
@@ -146,7 +128,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log(`[Webhook] Subscription updated: ${subscription.id}, status: ${subscription.status}`);
 
-  const userId = parseInt(subscription.metadata?.user_id || "0");
+  let userId = parseInt(subscription.metadata?.user_id || "0");
+  
   if (!userId) {
     // Try to find user by customer ID
     const customerId = typeof subscription.customer === "string" 
@@ -158,12 +141,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       console.error("[Webhook] Cannot find user for subscription");
       return;
     }
+    userId = user.id;
   }
 
   const tier = subscription.metadata?.tier as TierName;
   
   if (subscription.status === "active" && tier) {
-    await updateUserTier(userId, tier);
+    await updateUserTier(userId, tier as any);
   }
 }
 
@@ -223,20 +207,10 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const tier = subscription.metadata?.tier as TierName;
 
   if (tier) {
-    const credits = getTierCredits(tier);
-    
-    // Reset monthly credits
-    await addUserCredits(user.id, credits);
+    // Reset monthly subscription credits
+    await resetMonthlyCredits(user.id, tier);
 
-    await createCreditTransaction({
-      userId: user.id,
-      amount: credits,
-      type: "subscription",
-      description: `Monthly renewal - ${credits} credits`,
-      balanceAfter: (user.credits || 0) + credits,
-    });
-
-    console.log(`[Webhook] Monthly renewal: Added ${credits} credits to user ${user.id}`);
+    console.log(`[Webhook] Monthly renewal: Reset credits for user ${user.id}, tier: ${tier}`);
   }
 }
 

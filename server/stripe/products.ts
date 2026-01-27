@@ -1,44 +1,60 @@
 /**
- * Stripe Products and Prices Configuration
+ * Stripe Products and Prices Configuration - Hybrid Model
  * 
  * This file centralizes all Stripe product definitions for the AI Influencer Generator.
- * Products are created dynamically on first use if they don't exist.
+ * 
+ * HYBRID MODEL:
+ * - FREE: 5 credits/day (resets at midnight UTC), watermark
+ * - Credit Packs: One-time purchases for additional credits
+ * - PRO Subscription: $19.99/mo - 500 credits/mo + premium features
+ * - CREATOR Subscription: $49.99/mo - 1500 credits/mo + all features
  */
 
-export type TierName = "free" | "basic" | "premium" | "vip";
+export type TierName = "free" | "pro" | "creator";
 
 export interface SubscriptionTier {
   name: TierName;
   displayName: string;
   description: string;
   priceMonthly: number; // in cents
-  credits: number;
+  monthlyCredits: number; // Credits included per month
+  dailyFreeCredits: number; // Free credits per day
   features: string[];
   hasWatermark: boolean;
   hasFanvueIntegration: boolean;
   hasContentScheduler: boolean;
   hasBatchGeneration: boolean;
   hasAutoPublish: boolean;
+  hasAIChat: boolean;
+  hasMarketplace: boolean;
+  hasPriorityQueue: boolean;
   maxBatchSize: number;
 }
 
 export interface CreditPack {
   id: string;
+  slug: string;
+  name: string;
   credits: number;
+  bonusCredits: number;
+  totalCredits: number;
   price: number; // in cents
   pricePerCredit: number;
+  savings: string; // e.g., "Save 33%"
+  popular?: boolean;
 }
 
-// Subscription tiers - BASIC/PREMIUM/VIP
+// Subscription tiers - FREE / PRO / CREATOR
 export const SUBSCRIPTION_TIERS: Record<TierName, SubscriptionTier> = {
   free: {
     name: "free",
     displayName: "Free",
     description: "Try AI Influencer Generator for free",
     priceMonthly: 0,
-    credits: 5,
+    monthlyCredits: 0,
+    dailyFreeCredits: 5,
     features: [
-      "5 free credits",
+      "5 free credits per day",
       "Watermarked images",
       "Basic character builder",
       "Community support",
@@ -48,97 +64,107 @@ export const SUBSCRIPTION_TIERS: Record<TierName, SubscriptionTier> = {
     hasContentScheduler: false,
     hasBatchGeneration: false,
     hasAutoPublish: false,
+    hasAIChat: false,
+    hasMarketplace: false,
+    hasPriorityQueue: false,
     maxBatchSize: 1,
   },
-  basic: {
-    name: "basic",
-    displayName: "BASIC",
-    description: "Perfect for getting started with AI influencers",
-    priceMonthly: 900, // $9.00
-    credits: 50,
+  pro: {
+    name: "pro",
+    displayName: "PRO",
+    description: "For serious content creators",
+    priceMonthly: 1999, // $19.99
+    monthlyCredits: 500,
+    dailyFreeCredits: 5, // Still get daily free credits
     features: [
-      "50 credits/month",
+      "500 credits/month",
+      "5 free credits/day (bonus)",
       "No watermark",
       "HD downloads",
-      "Email support",
-      "Basic analytics",
-    ],
-    hasWatermark: false,
-    hasFanvueIntegration: false,
-    hasContentScheduler: false,
-    hasBatchGeneration: false,
-    hasAutoPublish: false,
-    maxBatchSize: 1,
-  },
-  premium: {
-    name: "premium",
-    displayName: "PREMIUM",
-    description: "For serious content creators and marketers",
-    priceMonthly: 2900, // $29.00
-    credits: 300,
-    features: [
-      "300 credits/month",
-      "No watermark",
-      "HD downloads",
+      "Priority queue",
+      "Fanvue integration",
       "Priority support",
       "Commercial license",
-      "Fanvue integration",
-      "Advanced analytics",
     ],
     hasWatermark: false,
     hasFanvueIntegration: true,
     hasContentScheduler: false,
     hasBatchGeneration: false,
     hasAutoPublish: false,
+    hasAIChat: false,
+    hasMarketplace: false,
+    hasPriorityQueue: true,
     maxBatchSize: 5,
   },
-  vip: {
-    name: "vip",
-    displayName: "VIP",
-    description: "For agencies and professional creators",
-    priceMonthly: 9900, // $99.00
-    credits: 1000,
+  creator: {
+    name: "creator",
+    displayName: "CREATOR",
+    description: "For professional creators and agencies",
+    priceMonthly: 4999, // $49.99
+    monthlyCredits: 1500,
+    dailyFreeCredits: 5, // Still get daily free credits
     features: [
-      "1000 credits/month",
+      "1500 credits/month",
+      "5 free credits/day (bonus)",
       "No watermark",
       "HD downloads",
-      "Dedicated support",
-      "Commercial license",
+      "Priority queue",
       "Fanvue integration",
       "Auto-publish to Fanvue",
       "Content scheduler",
       "Batch generation (30 at once)",
+      "AI Chat companion",
+      "Marketplace listing",
+      "Dedicated support",
       "API access",
-      "White-label option",
     ],
     hasWatermark: false,
     hasFanvueIntegration: true,
     hasContentScheduler: true,
     hasBatchGeneration: true,
     hasAutoPublish: true,
+    hasAIChat: true,
+    hasMarketplace: true,
+    hasPriorityQueue: true,
     maxBatchSize: 30,
   },
 };
 
-// One-time credit packs
+// One-time credit packs with bonus credits
 export const CREDIT_PACKS: CreditPack[] = [
   {
-    id: "credits_100",
+    id: "credits_small",
+    slug: "small",
+    name: "Small Pack",
     credits: 100,
-    price: 1500, // $15.00
-    pricePerCredit: 0.15,
-  },
-  {
-    id: "credits_500",
-    credits: 500,
-    price: 6000, // $60.00
-    pricePerCredit: 0.12,
-  },
-  {
-    id: "credits_1000",
-    credits: 1000,
-    price: 10000, // $100.00
+    bonusCredits: 0,
+    totalCredits: 100,
+    price: 999, // $9.99
     pricePerCredit: 0.10,
+    savings: "",
+  },
+  {
+    id: "credits_medium",
+    slug: "medium",
+    name: "Medium Pack",
+    credits: 300,
+    bonusCredits: 100, // +33% bonus
+    totalCredits: 400,
+    price: 2999, // $29.99
+    pricePerCredit: 0.075,
+    savings: "Save 25%",
+    popular: true,
+  },
+  {
+    id: "credits_large",
+    slug: "large",
+    name: "Large Pack",
+    credits: 1000,
+    bonusCredits: 500, // +50% bonus
+    totalCredits: 1500,
+    price: 9999, // $99.99
+    pricePerCredit: 0.067,
+    savings: "Save 33%",
   },
 ];
 
@@ -211,9 +237,19 @@ export function getCreditPackById(id: string): CreditPack | undefined {
   return CREDIT_PACKS.find((pack) => pack.id === id);
 }
 
-// Helper to get tier credits
-export function getTierCredits(tier: TierName): number {
-  return SUBSCRIPTION_TIERS[tier]?.credits ?? 0;
+// Helper to get credit pack by slug
+export function getCreditPackBySlug(slug: string): CreditPack | undefined {
+  return CREDIT_PACKS.find((pack) => pack.slug === slug);
+}
+
+// Helper to get tier monthly credits
+export function getTierMonthlyCredits(tier: TierName): number {
+  return SUBSCRIPTION_TIERS[tier]?.monthlyCredits ?? 0;
+}
+
+// Helper to get tier daily free credits
+export function getTierDailyCredits(tier: TierName): number {
+  return SUBSCRIPTION_TIERS[tier]?.dailyFreeCredits ?? 5;
 }
 
 // Helper to check feature access
@@ -241,4 +277,59 @@ export function calculateCommission(amount: number, level: 1 | 2 | 3): number {
     case 3: return Math.floor(amount * rates.level3);
     default: return 0;
   }
+}
+
+// Calculate total available credits for a user
+export interface UserCredits {
+  freeCreditsToday: number;
+  paidCredits: number;
+  subscriptionCredits: number;
+  totalAvailable: number;
+}
+
+export function calculateUserCredits(
+  freeCreditsToday: number,
+  creditBalance: number,
+  monthlyCreditsRemaining: number
+): UserCredits {
+  return {
+    freeCreditsToday,
+    paidCredits: creditBalance,
+    subscriptionCredits: monthlyCreditsRemaining,
+    totalAvailable: freeCreditsToday + creditBalance + monthlyCreditsRemaining,
+  };
+}
+
+// Determine which credits to use (priority: free > subscription > paid)
+export function getCreditsToDeduct(
+  freeCreditsToday: number,
+  monthlyCreditsRemaining: number,
+  creditBalance: number,
+  amount: number
+): { free: number; subscription: number; paid: number } {
+  let remaining = amount;
+  const result = { free: 0, subscription: 0, paid: 0 };
+
+  // First use free credits
+  if (remaining > 0 && freeCreditsToday > 0) {
+    const fromFree = Math.min(remaining, freeCreditsToday);
+    result.free = fromFree;
+    remaining -= fromFree;
+  }
+
+  // Then use subscription credits
+  if (remaining > 0 && monthlyCreditsRemaining > 0) {
+    const fromSub = Math.min(remaining, monthlyCreditsRemaining);
+    result.subscription = fromSub;
+    remaining -= fromSub;
+  }
+
+  // Finally use paid credits
+  if (remaining > 0 && creditBalance > 0) {
+    const fromPaid = Math.min(remaining, creditBalance);
+    result.paid = fromPaid;
+    remaining -= fromPaid;
+  }
+
+  return result;
 }

@@ -10,7 +10,6 @@ import {
   getGenerationById, createCreditTransaction, getUserCreditTransactions,
   createAffiliate, getAffiliateByUserId, getAffiliateByCode, getAffiliateCommissions,
   getAdminMetrics, getAllUsers, getUserCount, getGenerationCount,
-  TIER_CREDITS, TIER_PRICES, CREDIT_PACKS,
   updateUserStripeCustomerId,
   getAffiliateLeaderboard, getAffiliateNetworkStats,
   // Fanvue integration
@@ -20,7 +19,9 @@ import {
   createScheduledPost, getScheduledPostsByUserId, getScheduledPostById,
   updateScheduledPost, deleteScheduledPost,
   // Batch jobs
-  createBatchJob, getBatchJobById, getBatchJobsByUserId, updateBatchJob, incrementBatchJobProgress
+  createBatchJob, getBatchJobById, getBatchJobsByUserId, updateBatchJob, incrementBatchJobProgress,
+  // Hybrid credit system
+  getUserCreditBalance, deductCreditsHybrid, addPaidCredits
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -30,7 +31,7 @@ import {
   cancelSubscription,
   resumeSubscription
 } from "./stripe/stripe";
-import { TierName } from "./stripe/products";
+import { TierName, SUBSCRIPTION_TIERS, CREDIT_PACKS } from "./stripe/products";
 import { generateInfluencerImage, buildPromptFromSettings } from "./imageGeneration";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
@@ -77,11 +78,15 @@ export const appRouter = router({
   // Credits management
   credits: router({
     getBalance: protectedProcedure.query(async ({ ctx }) => {
+      const balance = await getUserCreditBalance(ctx.user.id);
       const user = await getUserById(ctx.user.id);
       return {
-        credits: user?.credits ?? 0,
+        credits: balance?.totalAvailable ?? 0,
         tier: user?.tier ?? "free",
-        monthlyCreditsUsed: user?.monthlyCreditsUsed ?? 0,
+        freeCreditsToday: balance?.freeCreditsToday ?? 0,
+        subscriptionCredits: balance?.subscriptionCredits ?? 0,
+        paidCredits: balance?.paidCredits ?? 0,
+        totalAvailable: balance?.totalAvailable ?? 0,
       };
     }),
 
@@ -91,17 +96,8 @@ export const appRouter = router({
 
     getPricing: publicProcedure.query(() => {
       return {
-        tiers: {
-          free: { id: "free", name: "Free", credits: 5, price: 0 },
-          basic: { id: "basic", name: "BASIC", credits: 50, price: 9 },
-          premium: { id: "premium", name: "PREMIUM", credits: 300, price: 29 },
-          vip: { id: "vip", name: "VIP", credits: 1000, price: 99 },
-        },
-        creditPacks: [
-          { id: "credits_100", credits: 100, price: 15 },
-          { id: "credits_500", credits: 500, price: 60 },
-          { id: "credits_1000", credits: 1000, price: 100 },
-        ],
+        tiers: SUBSCRIPTION_TIERS,
+        creditPacks: CREDIT_PACKS,
       };
     }),
   }),
@@ -119,11 +115,23 @@ export const appRouter = router({
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
-        if (user.credits < 1) {
+        // Check credits using hybrid system
+        const creditBalance = await getUserCreditBalance(ctx.user.id);
+        if (!creditBalance || creditBalance.totalAvailable < 1) {
           throw new TRPCError({ 
             code: "FORBIDDEN", 
             message: "Not enough credits. Please upgrade your plan or purchase more credits." 
           });
+        }
+
+        // Determine credit source for tracking
+        let creditSource: "free" | "paid" | "subscription" = "free";
+        if (creditBalance.freeCreditsToday >= 1) {
+          creditSource = "free";
+        } else if (creditBalance.subscriptionCredits >= 1) {
+          creditSource = "subscription";
+        } else {
+          creditSource = "paid";
         }
 
         // Create generation record
@@ -133,6 +141,7 @@ export const appRouter = router({
           characterSettings: input.characterSettings,
           imageUrl: "",
           hasWatermark: user.tier === "free",
+          creditSource,
           status: "pending",
         });
 
@@ -150,16 +159,21 @@ export const appRouter = router({
 
           const permanentUrl = result.imageUrl;
 
-          // Deduct credit
-          await deductUserCredits(ctx.user.id, 1);
+          // Deduct credit using hybrid system
+          const deductResult = await deductCreditsHybrid(ctx.user.id, 1);
+          if (!deductResult.success) {
+            throw new TRPCError({ code: "FORBIDDEN", message: deductResult.error || "Failed to deduct credits" });
+          }
 
           // Log transaction
           await createCreditTransaction({
             userId: ctx.user.id,
             amount: -1,
             type: "generation",
+            creditSource: deductResult.source as "free" | "paid" | "subscription",
             description: "AI influencer generation",
-            balanceAfter: user.credits - 1,
+            balanceBefore: creditBalance.totalAvailable,
+            balanceAfter: creditBalance.totalAvailable - 1,
             relatedId: generationId,
           });
 
@@ -723,7 +737,7 @@ export const appRouter = router({
   stripe: router({
     createSubscriptionCheckout: protectedProcedure
       .input(z.object({
-        tier: z.enum(["basic", "premium", "vip"]),
+        tier: z.enum(["pro", "creator"]),
         affiliateCode: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -761,7 +775,7 @@ export const appRouter = router({
 
     createCreditPackCheckout: protectedProcedure
       .input(z.object({
-        packId: z.enum(["credits_100", "credits_500", "credits_1000"]),
+        packId: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
         const user = await getUserById(ctx.user.id);

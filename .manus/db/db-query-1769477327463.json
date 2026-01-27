@@ -1,0 +1,9 @@
+{
+  "query": "\nINSERT INTO creditPacks (name, slug, credits, bonusCredits, price, sortOrder) VALUES\n('Small Pack', 'small', 100, 0, 9.99, 1),\n('Medium Pack', 'medium', 300, 100, 29.99, 2),\n('Large Pack', 'large', 1000, 500, 99.99, 3)\nON DUPLICATE KEY UPDATE name=name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute \nINSERT INTO creditPacks (name, slug, credits, bonusCredits, price, sortOrder) VALUES\n('Small Pack', 'small', 100, 0, 9.99, 1),\n('Medium Pack', 'medium', 300, 100, 29.99, 2),\n('Large Pack', 'large', 1000, 500, 99.99, 3)\nON DUPLICATE KEY UPDATE name=name;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 64
+}

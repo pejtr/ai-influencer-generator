@@ -185,3 +185,35 @@
 - [x] Add hover effects and image details
 - [x] Include social proof elements
 - [x] Make gallery responsive
+
+
+## Hybrid Monetization Model - COMPLETED
+- [x] Update database schema for credit system
+  - [x] Add credit_balance field to users table
+  - [x] Add free_credits_today field with daily reset
+  - [x] Add last_free_credits_reset timestamp
+  - [x] Create credit_transactions table for history
+  - [x] Create credit_packs table for products
+- [x] Implement Credit Pack purchases (Stripe one-time)
+  - [x] Small Pack: $9.99 = 100 credits
+  - [x] Medium Pack: $29.99 = 400 credits (+33% bonus)
+  - [x] Large Pack: $99.99 = 1500 credits (+50% bonus)
+- [x] Update Subscription tiers with monthly credits
+  - [x] FREE: 5 credits/day, watermark, basic styles
+  - [x] PRO ($19.99/mo): 500 credits/mo, no watermark, HD, Fanvue
+  - [x] CREATOR ($49.99/mo): 1500 credits/mo, batch, scheduler, AI chat
+- [x] Implement free daily credits system
+  - [x] 5 free credits per day for all users
+  - [x] Reset at midnight UTC
+  - [x] Show remaining free credits in UI
+- [x] Update Pricing page UI
+  - [x] Credit packs section with tabs
+  - [x] Subscription comparison table
+  - [x] Savings calculator (bonus credits display)
+  - [x] FAQ section explaining credit system
+- [x] Credit deduction on generation
+  - [x] Check balance before generation
+  - [x] Deduct from free credits first, then subscription, then paid
+  - [x] Show low balance warning
+- [x] Credit transaction history page
+- [x] Write unit tests for credit system (77 tests passing)

@@ -21,19 +21,19 @@ export default function Scheduler() {
   const [hashtags, setHashtags] = useState("#AIInfluencer #VirtualModel #ContentCreator");
   const [scheduledTime, setScheduledTime] = useState("");
 
-  // Check if user has VIP tier
-  const isVIP = user?.tier === "vip";
+  // Check if user has CREATOR tier (scheduler access)
+  const isCreator = user?.tier === "creator";
 
   // Fetch scheduled posts
   const { data: scheduledPosts, isLoading: postsLoading, refetch: refetchPosts } = trpc.scheduler.list.useQuery(
     undefined,
-    { enabled: isVIP }
+    { enabled: isCreator }
   );
 
   // Fetch unpublished generations for selection
   const { data: unpublishedGenerations } = trpc.generation.getUnpublished.useQuery(
     undefined,
-    { enabled: isVIP }
+    { enabled: isCreator }
   );
 
   // Mutations
@@ -146,7 +146,7 @@ export default function Scheduler() {
   };
 
   // VIP Gate
-  if (!authLoading && !isVIP) {
+  if (!authLoading && !isCreator) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container py-20">

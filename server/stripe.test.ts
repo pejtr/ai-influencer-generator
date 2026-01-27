@@ -1,34 +1,44 @@
 import { describe, expect, it } from "vitest";
-import { SUBSCRIPTION_TIERS, CREDIT_PACKS, getTierByName, getCreditPackById, getTierCredits } from "./stripe/products";
+import { 
+  SUBSCRIPTION_TIERS, 
+  CREDIT_PACKS, 
+  getTierByName, 
+  getCreditPackById,
+  getTierMonthlyCredits,
+  getTierDailyCredits
+} from "./stripe/products";
 
-describe("Stripe Products Configuration", () => {
+describe("Stripe Products Configuration - Hybrid Model", () => {
   describe("Subscription Tiers", () => {
     it("should have all required tiers defined", () => {
       expect(SUBSCRIPTION_TIERS.free).toBeDefined();
-      expect(SUBSCRIPTION_TIERS.basic).toBeDefined();
-      expect(SUBSCRIPTION_TIERS.premium).toBeDefined();
-      expect(SUBSCRIPTION_TIERS.vip).toBeDefined();
+      expect(SUBSCRIPTION_TIERS.pro).toBeDefined();
+      expect(SUBSCRIPTION_TIERS.creator).toBeDefined();
     });
 
     it("should have correct pricing for each tier", () => {
       expect(SUBSCRIPTION_TIERS.free.priceMonthly).toBe(0);
-      expect(SUBSCRIPTION_TIERS.basic.priceMonthly).toBe(900); // $9.00
-      expect(SUBSCRIPTION_TIERS.premium.priceMonthly).toBe(2900); // $29.00
-      expect(SUBSCRIPTION_TIERS.vip.priceMonthly).toBe(9900); // $99.00
+      expect(SUBSCRIPTION_TIERS.pro.priceMonthly).toBe(1999); // $19.99
+      expect(SUBSCRIPTION_TIERS.creator.priceMonthly).toBe(4999); // $49.99
     });
 
-    it("should have correct credits for each tier", () => {
-      expect(SUBSCRIPTION_TIERS.free.credits).toBe(5);
-      expect(SUBSCRIPTION_TIERS.basic.credits).toBe(50);
-      expect(SUBSCRIPTION_TIERS.premium.credits).toBe(300);
-      expect(SUBSCRIPTION_TIERS.vip.credits).toBe(1000);
+    it("should have correct monthly credits for each tier", () => {
+      expect(SUBSCRIPTION_TIERS.free.monthlyCredits).toBe(0);
+      expect(SUBSCRIPTION_TIERS.pro.monthlyCredits).toBe(500);
+      expect(SUBSCRIPTION_TIERS.creator.monthlyCredits).toBe(1500);
+    });
+
+    it("should have 5 daily free credits for all tiers", () => {
+      expect(SUBSCRIPTION_TIERS.free.dailyFreeCredits).toBe(5);
+      expect(SUBSCRIPTION_TIERS.pro.dailyFreeCredits).toBe(5);
+      expect(SUBSCRIPTION_TIERS.creator.dailyFreeCredits).toBe(5);
     });
 
     it("should return tier by name", () => {
-      const basic = getTierByName("basic");
-      expect(basic).toBeDefined();
-      expect(basic?.name).toBe("basic");
-      expect(basic?.priceMonthly).toBe(900);
+      const pro = getTierByName("pro");
+      expect(pro).toBeDefined();
+      expect(pro?.name).toBe("pro");
+      expect(pro?.priceMonthly).toBe(1999);
     });
 
     it("should return undefined for invalid tier name", () => {
@@ -36,11 +46,16 @@ describe("Stripe Products Configuration", () => {
       expect(invalid).toBeUndefined();
     });
 
-    it("should return correct credits for tier", () => {
-      expect(getTierCredits("free")).toBe(5);
-      expect(getTierCredits("basic")).toBe(50);
-      expect(getTierCredits("premium")).toBe(300);
-      expect(getTierCredits("vip")).toBe(1000);
+    it("should return correct monthly credits for tier", () => {
+      expect(getTierMonthlyCredits("free")).toBe(0);
+      expect(getTierMonthlyCredits("pro")).toBe(500);
+      expect(getTierMonthlyCredits("creator")).toBe(1500);
+    });
+
+    it("should return correct daily credits for tier", () => {
+      expect(getTierDailyCredits("free")).toBe(5);
+      expect(getTierDailyCredits("pro")).toBe(5);
+      expect(getTierDailyCredits("creator")).toBe(5);
     });
   });
 
@@ -51,20 +66,26 @@ describe("Stripe Products Configuration", () => {
 
     it("should have correct pricing for credit packs", () => {
       expect(CREDIT_PACKS[0].credits).toBe(100);
-      expect(CREDIT_PACKS[0].price).toBe(1500); // $15.00
+      expect(CREDIT_PACKS[0].price).toBe(999); // $9.99
 
-      expect(CREDIT_PACKS[1].credits).toBe(500);
-      expect(CREDIT_PACKS[1].price).toBe(6000); // $60.00
+      expect(CREDIT_PACKS[1].credits).toBe(300);
+      expect(CREDIT_PACKS[1].price).toBe(2999); // $29.99
 
       expect(CREDIT_PACKS[2].credits).toBe(1000);
-      expect(CREDIT_PACKS[2].price).toBe(10000); // $100.00
+      expect(CREDIT_PACKS[2].price).toBe(9999); // $99.99
+    });
+
+    it("should have bonus credits for larger packs", () => {
+      expect(CREDIT_PACKS[0].bonusCredits).toBe(0);
+      expect(CREDIT_PACKS[1].bonusCredits).toBe(100); // +33%
+      expect(CREDIT_PACKS[2].bonusCredits).toBe(500); // +50%
     });
 
     it("should return credit pack by ID", () => {
-      const pack = getCreditPackById("credits_100");
+      const pack = getCreditPackById("credits_small");
       expect(pack).toBeDefined();
       expect(pack?.credits).toBe(100);
-      expect(pack?.price).toBe(1500);
+      expect(pack?.price).toBe(999);
     });
 
     it("should return undefined for invalid pack ID", () => {
@@ -73,12 +94,34 @@ describe("Stripe Products Configuration", () => {
     });
 
     it("should have decreasing price per credit for larger packs", () => {
-      const pack100 = getCreditPackById("credits_100");
-      const pack500 = getCreditPackById("credits_500");
-      const pack1000 = getCreditPackById("credits_1000");
+      const packSmall = getCreditPackById("credits_small");
+      const packMedium = getCreditPackById("credits_medium");
+      const packLarge = getCreditPackById("credits_large");
 
-      expect(pack100!.pricePerCredit).toBeGreaterThan(pack500!.pricePerCredit);
-      expect(pack500!.pricePerCredit).toBeGreaterThan(pack1000!.pricePerCredit);
+      expect(packSmall!.pricePerCredit).toBeGreaterThan(packMedium!.pricePerCredit);
+      expect(packMedium!.pricePerCredit).toBeGreaterThan(packLarge!.pricePerCredit);
+    });
+  });
+
+  describe("Tier Features", () => {
+    it("free tier should have watermark", () => {
+      expect(SUBSCRIPTION_TIERS.free.hasWatermark).toBe(true);
+    });
+
+    it("pro tier should not have watermark", () => {
+      expect(SUBSCRIPTION_TIERS.pro.hasWatermark).toBe(false);
+    });
+
+    it("pro tier should have Fanvue integration", () => {
+      expect(SUBSCRIPTION_TIERS.pro.hasFanvueIntegration).toBe(true);
+    });
+
+    it("creator tier should have all features", () => {
+      expect(SUBSCRIPTION_TIERS.creator.hasFanvueIntegration).toBe(true);
+      expect(SUBSCRIPTION_TIERS.creator.hasContentScheduler).toBe(true);
+      expect(SUBSCRIPTION_TIERS.creator.hasBatchGeneration).toBe(true);
+      expect(SUBSCRIPTION_TIERS.creator.hasAutoPublish).toBe(true);
+      expect(SUBSCRIPTION_TIERS.creator.hasAIChat).toBe(true);
     });
   });
 });

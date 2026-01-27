@@ -355,26 +355,139 @@ export async function getAdminMetrics() {
   };
 }
 
-// ============ TIER CREDIT LIMITS ============
+// ============ HYBRID CREDIT SYSTEM ============
 
-export const TIER_CREDITS = {
-  free: 5,
-  starter: 50,
-  pro: 300,
-  business: 1000,
-} as const;
+import { getCreditsToDeduct, getTierDailyCredits, getTierMonthlyCredits, TierName } from './stripe/products';
 
-export const TIER_PRICES = {
-  starter: 9,
-  pro: 29,
-  business: 99,
-} as const;
+// Get user's current credit balance (all sources)
+export async function getUserCreditBalance(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select({
+    creditBalance: users.creditBalance,
+    freeCreditsToday: users.freeCreditsToday,
+    lastFreeCreditsReset: users.lastFreeCreditsReset,
+    monthlyCreditsRemaining: users.monthlyCreditsRemaining,
+    monthlyCreditsTotal: users.monthlyCreditsTotal,
+    lastMonthlyReset: users.lastMonthlyReset,
+    tier: users.tier,
+  }).from(users).where(eq(users.id, userId)).limit(1);
+  
+  if (result.length === 0) return null;
+  
+  const user = result[0];
+  const now = new Date();
+  
+  // Check if free credits need reset (midnight UTC)
+  const lastReset = new Date(user.lastFreeCreditsReset);
+  const needsFreeReset = lastReset.toDateString() !== now.toDateString();
+  
+  let freeCreditsToday = user.freeCreditsToday;
+  if (needsFreeReset) {
+    freeCreditsToday = getTierDailyCredits(user.tier as TierName);
+    await db.update(users).set({
+      freeCreditsToday,
+      lastFreeCreditsReset: now,
+    }).where(eq(users.id, userId));
+  }
+  
+  return {
+    freeCreditsToday,
+    paidCredits: user.creditBalance,
+    subscriptionCredits: user.monthlyCreditsRemaining,
+    totalAvailable: freeCreditsToday + user.creditBalance + user.monthlyCreditsRemaining,
+    tier: user.tier,
+  };
+}
 
-export const CREDIT_PACKS = [
-  { credits: 100, price: 15 },
-  { credits: 500, price: 60 },
-  { credits: 1000, price: 100 },
-] as const;
+// Deduct credits using priority: free > subscription > paid
+export async function deductCreditsHybrid(userId: number, amount: number): Promise<{ success: boolean; source: string; error?: string }> {
+  const db = await getDb();
+  if (!db) return { success: false, source: 'none', error: 'Database not available' };
+  
+  const balance = await getUserCreditBalance(userId);
+  if (!balance) return { success: false, source: 'none', error: 'User not found' };
+  
+  if (balance.totalAvailable < amount) {
+    return { success: false, source: 'none', error: 'Insufficient credits' };
+  }
+  
+  const deduction = getCreditsToDeduct(
+    balance.freeCreditsToday,
+    balance.subscriptionCredits,
+    balance.paidCredits,
+    amount
+  );
+  
+  // Update user credits
+  await db.update(users).set({
+    freeCreditsToday: balance.freeCreditsToday - deduction.free,
+    monthlyCreditsRemaining: balance.subscriptionCredits - deduction.subscription,
+    creditBalance: balance.paidCredits - deduction.paid,
+  }).where(eq(users.id, userId));
+  
+  // Determine primary source for tracking
+  let source = 'free';
+  if (deduction.subscription > 0) source = 'subscription';
+  if (deduction.paid > 0) source = 'paid';
+  
+  return { success: true, source };
+}
+
+// Add paid credits to user balance
+export async function addPaidCredits(userId: number, amount: number, description: string) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  const user = await getUserById(userId);
+  if (!user) return false;
+  
+  const balanceBefore = user.creditBalance || 0;
+  const balanceAfter = balanceBefore + amount;
+  
+  await db.update(users).set({
+    creditBalance: balanceAfter,
+  }).where(eq(users.id, userId));
+  
+  // Log transaction
+  await createCreditTransaction({
+    userId,
+    amount,
+    type: 'credit_pack_purchase',
+    description,
+    balanceBefore,
+    balanceAfter,
+    creditSource: 'paid',
+  });
+  
+  return true;
+}
+
+// Reset monthly subscription credits
+export async function resetMonthlyCredits(userId: number, tier: TierName) {
+  const db = await getDb();
+  if (!db) return;
+  
+  const monthlyCredits = getTierMonthlyCredits(tier);
+  
+  await db.update(users).set({
+    monthlyCreditsRemaining: monthlyCredits,
+    monthlyCreditsTotal: monthlyCredits,
+    lastMonthlyReset: new Date(),
+  }).where(eq(users.id, userId));
+  
+  // Log transaction
+  await createCreditTransaction({
+    userId,
+    amount: monthlyCredits,
+    type: 'subscription_monthly',
+    description: `Monthly ${tier.toUpperCase()} subscription credits`,
+    balanceBefore: 0,
+    balanceAfter: monthlyCredits,
+    creditSource: 'subscription',
+  });
+}
 
 
 // ============ AFFILIATE LEADERBOARD & NETWORK STATS ============

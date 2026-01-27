@@ -16,8 +16,8 @@ export default function FanvueConnect() {
   const [, setLocation] = useLocation();
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Check tier access
-  const hasTierAccess = user?.tier === "premium" || user?.tier === "vip";
+  // Check tier access - PRO and CREATOR tiers have Fanvue access
+  const hasTierAccess = user?.tier === "pro" || user?.tier === "creator";
 
   // Fetch Fanvue connection status
   const { data: fanvueStatus, isLoading: statusLoading, refetch: refetchStatus } = trpc.fanvue.getStatus.useQuery(
@@ -265,7 +265,7 @@ export default function FanvueConnect() {
                     </div>
                   </Link>
                   
-                  {user?.tier === "vip" && (
+                  {user?.tier === "creator" && (
                     <Link href="/scheduler">
                       <div className="p-4 rounded-lg bg-muted/30 border border-border/50 hover:border-[#c8ff00]/50 transition-colors cursor-pointer">
                         <Sparkles className="w-8 h-8 text-[#c8ff00] mb-2" />

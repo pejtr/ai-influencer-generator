@@ -4,76 +4,66 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Check, Sparkles, Zap, Crown, Gem, Loader2, CreditCard, Star, Lock } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Loader2, CreditCard, Star, Gift, TrendingUp, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearch } from "wouter";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const TIER_ICONS = {
   free: Sparkles,
-  basic: Zap,
-  premium: Crown,
-  vip: Gem,
+  pro: Zap,
+  creator: Crown,
 };
 
 const TIER_COLORS = {
   free: "text-muted-foreground",
-  basic: "text-blue-500",
-  premium: "text-primary",
-  vip: "text-purple-500",
+  pro: "text-primary",
+  creator: "text-purple-500",
 };
-
-const PACK_IDS = ["credits_100", "credits_500", "credits_1000"] as const;
 
 // Feature descriptions for each tier
 const TIER_FEATURES = {
   free: [
-    "5 AI generations per month",
+    "5 free generations daily",
     "Basic character customization",
     "Watermarked exports",
     "Community support",
   ],
-  basic: [
-    "50 AI generations per month",
+  pro: [
+    "500 credits/month",
+    "5 free generations daily",
     "Full character customization",
     "HD exports without watermark",
-    "Email support",
-    "Basic analytics",
-  ],
-  premium: [
-    "300 AI generations per month",
-    "Batch generation (30 at once)",
-    "Content calendar",
-    "Priority support",
-    "Advanced analytics",
+    "Priority queue",
     "Fanvue integration",
-    "Auto-publish scheduling",
+    "Email support",
   ],
-  vip: [
-    "1000+ AI generations per month",
-    "Unlimited batch generation",
+  creator: [
+    "1500 credits/month",
+    "5 free generations daily",
+    "Batch generation (30 at once)",
+    "Content scheduler",
+    "Auto-publish to Fanvue",
     "AI Chat persona builder",
-    "White-label exports",
-    "Dedicated account manager",
-    "Full Fanvue/OnlyFans integration",
-    "Revenue tracking dashboard",
-    "API access",
+    "Advanced analytics",
+    "Priority support",
   ],
 };
 
-// Locked features shown to lower tiers
-const LOCKED_FEATURES = {
-  free: ["HD exports", "Batch generation", "Fanvue integration", "AI Chat builder"],
-  basic: ["Batch generation", "Fanvue integration", "AI Chat builder", "API access"],
-  premium: ["Unlimited generations", "AI Chat builder", "API access", "White-label"],
-};
+// Credit pack data
+const CREDIT_PACKS = [
+  { id: "starter", name: "Starter", credits: 100, bonus: 0, price: 9.99, popular: false },
+  { id: "growth", name: "Growth", credits: 400, bonus: 133, price: 29.99, popular: true },
+  { id: "scale", name: "Scale", credits: 1500, bonus: 750, price: 99.99, popular: false },
+];
 
 export default function Pricing() {
   const { user, isAuthenticated } = useAuth();
   const searchString = useSearch();
   const searchParams = new URLSearchParams(searchString);
-  
-  const { data: pricing } = trpc.credits.getPricing.useQuery();
+  const [activeTab, setActiveTab] = useState<"subscription" | "credits">("subscription");
+
   const { data: userCredits, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
@@ -117,6 +107,7 @@ export default function Pricing() {
     if (success === "true") {
       if (credits) {
         toast.success(`Successfully purchased ${credits} credits!`);
+        setActiveTab("credits");
       } else {
         toast.success("Subscription activated successfully!");
       }
@@ -144,7 +135,7 @@ export default function Pricing() {
       return;
     }
 
-    subscriptionCheckout.mutate({ tier: tier as "basic" | "premium" | "vip" });
+    subscriptionCheckout.mutate({ tier: tier as "pro" | "creator" });
   };
 
   const handleBuyCredits = (packId: string) => {
@@ -152,11 +143,14 @@ export default function Pricing() {
       window.location.href = getLoginUrl();
       return;
     }
-    creditPackCheckout.mutate({ packId: packId as "credits_100" | "credits_500" | "credits_1000" });
+    creditPackCheckout.mutate({ packId: packId });
   };
 
-  const tiers = pricing?.tiers ? Object.values(pricing.tiers) : [];
-  const creditPacks = pricing?.creditPacks || [];
+  const tiers = [
+    { id: "free", name: "Free", price: 0, credits: 5, description: "5 daily free generations" },
+    { id: "pro", name: "Pro", price: 19.99, credits: 500, description: "500 credits/month + daily free" },
+    { id: "creator", name: "Creator", price: 49.99, credits: 1500, description: "1500 credits/month + all features" },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -164,245 +158,330 @@ export default function Pricing() {
       
       <main className="container py-16">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
             <Star className="h-4 w-4" />
-            AI Influencer Marketing Platform
+            Flexible Pricing for Every Creator
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Choose Your <span className="text-primary">Success</span> Plan
+            Pay Your Way: <span className="text-primary">Subscribe</span> or <span className="text-purple-500">Buy Credits</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            From hobbyist to professional AI influencer creator. Scale your virtual persona empire with our flexible plans.
+            Choose a subscription for consistent monthly credits, or buy credit packs when you need them. Mix and match for maximum flexibility.
           </p>
         </div>
 
-        {/* Current Plan Badge */}
+        {/* Current Balance */}
         {isAuthenticated && userCredits && (
           <div className="flex justify-center mb-8">
-            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-card border border-border">
-              <span className="text-muted-foreground">Current plan:</span>
-              <span className={cn("font-bold uppercase", TIER_COLORS[userCredits.tier as keyof typeof TIER_COLORS])}>
-                {userCredits.tier}
-              </span>
-              <span className="text-muted-foreground">•</span>
-              <span className="font-medium">{userCredits.credits} credits</span>
+            <div className="inline-flex items-center gap-4 px-6 py-4 rounded-xl bg-card border border-border">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-primary" />
+                <span className="text-muted-foreground">Your Balance:</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-center px-3">
+                  <div className="text-2xl font-bold text-green-500">{userCredits.freeCreditsToday || 0}</div>
+                  <div className="text-xs text-muted-foreground">Free Today</div>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center px-3">
+                  <div className="text-2xl font-bold text-primary">{userCredits.subscriptionCredits || 0}</div>
+                  <div className="text-xs text-muted-foreground">Monthly</div>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center px-3">
+                  <div className="text-2xl font-bold text-purple-500">{userCredits.paidCredits || 0}</div>
+                  <div className="text-xs text-muted-foreground">Purchased</div>
+                </div>
+              </div>
               {userCredits.tier !== "free" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => billingPortal.mutate()}
-                  disabled={billingPortal.isPending}
-                >
-                  {billingPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Manage Subscription"}
-                </Button>
+                <>
+                  <div className="h-8 w-px bg-border" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => billingPortal.mutate()}
+                    disabled={billingPortal.isPending}
+                  >
+                    {billingPortal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Manage Subscription"}
+                  </Button>
+                </>
               )}
             </div>
           </div>
         )}
 
-        {/* Pricing Tiers */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
-          {tiers.map((tier) => {
-            const Icon = TIER_ICONS[tier.id as keyof typeof TIER_ICONS] || Sparkles;
-            const colorClass = TIER_COLORS[tier.id as keyof typeof TIER_COLORS] || "text-muted-foreground";
-            const features = TIER_FEATURES[tier.id as keyof typeof TIER_FEATURES] || [];
-            const lockedFeatures = LOCKED_FEATURES[tier.id as keyof typeof LOCKED_FEATURES] || [];
-            const isCurrentTier = userCredits?.tier === tier.id;
-            const isPremium = tier.id === "premium";
-            const isVip = tier.id === "vip";
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "subscription" | "credits")} className="w-full">
+          <div className="flex justify-center mb-8">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="subscription" className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Monthly Plans
+              </TabsTrigger>
+              <TabsTrigger value="credits" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Credit Packs
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-            return (
-              <div
-                key={tier.id}
-                className={cn(
-                  "relative flex flex-col rounded-2xl border bg-card p-6 transition-all duration-300",
-                  isPremium && "border-primary shadow-lg shadow-primary/20 scale-105",
-                  isVip && "border-purple-500 shadow-lg shadow-purple-500/20",
-                  isCurrentTier && "ring-2 ring-primary"
-                )}
-              >
-                {/* Popular Badge */}
-                {isPremium && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
-                {isVip && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-4 py-1 rounded-full bg-purple-500 text-white text-xs font-bold uppercase">
-                      Best Value
-                    </span>
-                  </div>
-                )}
+          {/* Subscription Plans */}
+          <TabsContent value="subscription">
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {tiers.map((tier) => {
+                const Icon = TIER_ICONS[tier.id as keyof typeof TIER_ICONS] || Sparkles;
+                const colorClass = TIER_COLORS[tier.id as keyof typeof TIER_COLORS] || "text-muted-foreground";
+                const features = TIER_FEATURES[tier.id as keyof typeof TIER_FEATURES] || [];
+                const isCurrentTier = userCredits?.tier === tier.id;
+                const isPro = tier.id === "pro";
+                const isCreator = tier.id === "creator";
 
-                {/* Tier Header */}
-                <div className="mb-6">
-                  <div className={cn("inline-flex p-3 rounded-xl mb-4", 
-                    tier.id === "free" && "bg-secondary",
-                    tier.id === "basic" && "bg-blue-500/10",
-                    tier.id === "premium" && "bg-primary/10",
-                    tier.id === "vip" && "bg-purple-500/10"
-                  )}>
-                    <Icon className={cn("h-6 w-6", colorClass)} />
+                return (
+                  <div
+                    key={tier.id}
+                    className={cn(
+                      "relative flex flex-col rounded-2xl border bg-card p-6 transition-all duration-300",
+                      isPro && "border-primary shadow-lg shadow-primary/20 scale-105",
+                      isCreator && "border-purple-500 shadow-lg shadow-purple-500/20",
+                      isCurrentTier && "ring-2 ring-primary"
+                    )}
+                  >
+                    {/* Popular Badge */}
+                    {isPro && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase">
+                          Most Popular
+                        </span>
+                      </div>
+                    )}
+                    {isCreator && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="px-4 py-1 rounded-full bg-purple-500 text-white text-xs font-bold uppercase">
+                          Best Value
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Tier Header */}
+                    <div className="mb-6">
+                      <div className={cn("inline-flex p-3 rounded-xl mb-4", 
+                        tier.id === "free" && "bg-secondary",
+                        tier.id === "pro" && "bg-primary/10",
+                        tier.id === "creator" && "bg-purple-500/10"
+                      )}>
+                        <Icon className={cn("h-6 w-6", colorClass)} />
+                      </div>
+                      <h3 className="text-xl font-bold uppercase">{tier.name}</h3>
+                      <div className="mt-2">
+                        <span className="text-4xl font-bold">${tier.price}</span>
+                        {tier.price > 0 && <span className="text-muted-foreground">/month</span>}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {tier.description}
+                      </p>
+                    </div>
+
+                    {/* Features */}
+                    <div className="flex-1 space-y-3 mb-6">
+                      {features.map((feature, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <Check className={cn("h-5 w-5 mt-0.5 shrink-0", colorClass)} />
+                          <span className="text-sm">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* CTA Button */}
+                    <Button
+                      className={cn(
+                        "w-full",
+                        isPro && "bg-primary hover:bg-primary/90",
+                        isCreator && "bg-purple-500 hover:bg-purple-600"
+                      )}
+                      variant={tier.id === "free" ? "outline" : "default"}
+                      onClick={() => handleSubscribe(tier.id)}
+                      disabled={isCurrentTier || subscriptionCheckout.isPending}
+                    >
+                      {subscriptionCheckout.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : isCurrentTier ? (
+                        "Current Plan"
+                      ) : tier.id === "free" ? (
+                        "Get Started Free"
+                      ) : (
+                        `Upgrade to ${tier.name}`
+                      )}
+                    </Button>
                   </div>
-                  <h3 className="text-xl font-bold uppercase">{tier.name}</h3>
-                  <div className="mt-2">
-                    <span className="text-4xl font-bold">${tier.price}</span>
-                    {tier.price > 0 && <span className="text-muted-foreground">/month</span>}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {tier.credits} credits/month
+                );
+              })}
+            </div>
+
+            {/* Free Credits Info */}
+            <div className="mt-12 max-w-2xl mx-auto">
+              <div className="flex items-center gap-4 p-6 rounded-xl bg-green-500/10 border border-green-500/20">
+                <Gift className="h-10 w-10 text-green-500 shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-green-500">5 Free Generations Daily</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Every user gets 5 free AI generations per day, regardless of subscription. Free credits reset at midnight UTC.
                   </p>
                 </div>
-
-                {/* Features */}
-                <div className="flex-1 space-y-3 mb-6">
-                  {features.map((feature, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <Check className={cn("h-5 w-5 mt-0.5 shrink-0", colorClass)} />
-                      <span className="text-sm">{feature}</span>
-                    </div>
-                  ))}
-                  
-                  {/* Locked features preview */}
-                  {lockedFeatures.slice(0, 2).map((feature, i) => (
-                    <div key={`locked-${i}`} className="flex items-start gap-2 opacity-40">
-                      <Lock className="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground line-through">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* CTA Button */}
-                <Button
-                  className={cn(
-                    "w-full",
-                    isPremium && "bg-primary hover:bg-primary/90",
-                    isVip && "bg-purple-500 hover:bg-purple-600"
-                  )}
-                  variant={tier.id === "free" ? "outline" : "default"}
-                  onClick={() => handleSubscribe(tier.id)}
-                  disabled={isCurrentTier || subscriptionCheckout.isPending}
-                >
-                  {subscriptionCheckout.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : isCurrentTier ? (
-                    "Current Plan"
-                  ) : tier.id === "free" ? (
-                    "Get Started Free"
-                  ) : (
-                    `Upgrade to ${tier.name}`
-                  )}
-                </Button>
               </div>
-            );
-          })}
-        </div>
-
-        {/* Credit Packs */}
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold mb-3">
-              Need More <span className="text-primary">Credits</span>?
-            </h2>
-            <p className="text-muted-foreground">
-              One-time credit packs for extra generations. No subscription required.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {creditPacks.map((pack) => (
-              <div
-                key={pack.id}
-                className="rounded-xl border bg-card p-6 text-center hover:border-primary/50 transition-colors"
-              >
-                <div className="inline-flex p-3 rounded-full bg-primary/10 mb-4">
-                  <CreditCard className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold">{pack.credits} Credits</h3>
-                <p className="text-3xl font-bold text-primary mt-2">${pack.price}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  ${(pack.price / pack.credits).toFixed(2)} per credit
-                </p>
-                <Button
-                  className="w-full mt-4"
-                  variant="outline"
-                  onClick={() => handleBuyCredits(pack.id)}
-                  disabled={creditPackCheckout.isPending}
-                >
-                  {creditPackCheckout.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Buy Now"
-                  )}
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Test Mode Notice */}
-        <div className="mt-16 p-6 rounded-xl bg-yellow-500/10 border border-yellow-500/20 max-w-2xl mx-auto">
-          <div className="flex items-start gap-4">
-            <div className="p-2 rounded-lg bg-yellow-500/20">
-              <CreditCard className="h-5 w-5 text-yellow-500" />
             </div>
-            <div>
-              <h4 className="font-semibold text-yellow-500">Test Mode Active</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Use test card <code className="px-2 py-0.5 rounded bg-secondary font-mono">4242 4242 4242 4242</code> with any future expiry and CVC.
+          </TabsContent>
+
+          {/* Credit Packs */}
+          <TabsContent value="credits">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold mb-2">Buy Credits When You Need Them</h2>
+                <p className="text-muted-foreground">
+                  No subscription required. Credits never expire and can be used anytime.
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                {CREDIT_PACKS.map((pack) => (
+                  <div
+                    key={pack.id}
+                    className={cn(
+                      "relative flex flex-col rounded-2xl border bg-card p-6 transition-all duration-300",
+                      pack.popular && "border-primary shadow-lg shadow-primary/20 scale-105"
+                    )}
+                  >
+                    {pack.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase">
+                          Best Value
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="mb-6">
+                      <div className="inline-flex p-3 rounded-xl bg-primary/10 mb-4">
+                        <CreditCard className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold">{pack.name}</h3>
+                      <div className="mt-2">
+                        <span className="text-4xl font-bold">${pack.price}</span>
+                        <span className="text-muted-foreground"> one-time</span>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 space-y-3 mb-6">
+                      <div className="flex items-center gap-2">
+                        <Check className="h-5 w-5 text-primary" />
+                        <span className="text-lg font-semibold">{pack.credits} credits</span>
+                      </div>
+                      {pack.bonus > 0 && (
+                        <div className="flex items-center gap-2 text-green-500">
+                          <Gift className="h-5 w-5" />
+                          <span className="font-medium">+{pack.bonus} bonus credits!</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Check className="h-5 w-5" />
+                        <span className="text-sm">Never expires</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Check className="h-5 w-5" />
+                        <span className="text-sm">Use anytime</span>
+                      </div>
+                      {pack.bonus > 0 && (
+                        <div className="pt-2 border-t border-border">
+                          <div className="text-sm text-muted-foreground">
+                            Total: <span className="font-bold text-foreground">{pack.credits + pack.bonus} credits</span>
+                          </div>
+                          <div className="text-xs text-green-500">
+                            Save {Math.round((pack.bonus / pack.credits) * 100)}%
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
+                      className={cn(
+                        "w-full",
+                        pack.popular && "bg-primary hover:bg-primary/90"
+                      )}
+                      variant={pack.popular ? "default" : "outline"}
+                      onClick={() => handleBuyCredits(pack.id)}
+                      disabled={creditPackCheckout.isPending}
+                    >
+                      {creditPackCheckout.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        `Buy ${pack.credits + pack.bonus} Credits`
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Credit Usage Info */}
+              <div className="mt-12 grid md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-card border border-border text-center">
+                  <div className="text-3xl font-bold text-primary mb-1">1</div>
+                  <div className="text-sm text-muted-foreground">credit = 1 AI generation</div>
+                </div>
+                <div className="p-4 rounded-xl bg-card border border-border text-center">
+                  <div className="text-3xl font-bold text-green-500 mb-1">∞</div>
+                  <div className="text-sm text-muted-foreground">Credits never expire</div>
+                </div>
+                <div className="p-4 rounded-xl bg-card border border-border text-center">
+                  <div className="text-3xl font-bold text-purple-500 mb-1">+</div>
+                  <div className="text-sm text-muted-foreground">Stack with subscription</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* FAQ Section */}
+        <div className="mt-20 max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <h4 className="font-semibold mb-2">How do credits work?</h4>
+              <p className="text-sm text-muted-foreground">
+                Each AI generation costs 1 credit. You get 5 free credits daily (reset at midnight UTC). 
+                Subscription credits are added monthly. Purchased credits never expire.
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <h4 className="font-semibold mb-2">Which credits are used first?</h4>
+              <p className="text-sm text-muted-foreground">
+                Credits are used in this order: Free daily credits → Subscription credits → Purchased credits. 
+                This ensures your purchased credits last as long as possible.
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <h4 className="font-semibold mb-2">Can I combine subscription and credit packs?</h4>
+              <p className="text-sm text-muted-foreground">
+                Yes! You can have a subscription AND buy credit packs. They stack together. 
+                Great for when you need extra credits for a big project.
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-card border border-border">
+              <h4 className="font-semibold mb-2">Do unused subscription credits roll over?</h4>
+              <p className="text-sm text-muted-foreground">
+                Subscription credits reset each billing cycle and don't roll over. 
+                However, purchased credit packs never expire and are always available.
               </p>
             </div>
           </div>
         </div>
 
-        {/* FAQ Section */}
-        <div className="mt-20 max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-10">
-            Frequently Asked <span className="text-primary">Questions</span>
-          </h2>
-          
-          <div className="space-y-6">
-            {[
-              {
-                q: "What happens when I run out of credits?",
-                a: "You can purchase additional credit packs anytime, or upgrade to a higher tier for more monthly credits. Unused credits roll over to the next month."
-              },
-              {
-                q: "Can I cancel my subscription anytime?",
-                a: "Yes! You can cancel anytime from your billing portal. You'll keep access until the end of your billing period."
-              },
-              {
-                q: "What's included in Fanvue integration?",
-                a: "Premium and VIP tiers include OAuth connection to Fanvue, auto-publish scheduling, and revenue tracking. Perfect for monetizing your AI influencer."
-              },
-              {
-                q: "Do you offer refunds?",
-                a: "We offer a 7-day money-back guarantee for first-time subscribers. Contact support if you're not satisfied."
-              },
-              {
-                q: "What payment methods do you accept?",
-                a: "We accept all major credit cards, debit cards, and Apple Pay through our secure Stripe payment system."
-              }
-            ].map((faq, i) => (
-              <div key={i} className="p-6 rounded-xl bg-card border border-border">
-                <h3 className="font-semibold mb-2">{faq.q}</h3>
-                <p className="text-muted-foreground">{faq.a}</p>
-              </div>
-            ))}
-          </div>
+        {/* Test Card Notice */}
+        <div className="mt-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            🧪 Test mode: Use card <code className="px-2 py-1 rounded bg-muted">4242 4242 4242 4242</code> with any future date and CVC
+          </p>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-8 mt-20">
-        <div className="container text-center text-sm text-muted-foreground">
-          <p>© 2026 AI Influencer Generator. The #1 AI Influencer Marketing Platform.</p>
-        </div>
-      </footer>
     </div>
   );
 }

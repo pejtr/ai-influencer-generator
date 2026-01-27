@@ -50,14 +50,14 @@ export default function BatchGeneration() {
   const [skinCondition, setSkinCondition] = useState("flawless");
   const [age, setAge] = useState(25);
 
-  // Check if user has VIP tier
-  const isVIP = user?.tier === "vip";
+  // Check if user has CREATOR tier (batch generation access)
+  const isCreator = user?.tier === "creator";
   const userCredits = user?.credits ?? 0;
 
   // Fetch batch jobs
   const { data: batchJobs, isLoading: jobsLoading, refetch: refetchJobs } = trpc.batch.list.useQuery(
     undefined,
-    { enabled: isVIP }
+    { enabled: isCreator }
   );
 
   // Create batch mutation
@@ -116,7 +116,7 @@ export default function BatchGeneration() {
   };
 
   // VIP Gate
-  if (!authLoading && !isVIP) {
+  if (!authLoading && !isCreator) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container py-20">

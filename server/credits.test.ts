@@ -1,12 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { SUBSCRIPTION_TIERS, CREDIT_PACKS } from "./stripe/products";
 
 // Mock the database functions
 vi.mock("./db", () => ({
   getUserById: vi.fn(),
+  getUserCreditBalance: vi.fn(),
   updateUserCredits: vi.fn(),
   deductUserCredits: vi.fn(),
+  deductCreditsHybrid: vi.fn(),
+  addPaidCredits: vi.fn(),
   createGeneration: vi.fn(),
   updateGeneration: vi.fn(),
   getUserGenerations: vi.fn(),
@@ -22,27 +26,10 @@ vi.mock("./db", () => ({
   getAllUsers: vi.fn(),
   getUserCount: vi.fn(),
   getGenerationCount: vi.fn(),
-  TIER_CREDITS: {
-    free: 5,
-    starter: 50,
-    pro: 300,
-    business: 1000,
-  },
-  TIER_PRICES: {
-    free: 0,
-    starter: 9,
-    pro: 29,
-    business: 99,
-  },
-  CREDIT_PACKS: [
-    { credits: 100, price: 15 },
-    { credits: 500, price: 60 },
-    { credits: 1000, price: 100 },
-  ],
 }));
 
 // Import mocked functions
-import { getUserById, getUserCreditTransactions } from "./db";
+import { getUserById, getUserCreditBalance, getUserCreditTransactions } from "./db";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
@@ -81,10 +68,21 @@ describe("credits.getBalance", () => {
     const mockUser = {
       id: 1,
       credits: 25,
-      tier: "starter",
-      monthlyCreditsUsed: 10,
+      tier: "pro",
+      creditBalance: 50,
+      freeCreditsToday: 5,
+      monthlyCreditsRemaining: 400,
     };
     
+    const mockBalance = {
+      freeCreditsToday: 5,
+      paidCredits: 50,
+      subscriptionCredits: 400,
+      totalAvailable: 455,
+      tier: "pro",
+    };
+    
+    vi.mocked(getUserCreditBalance).mockResolvedValue(mockBalance);
     vi.mocked(getUserById).mockResolvedValue(mockUser as any);
 
     const ctx = createAuthContext();
@@ -92,15 +90,16 @@ describe("credits.getBalance", () => {
 
     const result = await caller.credits.getBalance();
 
-    expect(result).toEqual({
-      credits: 25,
-      tier: "starter",
-      monthlyCreditsUsed: 10,
-    });
-    expect(getUserById).toHaveBeenCalledWith(1);
+    expect(result.credits).toBe(455);
+    expect(result.tier).toBe("pro");
+    expect(result.freeCreditsToday).toBe(5);
+    expect(result.subscriptionCredits).toBe(400);
+    expect(result.paidCredits).toBe(50);
+    expect(getUserCreditBalance).toHaveBeenCalledWith(1);
   });
 
   it("returns default values when user not found", async () => {
+    vi.mocked(getUserCreditBalance).mockResolvedValue(null);
     vi.mocked(getUserById).mockResolvedValue(undefined);
 
     const ctx = createAuthContext();
@@ -108,11 +107,11 @@ describe("credits.getBalance", () => {
 
     const result = await caller.credits.getBalance();
 
-    expect(result).toEqual({
-      credits: 0,
-      tier: "free",
-      monthlyCreditsUsed: 0,
-    });
+    expect(result.credits).toBe(0);
+    expect(result.tier).toBe("free");
+    expect(result.freeCreditsToday).toBe(0);
+    expect(result.subscriptionCredits).toBe(0);
+    expect(result.paidCredits).toBe(0);
   });
 });
 
@@ -147,17 +146,9 @@ describe("credits.getPricing", () => {
     const result = await caller.credits.getPricing();
 
     expect(result.tiers).toBeDefined();
-    expect(result.tiers.free.credits).toBe(5);
-    expect(result.tiers.free.price).toBe(0);
-    expect(result.tiers.basic.credits).toBe(50);
-    expect(result.tiers.basic.price).toBe(9);
-    expect(result.tiers.premium.credits).toBe(300);
-    expect(result.tiers.premium.price).toBe(29);
-    expect(result.tiers.vip.credits).toBe(1000);
-    expect(result.tiers.vip.price).toBe(99);
-
+    expect(result.tiers).toEqual(SUBSCRIPTION_TIERS);
     expect(result.creditPacks).toBeDefined();
-    expect(result.creditPacks.length).toBe(3);
+    expect(result.creditPacks).toEqual(CREDIT_PACKS);
   });
 
   it("is accessible without authentication (public procedure)", async () => {
@@ -172,5 +163,29 @@ describe("credits.getPricing", () => {
 
     expect(result.tiers).toBeDefined();
     expect(result.creditPacks).toBeDefined();
+  });
+
+  it("returns correct tier structure for hybrid model", async () => {
+    const ctx: TrpcContext = {
+      user: null,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: {} as TrpcContext["res"],
+    };
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.credits.getPricing();
+
+    // Check free tier
+    expect(result.tiers.free.priceMonthly).toBe(0);
+    expect(result.tiers.free.monthlyCredits).toBe(0);
+    expect(result.tiers.free.dailyFreeCredits).toBe(5);
+
+    // Check pro tier
+    expect(result.tiers.pro.priceMonthly).toBe(1999);
+    expect(result.tiers.pro.monthlyCredits).toBe(500);
+
+    // Check creator tier
+    expect(result.tiers.creator.priceMonthly).toBe(4999);
+    expect(result.tiers.creator.monthlyCredits).toBe(1500);
   });
 });

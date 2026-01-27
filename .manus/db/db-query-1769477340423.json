@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE creditTransactions \nADD COLUMN IF NOT EXISTS creditSource ENUM('free', 'paid', 'subscription') DEFAULT 'paid' NOT NULL,\nADD COLUMN IF NOT EXISTS balanceBefore INT DEFAULT 0 NOT NULL,\nADD COLUMN IF NOT EXISTS metadata JSON;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute \nALTER TABLE creditTransactions \nADD COLUMN IF NOT EXISTS creditSource ENUM('free', 'paid', 'subscription') DEFAULT 'paid' NOT NULL,\nADD COLUMN IF NOT EXISTS balanceBefore INT DEFAULT 0 NOT NULL,\nADD COLUMN IF NOT EXISTS metadata JSON;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 916
+}

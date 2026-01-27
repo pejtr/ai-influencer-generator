@@ -105,7 +105,7 @@ export default function Navbar() {
                         <span>Upgrade Plan</span>
                       </Link>
                     </DropdownMenuItem>
-                    {(user?.tier === "premium" || user?.tier === "vip") && (
+                    {(user?.tier === "pro" || user?.tier === "creator") && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
@@ -116,7 +116,7 @@ export default function Navbar() {
                         </DropdownMenuItem>
                       </>
                     )}
-                    {user?.tier === "vip" && (
+                    {user?.tier === "creator" && (
                       <>
                         <DropdownMenuItem asChild>
                           <Link href="/scheduler" className="flex items-center gap-2 cursor-pointer">

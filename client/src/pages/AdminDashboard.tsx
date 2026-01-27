@@ -219,12 +219,10 @@ export default function AdminDashboard() {
                             <TableCell>{u.email || "—"}</TableCell>
                             <TableCell>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                u.tier === "vip" 
+                                u.tier === "creator" 
                                   ? "bg-purple-500/10 text-purple-500"
-                                  : u.tier === "premium"
+                                  : u.tier === "pro"
                                   ? "bg-primary/10 text-primary"
-                                  : u.tier === "basic"
-                                  ? "bg-blue-500/10 text-blue-500"
                                   : "bg-secondary text-muted-foreground"
                               }`}>
                                 {u.tier}

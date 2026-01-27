@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE users \nADD COLUMN IF NOT EXISTS creditBalance INT DEFAULT 0 NOT NULL,\nADD COLUMN IF NOT EXISTS freeCreditsToday INT DEFAULT 5 NOT NULL,\nADD COLUMN IF NOT EXISTS lastFreeCreditsReset TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\nADD COLUMN IF NOT EXISTS monthlyCreditsRemaining INT DEFAULT 0 NOT NULL,\nADD COLUMN IF NOT EXISTS monthlyCreditsTotal INT DEFAULT 0 NOT NULL,\nADD COLUMN IF NOT EXISTS lastMonthlyReset TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute \nALTER TABLE users \nADD COLUMN IF NOT EXISTS creditBalance INT DEFAULT 0 NOT NULL,\nADD COLUMN IF NOT EXISTS freeCreditsToday INT DEFAULT 5 NOT NULL,\nADD COLUMN IF NOT EXISTS lastFreeCreditsReset TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\nADD COLUMN IF NOT EXISTS monthlyCreditsRemaining INT DEFAULT 0 NOT NULL,\nADD COLUMN IF NOT EXISTS monthlyCreditsTotal INT DEFAULT 0 NOT NULL,\nADD COLUMN IF NOT EXISTS lastMonthlyReset TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1927
+}
