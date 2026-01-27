@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
 import { Link, useLocation } from "wouter";
-import { Sparkles, Menu, X, User, LogOut, CreditCard, LayoutDashboard, Image, Calendar, Zap, Link2 } from "lucide-react";
+import { Sparkles, Menu, X, User, LogOut, CreditCard, LayoutDashboard, Image, Calendar, Zap, Link2, MessageCircle, Users } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ export default function Navbar() {
     { href: "/", label: "Home" },
     { href: "/studio", label: "Studio" },
     { href: "/gallery", label: "Gallery" },
+    { href: "/companions", label: "AI Chat" },
     { href: "/pricing", label: "Pricing" },
   ];
 
@@ -108,6 +109,18 @@ export default function Navbar() {
                     {(user?.tier === "pro" || user?.tier === "creator") && (
                       <>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/companions" className="flex items-center gap-2 cursor-pointer">
+                            <MessageCircle className="w-4 h-4" />
+                            <span>AI Chat Companions</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/creator" className="flex items-center gap-2 cursor-pointer">
+                            <Users className="w-4 h-4" />
+                            <span>Creator Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href="/fanvue" className="flex items-center gap-2 cursor-pointer">
                             <Link2 className="w-4 h-4" />

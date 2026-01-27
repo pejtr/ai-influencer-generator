@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE users \nADD COLUMN IF NOT EXISTS fanvueAccessToken TEXT,\nADD COLUMN IF NOT EXISTS fanvueRefreshToken TEXT,\nADD COLUMN IF NOT EXISTS fanvueUserId VARCHAR(255),\nADD COLUMN IF NOT EXISTS fanvueConnectedAt TIMESTAMP NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute ALTER TABLE users \nADD COLUMN IF NOT EXISTS fanvueAccessToken TEXT,\nADD COLUMN IF NOT EXISTS fanvueRefreshToken TEXT,\nADD COLUMN IF NOT EXISTS fanvueUserId VARCHAR(255),\nADD COLUMN IF NOT EXISTS fanvueConnectedAt TIMESTAMP NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 62
+}

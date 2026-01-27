@@ -7,7 +7,15 @@ import {
   creditPurchases, InsertCreditPurchase,
   affiliates, InsertAffiliate,
   affiliateCommissions, InsertAffiliateCommission,
-  creditTransactions, InsertCreditTransaction
+  creditTransactions, InsertCreditTransaction,
+  // Chat Companion
+  influencerPersonalities, InsertInfluencerPersonality,
+  chatConversations, InsertChatConversation,
+  chatMessages, InsertChatMessage,
+  exclusiveContent, InsertExclusiveContent,
+  contentPurchases, InsertContentPurchase,
+  fanTips, InsertFanTip,
+  creatorEarnings, InsertCreatorEarnings
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -724,4 +732,315 @@ export async function getUnpublishedGenerations(userId: number, limit = 30) {
     ))
     .limit(limit)
     .orderBy(desc(generations.createdAt));
+}
+
+
+// ============ AI CHAT COMPANION ============
+
+// Influencer Personalities
+export async function createInfluencerPersonality(data: InsertInfluencerPersonality) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(influencerPersonalities).values(data);
+  return result[0].insertId;
+}
+
+export async function getInfluencerPersonalityById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(influencerPersonalities).where(eq(influencerPersonalities.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getInfluencerPersonalitiesByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(influencerPersonalities)
+    .where(eq(influencerPersonalities.userId, userId))
+    .orderBy(desc(influencerPersonalities.createdAt));
+}
+
+export async function updateInfluencerPersonality(id: number, userId: number, data: Partial<InsertInfluencerPersonality>) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.update(influencerPersonalities)
+    .set(data)
+    .where(and(eq(influencerPersonalities.id, id), eq(influencerPersonalities.userId, userId)));
+  return true;
+}
+
+export async function deleteInfluencerPersonality(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(influencerPersonalities)
+    .where(and(eq(influencerPersonalities.id, id), eq(influencerPersonalities.userId, userId)));
+  return true;
+}
+
+export async function getActivePersonalities(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(influencerPersonalities)
+    .where(eq(influencerPersonalities.isActive, true))
+    .limit(limit)
+    .orderBy(desc(influencerPersonalities.totalConversations));
+}
+
+// Chat Conversations
+export async function createChatConversation(data: InsertChatConversation) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(chatConversations).values(data);
+  return result[0].insertId;
+}
+
+export async function getChatConversationById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(chatConversations).where(eq(chatConversations.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getConversationByFanAndPersonality(fanUserId: number, personalityId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(chatConversations)
+    .where(and(
+      eq(chatConversations.fanUserId, fanUserId),
+      eq(chatConversations.personalityId, personalityId)
+    ))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getConversationsByFanId(fanUserId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatConversations)
+    .where(eq(chatConversations.fanUserId, fanUserId))
+    .orderBy(desc(chatConversations.lastMessageAt))
+    .limit(limit);
+}
+
+export async function getConversationsByCreatorId(creatorUserId: number, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatConversations)
+    .where(eq(chatConversations.creatorUserId, creatorUserId))
+    .orderBy(desc(chatConversations.lastMessageAt))
+    .limit(limit);
+}
+
+export async function updateChatConversation(id: number, data: Partial<InsertChatConversation>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(chatConversations).set(data).where(eq(chatConversations.id, id));
+}
+
+export async function incrementConversationStats(conversationId: number, amountSpent: number = 0) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(chatConversations).set({
+    messageCount: sql`${chatConversations.messageCount} + 1`,
+    fanSpent: sql`${chatConversations.fanSpent} + ${amountSpent}`,
+    lastMessageAt: new Date(),
+  }).where(eq(chatConversations.id, conversationId));
+}
+
+// Chat Messages
+export async function createChatMessage(data: InsertChatMessage) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(chatMessages).values(data);
+  return result[0].insertId;
+}
+
+export async function getChatMessagesByConversationId(conversationId: number, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatMessages)
+    .where(eq(chatMessages.conversationId, conversationId))
+    .orderBy(chatMessages.createdAt)
+    .limit(limit);
+}
+
+export async function getRecentChatMessages(conversationId: number, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatMessages)
+    .where(eq(chatMessages.conversationId, conversationId))
+    .orderBy(desc(chatMessages.createdAt))
+    .limit(limit);
+}
+
+// Exclusive Content
+export async function createExclusiveContent(data: InsertExclusiveContent) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(exclusiveContent).values(data);
+  return result[0].insertId;
+}
+
+export async function getExclusiveContentById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(exclusiveContent).where(eq(exclusiveContent.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getExclusiveContentByCreatorId(creatorUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(exclusiveContent)
+    .where(eq(exclusiveContent.creatorUserId, creatorUserId))
+    .orderBy(desc(exclusiveContent.createdAt));
+}
+
+export async function getActiveExclusiveContent(creatorUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(exclusiveContent)
+    .where(and(
+      eq(exclusiveContent.creatorUserId, creatorUserId),
+      eq(exclusiveContent.isActive, true)
+    ))
+    .orderBy(desc(exclusiveContent.createdAt));
+}
+
+export async function updateExclusiveContent(id: number, creatorUserId: number, data: Partial<InsertExclusiveContent>) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.update(exclusiveContent)
+    .set(data)
+    .where(and(eq(exclusiveContent.id, id), eq(exclusiveContent.creatorUserId, creatorUserId)));
+  return true;
+}
+
+export async function incrementContentSales(contentId: number, amount: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(exclusiveContent).set({
+    totalSales: sql`${exclusiveContent.totalSales} + 1`,
+    totalRevenue: sql`${exclusiveContent.totalRevenue} + ${amount}`,
+  }).where(eq(exclusiveContent.id, contentId));
+}
+
+// Content Purchases
+export async function createContentPurchase(data: InsertContentPurchase) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(contentPurchases).values(data);
+  return result[0].insertId;
+}
+
+export async function getContentPurchasesByFanId(fanUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(contentPurchases)
+    .where(eq(contentPurchases.fanUserId, fanUserId))
+    .orderBy(desc(contentPurchases.purchasedAt));
+}
+
+export async function hasUserPurchasedContent(fanUserId: number, contentId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db.select().from(contentPurchases)
+    .where(and(
+      eq(contentPurchases.fanUserId, fanUserId),
+      eq(contentPurchases.contentId, contentId),
+      eq(contentPurchases.status, 'completed')
+    ))
+    .limit(1);
+  return result.length > 0;
+}
+
+// Fan Tips
+export async function createFanTip(data: InsertFanTip) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(fanTips).values(data);
+  return result[0].insertId;
+}
+
+export async function getTipsByCreatorId(creatorUserId: number, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(fanTips)
+    .where(eq(fanTips.creatorUserId, creatorUserId))
+    .orderBy(desc(fanTips.createdAt))
+    .limit(limit);
+}
+
+// Creator Earnings
+export async function getOrCreateCreatorEarnings(creatorUserId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const existing = await db.select().from(creatorEarnings)
+    .where(eq(creatorEarnings.creatorUserId, creatorUserId))
+    .limit(1);
+  
+  if (existing.length > 0) {
+    return existing[0];
+  }
+  
+  // Create new earnings record
+  await db.insert(creatorEarnings).values({ creatorUserId });
+  const created = await db.select().from(creatorEarnings)
+    .where(eq(creatorEarnings.creatorUserId, creatorUserId))
+    .limit(1);
+  
+  return created.length > 0 ? created[0] : null;
+}
+
+export async function updateCreatorEarnings(
+  creatorUserId: number, 
+  earnings: number, 
+  type: 'content' | 'tips' | 'messages'
+) {
+  const db = await getDb();
+  if (!db) return;
+  
+  const updates: Record<string, unknown> = {
+    totalEarnings: sql`${creatorEarnings.totalEarnings} + ${earnings}`,
+    pendingEarnings: sql`${creatorEarnings.pendingEarnings} + ${earnings}`,
+  };
+  
+  if (type === 'content') {
+    updates.earningsFromContent = sql`${creatorEarnings.earningsFromContent} + ${earnings}`;
+    updates.totalContentSold = sql`${creatorEarnings.totalContentSold} + 1`;
+  } else if (type === 'tips') {
+    updates.earningsFromTips = sql`${creatorEarnings.earningsFromTips} + ${earnings}`;
+  } else if (type === 'messages') {
+    updates.earningsFromMessages = sql`${creatorEarnings.earningsFromMessages} + ${earnings}`;
+  }
+  
+  await db.update(creatorEarnings).set(updates).where(eq(creatorEarnings.creatorUserId, creatorUserId));
+}
+
+export async function incrementCreatorFans(creatorUserId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(creatorEarnings).set({
+    totalFans: sql`${creatorEarnings.totalFans} + 1`,
+    totalConversations: sql`${creatorEarnings.totalConversations} + 1`,
+  }).where(eq(creatorEarnings.creatorUserId, creatorUserId));
+}
+
+// Increment personality stats
+export async function incrementPersonalityStats(personalityId: number, revenue: number = 0) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(influencerPersonalities).set({
+    totalMessages: sql`${influencerPersonalities.totalMessages} + 1`,
+    totalRevenue: sql`${influencerPersonalities.totalRevenue} + ${revenue}`,
+  }).where(eq(influencerPersonalities.id, personalityId));
+}
+
+export async function incrementPersonalityConversations(personalityId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(influencerPersonalities).set({
+    totalConversations: sql`${influencerPersonalities.totalConversations} + 1`,
+  }).where(eq(influencerPersonalities.id, personalityId));
 }

@@ -21,7 +21,19 @@ import {
   // Batch jobs
   createBatchJob, getBatchJobById, getBatchJobsByUserId, updateBatchJob, incrementBatchJobProgress,
   // Hybrid credit system
-  getUserCreditBalance, deductCreditsHybrid, addPaidCredits
+  getUserCreditBalance, deductCreditsHybrid, addPaidCredits,
+  // Chat Companion
+  createInfluencerPersonality, getInfluencerPersonalityById, getInfluencerPersonalitiesByUserId,
+  updateInfluencerPersonality, deleteInfluencerPersonality, getActivePersonalities,
+  createChatConversation, getChatConversationById, getConversationByFanAndPersonality,
+  getConversationsByFanId, getConversationsByCreatorId, updateChatConversation, incrementConversationStats,
+  createChatMessage, getChatMessagesByConversationId, getRecentChatMessages,
+  createExclusiveContent, getExclusiveContentById, getExclusiveContentByCreatorId,
+  getActiveExclusiveContent, updateExclusiveContent, incrementContentSales,
+  createContentPurchase, getContentPurchasesByFanId, hasUserPurchasedContent,
+  createFanTip, getTipsByCreatorId,
+  getOrCreateCreatorEarnings, updateCreatorEarnings, incrementCreatorFans,
+  incrementPersonalityStats, incrementPersonalityConversations
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -41,6 +53,10 @@ import {
   publishToFanvue, isFanvueConfigured
 } from "./fanvue/fanvue";
 import { generateVideo, queryVideoStatus, CAMERA_MOVEMENTS, buildVideoPrompt } from "./videoGeneration";
+import { 
+  generateChatResponse, generateWelcomeMessage, generateContentOfferMessage,
+  calculatePlatformFee, MESSAGE_COST 
+} from "./chatCompanion";
 
 // Character settings schema
 const characterSettingsSchema = z.object({
@@ -944,6 +960,449 @@ export const appRouter = router({
         label: key.replace(/([A-Z])/g, " $1").trim(),
         instruction: value,
       }));
+    }),
+  }),
+
+  // ============ AI CHAT COMPANION ============
+  chatCompanion: router({
+    // Get all active AI personalities (for fans to browse)
+    getActivePersonalities: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(20) }).optional())
+      .query(async ({ input }) => {
+        const personalities = await getActivePersonalities(input?.limit ?? 20);
+        return personalities.map(p => ({
+          id: p.id,
+          name: p.name,
+          bio: p.bio,
+          avatarUrl: p.avatarUrl,
+          personalityType: p.personalityType,
+          totalConversations: p.totalConversations,
+        }));
+      }),
+
+    // Get personality details
+    getPersonality: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const personality = await getInfluencerPersonalityById(input.id);
+        if (!personality || !personality.isActive) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Personality not found" });
+        }
+        return {
+          id: personality.id,
+          name: personality.name,
+          bio: personality.bio,
+          avatarUrl: personality.avatarUrl,
+          personalityType: personality.personalityType,
+          interests: personality.interests,
+        };
+      }),
+
+    // Start or get existing conversation
+    startConversation: protectedProcedure
+      .input(z.object({ personalityId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const personality = await getInfluencerPersonalityById(input.personalityId);
+        if (!personality || !personality.isActive) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Personality not found" });
+        }
+
+        // Check if conversation already exists
+        let conversation = await getConversationByFanAndPersonality(ctx.user.id, input.personalityId);
+        
+        if (!conversation) {
+          // Create new conversation
+          const conversationId = await createChatConversation({
+            fanUserId: ctx.user.id,
+            personalityId: input.personalityId,
+            creatorUserId: personality.userId,
+          });
+          
+          if (!conversationId) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create conversation" });
+          }
+
+          conversation = await getChatConversationById(conversationId);
+          
+          // Increment stats
+          await incrementPersonalityConversations(input.personalityId);
+          await incrementCreatorFans(personality.userId);
+
+          // Send welcome message
+          const welcomeMessage = await generateWelcomeMessage(personality);
+          await createChatMessage({
+            conversationId: conversationId,
+            role: "ai",
+            content: welcomeMessage,
+          });
+        }
+
+        return {
+          conversationId: conversation!.id,
+          personality: {
+            id: personality.id,
+            name: personality.name,
+            avatarUrl: personality.avatarUrl,
+          },
+        };
+      }),
+
+    // Send message to AI
+    sendMessage: protectedProcedure
+      .input(z.object({
+        conversationId: z.number(),
+        message: z.string().min(1).max(2000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const conversation = await getChatConversationById(input.conversationId);
+        if (!conversation || conversation.fanUserId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Conversation not found" });
+        }
+
+        if (conversation.status === "blocked") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "This conversation has been blocked" });
+        }
+
+        const personality = await getInfluencerPersonalityById(conversation.personalityId);
+        if (!personality) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Personality not found" });
+        }
+
+        // Save fan's message
+        await createChatMessage({
+          conversationId: input.conversationId,
+          role: "fan",
+          content: input.message,
+        });
+
+        // Get conversation history for context
+        const recentMessages = await getRecentChatMessages(input.conversationId, 10);
+        const messagesForContext = recentMessages.reverse().map(m => ({
+          role: m.role as "fan" | "ai" | "system",
+          content: m.content,
+        }));
+
+        // Check if we should offer content
+        const availableContent = await getActiveExclusiveContent(personality.userId);
+        const shouldOfferContent = availableContent.length > 0 && Math.random() < 0.2; // 20% chance
+        const contentToOffer = shouldOfferContent ? availableContent[Math.floor(Math.random() * availableContent.length)] : undefined;
+
+        // Generate AI response
+        const { response: aiResponse, shouldOfferContent: offerContent } = await generateChatResponse(
+          personality,
+          messagesForContext,
+          input.message,
+          contentToOffer ? {
+            shouldOfferContent: true,
+            contentToOffer: {
+              id: contentToOffer.id,
+              title: contentToOffer.title,
+              price: contentToOffer.price.toString(),
+            },
+          } : undefined
+        );
+
+        // Save AI response
+        await createChatMessage({
+          conversationId: input.conversationId,
+          role: "ai",
+          content: aiResponse,
+          hasContentOffer: offerContent && contentToOffer ? true : false,
+          offeredContentId: contentToOffer?.id,
+        });
+
+        // Update stats
+        await incrementConversationStats(input.conversationId);
+        await incrementPersonalityStats(conversation.personalityId);
+
+        return {
+          response: aiResponse,
+          contentOffer: offerContent && contentToOffer ? {
+            id: contentToOffer.id,
+            title: contentToOffer.title,
+            price: contentToOffer.price.toString(),
+            previewUrl: contentToOffer.previewUrl,
+          } : null,
+        };
+      }),
+
+    // Get conversation messages
+    getMessages: protectedProcedure
+      .input(z.object({
+        conversationId: z.number(),
+        limit: z.number().min(1).max(100).default(50),
+      }))
+      .query(async ({ ctx, input }) => {
+        const conversation = await getChatConversationById(input.conversationId);
+        if (!conversation || conversation.fanUserId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Conversation not found" });
+        }
+
+        const messages = await getChatMessagesByConversationId(input.conversationId, input.limit);
+        return messages.map(m => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          hasContentOffer: m.hasContentOffer,
+          offeredContentId: m.offeredContentId,
+          createdAt: m.createdAt,
+        }));
+      }),
+
+    // Get fan's conversations
+    getMyConversations: protectedProcedure.query(async ({ ctx }) => {
+      const conversations = await getConversationsByFanId(ctx.user.id);
+      const result = [];
+      
+      for (const conv of conversations) {
+        const personality = await getInfluencerPersonalityById(conv.personalityId);
+        if (personality) {
+          result.push({
+            id: conv.id,
+            personality: {
+              id: personality.id,
+              name: personality.name,
+              avatarUrl: personality.avatarUrl,
+            },
+            messageCount: conv.messageCount,
+            lastMessageAt: conv.lastMessageAt,
+            status: conv.status,
+          });
+        }
+      }
+      
+      return result;
+    }),
+
+    // Unlock exclusive content
+    unlockContent: protectedProcedure
+      .input(z.object({
+        contentId: z.number(),
+        conversationId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const content = await getExclusiveContentById(input.contentId);
+        if (!content || !content.isActive) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Content not found" });
+        }
+
+        // Check if already purchased
+        const alreadyPurchased = await hasUserPurchasedContent(ctx.user.id, input.contentId);
+        if (alreadyPurchased) {
+          return { fullUrl: content.fullUrl, alreadyOwned: true };
+        }
+
+        // For now, we'll mark as pending and return - actual payment would go through Stripe
+        const { platformFee, creatorEarnings } = calculatePlatformFee(Number(content.price));
+        
+        await createContentPurchase({
+          fanUserId: ctx.user.id,
+          contentId: input.contentId,
+          creatorUserId: content.creatorUserId,
+          conversationId: input.conversationId,
+          amount: content.price,
+          platformFee: platformFee.toString(),
+          creatorEarnings: creatorEarnings.toString(),
+          status: "completed", // In real app, this would be pending until Stripe confirms
+        });
+
+        // Update stats
+        await incrementContentSales(input.contentId, Number(content.price));
+        await updateCreatorEarnings(content.creatorUserId, creatorEarnings, "content");
+
+        return { fullUrl: content.fullUrl, alreadyOwned: false };
+      }),
+
+    // Send tip to creator
+    sendTip: protectedProcedure
+      .input(z.object({
+        creatorUserId: z.number(),
+        personalityId: z.number().optional(),
+        conversationId: z.number().optional(),
+        amount: z.number().min(1).max(1000),
+        message: z.string().max(500).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { platformFee, creatorEarnings } = calculatePlatformFee(input.amount);
+        
+        await createFanTip({
+          fanUserId: ctx.user.id,
+          creatorUserId: input.creatorUserId,
+          personalityId: input.personalityId,
+          conversationId: input.conversationId,
+          amount: input.amount.toString(),
+          platformFee: platformFee.toString(),
+          creatorEarnings: creatorEarnings.toString(),
+          message: input.message,
+          status: "completed", // In real app, this would be pending until Stripe confirms
+        });
+
+        await updateCreatorEarnings(input.creatorUserId, creatorEarnings, "tips");
+
+        return { success: true, creatorEarnings };
+      }),
+  }),
+
+  // ============ CREATOR DASHBOARD ============
+  creator: router({
+    // Create new AI personality
+    createPersonality: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(100),
+        bio: z.string().max(1000).optional(),
+        avatarUrl: z.string().url().optional(),
+        personalityType: z.enum(["flirty", "friendly", "mysterious", "playful", "sophisticated", "bold"]).default("friendly"),
+        chatStyle: z.enum(["casual", "formal", "romantic", "witty", "seductive"]).default("casual"),
+        responseLength: z.enum(["short", "medium", "long"]).default("medium"),
+        customTraits: z.array(z.string()).optional(),
+        interests: z.array(z.string()).optional(),
+        welcomeMessage: z.string().max(500).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Check tier - only Pro and Creator can create personalities
+        if (ctx.user.tier === "free") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Upgrade to Pro or Creator to create AI personalities" });
+        }
+
+        const personalityId = await createInfluencerPersonality({
+          userId: ctx.user.id,
+          name: input.name,
+          bio: input.bio,
+          avatarUrl: input.avatarUrl,
+          personalityType: input.personalityType,
+          chatStyle: input.chatStyle,
+          responseLength: input.responseLength,
+          customTraits: input.customTraits,
+          interests: input.interests,
+          welcomeMessage: input.welcomeMessage,
+        });
+
+        if (!personalityId) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create personality" });
+        }
+
+        // Initialize creator earnings
+        await getOrCreateCreatorEarnings(ctx.user.id);
+
+        return { id: personalityId };
+      }),
+
+    // Get my personalities
+    getMyPersonalities: protectedProcedure.query(async ({ ctx }) => {
+      return getInfluencerPersonalitiesByUserId(ctx.user.id);
+    }),
+
+    // Update personality
+    updatePersonality: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).max(100).optional(),
+        bio: z.string().max(1000).optional(),
+        avatarUrl: z.string().url().optional(),
+        personalityType: z.enum(["flirty", "friendly", "mysterious", "playful", "sophisticated", "bold"]).optional(),
+        chatStyle: z.enum(["casual", "formal", "romantic", "witty", "seductive"]).optional(),
+        responseLength: z.enum(["short", "medium", "long"]).optional(),
+        customTraits: z.array(z.string()).optional(),
+        interests: z.array(z.string()).optional(),
+        welcomeMessage: z.string().max(500).optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await updateInfluencerPersonality(id, ctx.user.id, data);
+        return { success: true };
+      }),
+
+    // Delete personality
+    deletePersonality: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteInfluencerPersonality(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    // Create exclusive content
+    createContent: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1).max(200),
+        description: z.string().max(1000).optional(),
+        contentType: z.enum(["image", "video", "gallery", "message"]).default("image"),
+        previewUrl: z.string().url().optional(),
+        fullUrl: z.string().url(),
+        price: z.number().min(1).max(1000),
+        personalityId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const contentId = await createExclusiveContent({
+          creatorUserId: ctx.user.id,
+          personalityId: input.personalityId,
+          title: input.title,
+          description: input.description,
+          contentType: input.contentType,
+          previewUrl: input.previewUrl,
+          fullUrl: input.fullUrl,
+          price: input.price.toString(),
+        });
+
+        if (!contentId) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create content" });
+        }
+
+        return { id: contentId };
+      }),
+
+    // Get my exclusive content
+    getMyContent: protectedProcedure.query(async ({ ctx }) => {
+      return getExclusiveContentByCreatorId(ctx.user.id);
+    }),
+
+    // Update content
+    updateContent: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().min(1).max(200).optional(),
+        description: z.string().max(1000).optional(),
+        price: z.number().min(1).max(1000).optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, price, ...rest } = input;
+        const data: Record<string, unknown> = { ...rest };
+        if (price !== undefined) data.price = price.toString();
+        await updateExclusiveContent(id, ctx.user.id, data);
+        return { success: true };
+      }),
+
+    // Get earnings dashboard
+    getEarnings: protectedProcedure.query(async ({ ctx }) => {
+      const earnings = await getOrCreateCreatorEarnings(ctx.user.id);
+      const tips = await getTipsByCreatorId(ctx.user.id, 10);
+      const conversations = await getConversationsByCreatorId(ctx.user.id, 10);
+      
+      return {
+        earnings,
+        recentTips: tips,
+        recentConversations: conversations.length,
+      };
+    }),
+
+    // Get conversation analytics
+    getConversationStats: protectedProcedure.query(async ({ ctx }) => {
+      const conversations = await getConversationsByCreatorId(ctx.user.id);
+      const personalities = await getInfluencerPersonalitiesByUserId(ctx.user.id);
+      
+      return {
+        totalConversations: conversations.length,
+        activeConversations: conversations.filter(c => c.status === "active").length,
+        totalPersonalities: personalities.length,
+        personalityStats: personalities.map(p => ({
+          id: p.id,
+          name: p.name,
+          conversations: p.totalConversations,
+          messages: p.totalMessages,
+          revenue: p.totalRevenue,
+        })),
+      };
     }),
   }),
 

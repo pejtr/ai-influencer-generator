@@ -246,3 +246,168 @@ export const batchJobs = mysqlTable("batchJobs", {
 
 export type BatchJob = typeof batchJobs.$inferSelect;
 export type InsertBatchJob = typeof batchJobs.$inferInsert;
+
+
+// ============================================
+// AI CHAT COMPANION TABLES
+// ============================================
+
+// AI Influencer Personalities - defines how the AI chatbot behaves
+export const influencerPersonalities = mysqlTable("influencerPersonalities", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // Creator who owns this personality
+  name: varchar("name", { length: 100 }).notNull(),
+  bio: text("bio"),
+  avatarUrl: text("avatarUrl"),
+  // Personality traits
+  personalityType: mysqlEnum("personalityType", ["flirty", "friendly", "mysterious", "playful", "sophisticated", "bold"]).default("friendly").notNull(),
+  chatStyle: mysqlEnum("chatStyle", ["casual", "formal", "romantic", "witty", "seductive"]).default("casual").notNull(),
+  responseLength: mysqlEnum("responseLength", ["short", "medium", "long"]).default("medium").notNull(),
+  // Custom traits as JSON
+  customTraits: json("customTraits").$type<string[]>(),
+  interests: json("interests").$type<string[]>(),
+  // Settings
+  welcomeMessage: text("welcomeMessage"),
+  autoResponseDelay: int("autoResponseDelay").default(2000).notNull(), // ms delay before responding
+  isActive: boolean("isActive").default(true).notNull(),
+  // Stats
+  totalConversations: int("totalConversations").default(0).notNull(),
+  totalMessages: int("totalMessages").default(0).notNull(),
+  totalRevenue: decimal("totalRevenue", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type InfluencerPersonality = typeof influencerPersonalities.$inferSelect;
+export type InsertInfluencerPersonality = typeof influencerPersonalities.$inferInsert;
+
+// Chat conversations between fans and AI influencers
+export const chatConversations = mysqlTable("chatConversations", {
+  id: int("id").autoincrement().primaryKey(),
+  fanUserId: int("fanUserId").notNull(), // The fan chatting
+  personalityId: int("personalityId").notNull(), // Which AI personality
+  creatorUserId: int("creatorUserId").notNull(), // Creator who owns the personality
+  // Stats
+  messageCount: int("messageCount").default(0).notNull(),
+  fanSpent: decimal("fanSpent", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  lastMessageAt: timestamp("lastMessageAt"),
+  // Status
+  status: mysqlEnum("status", ["active", "archived", "blocked"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatConversation = typeof chatConversations.$inferInsert;
+
+// Individual chat messages
+export const chatMessages = mysqlTable("chatMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull(),
+  role: mysqlEnum("role", ["fan", "ai", "system"]).notNull(),
+  content: text("content").notNull(),
+  // For content recommendations
+  hasContentOffer: boolean("hasContentOffer").default(false).notNull(),
+  offeredContentId: int("offeredContentId"),
+  // Payment for this message (pay-per-message model)
+  isPaid: boolean("isPaid").default(false).notNull(),
+  messageCost: decimal("messageCost", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  // Metadata
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
+
+// Exclusive content that can be sold through chat
+export const exclusiveContent = mysqlTable("exclusiveContent", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorUserId: int("creatorUserId").notNull(),
+  personalityId: int("personalityId"), // Optional - can be tied to specific personality
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  // Content
+  contentType: mysqlEnum("contentType", ["image", "video", "gallery", "message"]).default("image").notNull(),
+  previewUrl: text("previewUrl"), // Blurred/teaser version
+  fullUrl: text("fullUrl").notNull(), // Actual content
+  // Pricing
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("usd").notNull(),
+  // Stats
+  totalSales: int("totalSales").default(0).notNull(),
+  totalRevenue: decimal("totalRevenue", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ExclusiveContent = typeof exclusiveContent.$inferSelect;
+export type InsertExclusiveContent = typeof exclusiveContent.$inferInsert;
+
+// Content purchases by fans
+export const contentPurchases = mysqlTable("contentPurchases", {
+  id: int("id").autoincrement().primaryKey(),
+  fanUserId: int("fanUserId").notNull(),
+  contentId: int("contentId").notNull(),
+  creatorUserId: int("creatorUserId").notNull(),
+  conversationId: int("conversationId"), // If purchased through chat
+  // Payment
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  platformFee: decimal("platformFee", { precision: 10, scale: 2 }).notNull(), // 10%
+  creatorEarnings: decimal("creatorEarnings", { precision: 10, scale: 2 }).notNull(), // 90%
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  status: mysqlEnum("status", ["pending", "completed", "refunded"]).default("pending").notNull(),
+  purchasedAt: timestamp("purchasedAt").defaultNow().notNull(),
+});
+
+export type ContentPurchase = typeof contentPurchases.$inferSelect;
+export type InsertContentPurchase = typeof contentPurchases.$inferInsert;
+
+// Tips from fans to creators
+export const fanTips = mysqlTable("fanTips", {
+  id: int("id").autoincrement().primaryKey(),
+  fanUserId: int("fanUserId").notNull(),
+  creatorUserId: int("creatorUserId").notNull(),
+  personalityId: int("personalityId"),
+  conversationId: int("conversationId"),
+  // Payment
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  platformFee: decimal("platformFee", { precision: 10, scale: 2 }).notNull(), // 10%
+  creatorEarnings: decimal("creatorEarnings", { precision: 10, scale: 2 }).notNull(), // 90%
+  message: text("message"), // Optional tip message
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  status: mysqlEnum("status", ["pending", "completed", "refunded"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type FanTip = typeof fanTips.$inferSelect;
+export type InsertFanTip = typeof fanTips.$inferInsert;
+
+// Creator earnings from chat companion
+export const creatorEarnings = mysqlTable("creatorEarnings", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorUserId: int("creatorUserId").notNull(),
+  // Totals
+  totalEarnings: decimal("totalEarnings", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  pendingEarnings: decimal("pendingEarnings", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  paidEarnings: decimal("paidEarnings", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  // Breakdown
+  earningsFromContent: decimal("earningsFromContent", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  earningsFromTips: decimal("earningsFromTips", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  earningsFromMessages: decimal("earningsFromMessages", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  // Stats
+  totalFans: int("totalFans").default(0).notNull(),
+  totalConversations: int("totalConversations").default(0).notNull(),
+  totalContentSold: int("totalContentSold").default(0).notNull(),
+  // Payout
+  payoutMethod: mysqlEnum("payoutMethod", ["stripe", "paypal", "bank"]).default("stripe").notNull(),
+  payoutEmail: varchar("payoutEmail", { length: 320 }),
+  payoutThreshold: decimal("payoutThreshold", { precision: 10, scale: 2 }).default("50.00").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CreatorEarnings = typeof creatorEarnings.$inferSelect;
+export type InsertCreatorEarnings = typeof creatorEarnings.$inferInsert;

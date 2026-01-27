@@ -14,6 +14,9 @@ import Scheduler from "./pages/Scheduler";
 import BatchGeneration from "./pages/BatchGeneration";
 import FanvueConnect from "./pages/FanvueConnect";
 import ThemeSwitcher from "./components/ThemeSwitcher";
+import Chat from "./pages/Chat";
+import Companions from "./pages/Companions";
+import CreatorDashboard from "./pages/CreatorDashboard";
 
 function Router() {
   return (
@@ -27,6 +30,10 @@ function Router() {
       <Route path="/scheduler" component={Scheduler} />
       <Route path="/batch" component={BatchGeneration} />
       <Route path="/fanvue" component={FanvueConnect} />
+      <Route path="/chat/:id" component={Chat} />
+      <Route path="/companions" component={Companions} />
+      <Route path="/creator" component={CreatorDashboard} />
+      <Route path="/creator/personalities" component={CreatorDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
