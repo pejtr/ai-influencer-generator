@@ -1614,6 +1614,127 @@ export const appRouter = router({
         totalGenerations: genCount,
       };
     }),
+
+    // ============ KNOWLEDGE BASE MANAGEMENT ============
+    
+    // Get all knowledge items
+    getKnowledgeItems: protectedProcedure
+      .input(z.object({
+        search: z.string().optional(),
+        contentType: z.string().optional(),
+        category: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { searchKnowledgeItems, getAllKnowledgeItems } = await import("./knowledgeBase");
+        
+        if (input?.search || input?.contentType || input?.category || input?.isActive !== undefined) {
+          return searchKnowledgeItems(input.search || "", {
+            contentType: input.contentType,
+            category: input.category,
+            isActive: input.isActive,
+          });
+        }
+        return getAllKnowledgeItems();
+      }),
+
+    // Get single knowledge item
+    getKnowledgeItem: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { getKnowledgeItemById } = await import("./knowledgeBase");
+        const item = await getKnowledgeItemById(input.id);
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Knowledge item not found" });
+        }
+        return item;
+      }),
+
+    // Create knowledge item
+    createKnowledgeItem: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1).max(255),
+        content: z.string().min(1),
+        contentType: z.enum(["platform_feature", "how_to", "best_practice", "faq", "industry", "tip"]),
+        category: z.string().min(1).max(100),
+        tags: z.array(z.string()).default([]),
+        priority: z.number().min(1).max(10).default(5),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { createKnowledgeItem } = await import("./knowledgeBase");
+        const id = await createKnowledgeItem(input);
+        if (!id) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create knowledge item" });
+        }
+        return { id };
+      }),
+
+    // Update knowledge item
+    updateKnowledgeItem: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().min(1).max(255).optional(),
+        content: z.string().min(1).optional(),
+        contentType: z.enum(["platform_feature", "how_to", "best_practice", "faq", "industry", "tip"]).optional(),
+        category: z.string().min(1).max(100).optional(),
+        tags: z.array(z.string()).optional(),
+        priority: z.number().min(1).max(10).optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { updateKnowledgeItem } = await import("./knowledgeBase");
+        const { id, ...updates } = input;
+        const success = await updateKnowledgeItem(id, updates);
+        if (!success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update knowledge item" });
+        }
+        return { success: true };
+      }),
+
+    // Delete knowledge item
+    deleteKnowledgeItem: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { deleteKnowledgeItem } = await import("./knowledgeBase");
+        const success = await deleteKnowledgeItem(input.id);
+        if (!success) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to delete knowledge item" });
+        }
+        return { success: true };
+      }),
+
+    // Get knowledge base stats
+    getKnowledgeStats: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const { getKnowledgeStats } = await import("./knowledgeBase");
+      return getKnowledgeStats();
+    }),
+
+    // Get knowledge categories
+    getKnowledgeCategories: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const { getKnowledgeCategories } = await import("./knowledgeBase");
+      return getKnowledgeCategories();
+    }),
   }),
 });
 

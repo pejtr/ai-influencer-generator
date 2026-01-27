@@ -17,6 +17,7 @@ import ThemeSwitcher from "./components/ThemeSwitcher";
 import Chat from "./pages/Chat";
 import Companions from "./pages/Companions";
 import CreatorDashboard from "./pages/CreatorDashboard";
+import AdminKnowledgeBase from "./pages/AdminKnowledgeBase";
 
 function Router() {
   return (
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/companions" component={Companions} />
       <Route path="/creator" component={CreatorDashboard} />
       <Route path="/creator/personalities" component={CreatorDashboard} />
+      <Route path="/admin/knowledge" component={AdminKnowledgeBase} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { 
   Users, Image, DollarSign, TrendingUp, 
-  Loader2, AlertTriangle
+  Loader2, AlertTriangle, BookOpen
 } from "lucide-react";
 import {
   Card,
@@ -75,11 +75,19 @@ export default function AdminDashboard() {
       <main className="pt-20 pb-8">
         <div className="container">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
-              Monitor your platform's performance and manage users
-            </p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+              <p className="text-muted-foreground">
+                Monitor your platform's performance and manage users
+              </p>
+            </div>
+            <Button asChild>
+              <Link href="/admin/knowledge" className="gap-2">
+                <BookOpen className="w-4 h-4" />
+                Knowledge Base
+              </Link>
+            </Button>
           </div>
 
           {metricsLoading ? (
