@@ -40,6 +40,7 @@ import {
   exchangeCodeForTokens, refreshAccessToken, getFanvueUser,
   publishToFanvue, isFanvueConfigured
 } from "./fanvue/fanvue";
+import { generateVideo, queryVideoStatus, CAMERA_MOVEMENTS, buildVideoPrompt } from "./videoGeneration";
 
 // Character settings schema
 const characterSettingsSchema = z.object({
@@ -838,6 +839,111 @@ export const appRouter = router({
 
       await resumeSubscription(user.stripeSubscriptionId);
       return { success: true };
+    }),
+  }),
+
+  // Video generation
+  video: router({
+    // Create video from image (I2V) or text (T2V)
+    create: protectedProcedure
+      .input(z.object({
+        prompt: z.string().min(10).max(500),
+        imageUrl: z.string().url().optional(), // For I2V
+        model: z.enum(["T2V-01", "T2V-01-Director", "I2V-01", "I2V-01-Director", "I2V-01-live", "MiniMax-Hailuo-02"]).optional(),
+        duration: z.enum(["6", "10"]).optional(),
+        resolution: z.enum(["768P", "1080P"]).optional(),
+        cameraMovement: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Video generation requires pro or creator tier
+        requireTier(user.tier, ["pro", "creator"]);
+
+        // Check credits - video costs 5 credits
+        const creditBalance = await getUserCreditBalance(ctx.user.id);
+        const videoCost = 5;
+        if (!creditBalance || creditBalance.totalAvailable < videoCost) {
+          throw new TRPCError({ 
+            code: "FORBIDDEN", 
+            message: `Not enough credits. Video generation costs ${videoCost} credits.` 
+          });
+        }
+
+        try {
+          // Determine model based on input
+          let model = input.model;
+          if (!model) {
+            model = input.imageUrl ? "I2V-01" : "T2V-01";
+          }
+
+          // Generate video
+          const result = await generateVideo({
+            prompt: input.prompt,
+            firstFrameImage: input.imageUrl,
+            model: model as any,
+            duration: input.duration ? parseInt(input.duration) as 6 | 10 : 6,
+            resolution: input.resolution || "768P",
+            cameraMovement: input.cameraMovement,
+          });
+
+          // Deduct credits
+          const deductResult = await deductCreditsHybrid(ctx.user.id, videoCost);
+          if (!deductResult.success) {
+            throw new TRPCError({ code: "FORBIDDEN", message: deductResult.error || "Failed to deduct credits" });
+          }
+
+          // Log transaction
+          await createCreditTransaction({
+            userId: ctx.user.id,
+            amount: -videoCost,
+            type: "video_generation",
+            creditSource: deductResult.source as "free" | "paid" | "subscription",
+            description: "AI video generation",
+            balanceBefore: creditBalance.totalAvailable,
+            balanceAfter: creditBalance.totalAvailable - videoCost,
+          });
+
+          return {
+            taskId: result.taskId,
+            videoUrl: result.videoUrl,
+            status: result.status,
+          };
+        } catch (error) {
+          console.error("Video generation failed:", error);
+          throw new TRPCError({ 
+            code: "INTERNAL_SERVER_ERROR", 
+            message: "Failed to generate video. Please try again." 
+          });
+        }
+      }),
+
+    // Query video generation status
+    getStatus: protectedProcedure
+      .input(z.object({ taskId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        try {
+          const result = await queryVideoStatus(input.taskId);
+          return result;
+        } catch (error) {
+          console.error("Failed to query video status:", error);
+          throw new TRPCError({ 
+            code: "INTERNAL_SERVER_ERROR", 
+            message: "Failed to check video status." 
+          });
+        }
+      }),
+
+    // Get available camera movements
+    getCameraMovements: publicProcedure.query(() => {
+      return Object.entries(CAMERA_MOVEMENTS).map(([key, value]) => ({
+        id: key,
+        label: key.replace(/([A-Z])/g, " $1").trim(),
+        instruction: value,
+      }));
     }),
   }),
 

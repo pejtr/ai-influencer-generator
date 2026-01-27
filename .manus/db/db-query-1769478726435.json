@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE users ADD COLUMN referredByLevel2 INT NULL;\nALTER TABLE users ADD COLUMN referredByLevel3 INT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute ALTER TABLE users ADD COLUMN referredByLevel2 INT NULL;\nALTER TABLE users ADD COLUMN referredByLevel3 INT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 811
+}

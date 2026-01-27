@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Navbar from "@/components/Navbar";
@@ -8,11 +8,14 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { 
   Sparkles, Shuffle, RotateCcw, Download, Loader2, 
-  User, Palette, Eye, Heart, Wand2, Plus
+  User, Palette, Eye, Heart, Wand2, Plus, Save, FolderOpen,
+  Scissors, Shirt, Video, Edit3, Trash2, ChevronRight
 } from "lucide-react";
 
 // Character options data
@@ -79,6 +82,90 @@ const SKIN_TONES = [
   { id: "deep", label: "Deep", color: "#3D2314" },
 ];
 
+// NEW: Body Types
+const BODY_TYPES = [
+  { id: "slim", label: "Slim", icon: "🧍" },
+  { id: "athletic", label: "Athletic", icon: "💪" },
+  { id: "average", label: "Average", icon: "👤" },
+  { id: "curvy", label: "Curvy", icon: "🌊" },
+  { id: "plus-size", label: "Plus Size", icon: "🌟" },
+  { id: "muscular", label: "Muscular", icon: "🏋️" },
+];
+
+// NEW: Hair Styles
+const HAIR_STYLES = [
+  { id: "straight-long", label: "Straight Long" },
+  { id: "straight-short", label: "Straight Short" },
+  { id: "wavy-long", label: "Wavy Long" },
+  { id: "wavy-medium", label: "Wavy Medium" },
+  { id: "curly", label: "Curly" },
+  { id: "coily", label: "Coily" },
+  { id: "braids", label: "Braids" },
+  { id: "ponytail", label: "Ponytail" },
+  { id: "bun", label: "Bun" },
+  { id: "pixie", label: "Pixie Cut" },
+  { id: "bob", label: "Bob" },
+  { id: "bald", label: "Bald" },
+];
+
+// NEW: Hair Colors
+const HAIR_COLORS = [
+  { id: "black", label: "Black", color: "#1a1a1a" },
+  { id: "dark-brown", label: "Dark Brown", color: "#3d2314" },
+  { id: "brown", label: "Brown", color: "#8B4513" },
+  { id: "light-brown", label: "Light Brown", color: "#A0522D" },
+  { id: "blonde", label: "Blonde", color: "#F5DEB3" },
+  { id: "platinum", label: "Platinum", color: "#E8E8E8" },
+  { id: "red", label: "Red", color: "#B22222" },
+  { id: "auburn", label: "Auburn", color: "#A52A2A" },
+  { id: "gray", label: "Gray", color: "#808080" },
+  { id: "white", label: "White", color: "#FFFFFF" },
+  { id: "pink", label: "Pink", color: "#FF69B4" },
+  { id: "blue", label: "Blue", color: "#4169E1" },
+  { id: "purple", label: "Purple", color: "#8B008B" },
+  { id: "green", label: "Green", color: "#228B22" },
+];
+
+// NEW: Outfit Styles
+const OUTFIT_STYLES = [
+  { id: "casual", label: "Casual", icon: "👕" },
+  { id: "formal", label: "Formal", icon: "👔" },
+  { id: "sporty", label: "Sporty", icon: "🏃" },
+  { id: "elegant", label: "Elegant", icon: "👗" },
+  { id: "streetwear", label: "Streetwear", icon: "🧢" },
+  { id: "bohemian", label: "Bohemian", icon: "🌸" },
+  { id: "business", label: "Business", icon: "💼" },
+  { id: "swimwear", label: "Swimwear", icon: "👙" },
+  { id: "lingerie", label: "Lingerie", icon: "🩱" },
+  { id: "vintage", label: "Vintage", icon: "🎀" },
+];
+
+// NEW: Outfit Colors
+const OUTFIT_COLORS = [
+  { id: "black", label: "Black", color: "#1a1a1a" },
+  { id: "white", label: "White", color: "#FFFFFF" },
+  { id: "red", label: "Red", color: "#DC143C" },
+  { id: "blue", label: "Blue", color: "#4169E1" },
+  { id: "green", label: "Green", color: "#228B22" },
+  { id: "pink", label: "Pink", color: "#FF69B4" },
+  { id: "purple", label: "Purple", color: "#8B008B" },
+  { id: "yellow", label: "Yellow", color: "#FFD700" },
+  { id: "orange", label: "Orange", color: "#FF8C00" },
+  { id: "nude", label: "Nude", color: "#E3BC9A" },
+];
+
+// NEW: Accessories
+const ACCESSORIES = [
+  { id: "none", label: "None" },
+  { id: "necklace", label: "Necklace" },
+  { id: "earrings", label: "Earrings" },
+  { id: "glasses", label: "Glasses" },
+  { id: "sunglasses", label: "Sunglasses" },
+  { id: "hat", label: "Hat" },
+  { id: "watch", label: "Watch" },
+  { id: "bracelet", label: "Bracelet" },
+];
+
 interface CharacterSettings {
   type: string;
   gender: string;
@@ -87,6 +174,12 @@ interface CharacterSettings {
   skinTone: string;
   skinCondition: string;
   age: number;
+  bodyType: string;
+  hairStyle: string;
+  hairColor: string;
+  outfitStyle: string;
+  outfitColor: string;
+  accessory: string;
   customPrompt: string;
 }
 
@@ -98,8 +191,17 @@ const defaultSettings: CharacterSettings = {
   skinTone: "medium",
   skinCondition: "none",
   age: 25,
+  bodyType: "average",
+  hairStyle: "straight-long",
+  hairColor: "brown",
+  outfitStyle: "casual",
+  outfitColor: "black",
+  accessory: "none",
   customPrompt: "",
 };
+
+// Builder section type
+type BuilderSection = "basics" | "appearance" | "hair" | "outfit";
 
 export default function Studio() {
   const { user, isAuthenticated } = useAuth();
@@ -107,10 +209,114 @@ export default function Studio() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState("builder");
+  const [activeSection, setActiveSection] = useState<BuilderSection>("basics");
+  const [savedPresets, setSavedPresets] = useState<{id: string; name: string; thumbnail?: string; settings: CharacterSettings}[]>([]);
+  const [presetName, setPresetName] = useState("");
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [editPrompt, setEditPrompt] = useState("");
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [videoPrompt, setVideoPrompt] = useState("");
+  const [selectedCameraMovement, setSelectedCameraMovement] = useState("");
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoTaskId, setVideoTaskId] = useState<string | null>(null);
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
 
   const { data: userCredits, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
+
+  const { data: cameraMovements } = trpc.video.getCameraMovements.useQuery();
+
+  const videoMutation = trpc.video.create.useMutation({
+    onSuccess: (data) => {
+      if (data.taskId) {
+        setVideoTaskId(data.taskId);
+        toast.info("Video generation started! This may take 1-2 minutes.");
+      }
+      if (data.videoUrl) {
+        setGeneratedVideoUrl(data.videoUrl);
+        toast.success("Video generated successfully!");
+      }
+      refetchCredits();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to generate video");
+    },
+    onSettled: () => {
+      setIsGeneratingVideo(false);
+    },
+  });
+
+  const handleGenerateVideo = () => {
+    if (!generatedImage) {
+      toast.error("Please generate an image first");
+      return;
+    }
+    if (!videoPrompt.trim()) {
+      toast.error("Please enter a video prompt");
+      return;
+    }
+    if ((userCredits?.totalAvailable ?? 0) < 5) {
+      toast.error("Not enough credits. Video generation costs 5 credits.");
+      return;
+    }
+    
+    setIsGeneratingVideo(true);
+    videoMutation.mutate({
+      prompt: videoPrompt,
+      imageUrl: generatedImage,
+      model: selectedCameraMovement ? "I2V-01-Director" : "I2V-01",
+      cameraMovement: selectedCameraMovement || undefined,
+    });
+  };
+
+  // Load saved presets from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("ai-influencer-presets");
+    if (saved) {
+      try {
+        setSavedPresets(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load presets:", e);
+      }
+    }
+  }, []);
+
+  // Save presets to localStorage
+  const savePreset = () => {
+    if (!presetName.trim()) {
+      toast.error("Please enter a name for your preset");
+      return;
+    }
+    const newPreset = {
+      id: Date.now().toString(),
+      name: presetName,
+      thumbnail: generatedImage || undefined,
+      settings: { ...settings },
+    };
+    const updated = [...savedPresets, newPreset];
+    setSavedPresets(updated);
+    localStorage.setItem("ai-influencer-presets", JSON.stringify(updated));
+    setPresetName("");
+    setShowSaveDialog(false);
+    toast.success("Character preset saved!");
+  };
+
+  const loadPreset = (preset: typeof savedPresets[0]) => {
+    setSettings(preset.settings);
+    if (preset.thumbnail) {
+      setGeneratedImage(preset.thumbnail);
+    }
+    toast.success(`Loaded "${preset.name}"`);
+  };
+
+  const deletePreset = (id: string) => {
+    const updated = savedPresets.filter(p => p.id !== id);
+    setSavedPresets(updated);
+    localStorage.setItem("ai-influencer-presets", JSON.stringify(updated));
+    toast.success("Preset deleted");
+  };
 
   const generateMutation = trpc.generation.create.useMutation({
     onSuccess: (data) => {
@@ -135,12 +341,28 @@ export default function Studio() {
     parts.push(`${settings.ethnicity}`);
     parts.push(`${settings.type === "human" ? "person" : settings.type}`);
     
+    // Body type
+    if (settings.bodyType !== "average") {
+      parts.push(`with a ${settings.bodyType} body type`);
+    }
+    
     // Physical features
     parts.push(`with ${settings.eyeColor} eyes`);
     parts.push(`and ${settings.skinTone} skin tone`);
     
+    // Hair
+    parts.push(`. ${settings.hairColor} ${settings.hairStyle} hair`);
+    
     if (settings.skinCondition !== "none") {
       parts.push(`with ${settings.skinCondition}`);
+    }
+    
+    // Outfit
+    parts.push(`. Wearing ${settings.outfitColor} ${settings.outfitStyle} outfit`);
+    
+    // Accessories
+    if (settings.accessory !== "none") {
+      parts.push(`with ${settings.accessory}`);
     }
     
     // Style
@@ -160,8 +382,8 @@ export default function Studio() {
       return;
     }
 
-    if ((userCredits?.credits ?? 0) < 1) {
-      toast.error("Not enough credits. Please upgrade your plan.");
+    if ((userCredits?.totalAvailable ?? 0) < 1) {
+      toast.error("Not enough credits. Please upgrade your plan or buy credits.");
       return;
     }
 
@@ -170,6 +392,21 @@ export default function Studio() {
       prompt: buildPrompt,
       characterSettings: settings,
     });
+  };
+
+  const handleEditWithPrompt = () => {
+    if (!editPrompt.trim()) {
+      toast.error("Please enter an edit prompt");
+      return;
+    }
+    // Add edit prompt to custom prompt and regenerate
+    setSettings(prev => ({
+      ...prev,
+      customPrompt: prev.customPrompt ? `${prev.customPrompt}. ${editPrompt}` : editPrompt
+    }));
+    setShowEditDialog(false);
+    setEditPrompt("");
+    toast.info("Edit applied! Click Generate to see changes.");
   };
 
   const handleRandomize = () => {
@@ -181,6 +418,12 @@ export default function Studio() {
       skinTone: SKIN_TONES[Math.floor(Math.random() * SKIN_TONES.length)].id,
       skinCondition: SKIN_CONDITIONS[Math.floor(Math.random() * SKIN_CONDITIONS.length)].id,
       age: Math.floor(Math.random() * 40) + 18,
+      bodyType: BODY_TYPES[Math.floor(Math.random() * BODY_TYPES.length)].id,
+      hairStyle: HAIR_STYLES[Math.floor(Math.random() * HAIR_STYLES.length)].id,
+      hairColor: HAIR_COLORS[Math.floor(Math.random() * HAIR_COLORS.length)].id,
+      outfitStyle: OUTFIT_STYLES[Math.floor(Math.random() * OUTFIT_STYLES.length)].id,
+      outfitColor: OUTFIT_COLORS[Math.floor(Math.random() * OUTFIT_COLORS.length)].id,
+      accessory: ACCESSORIES[Math.floor(Math.random() * ACCESSORIES.length)].id,
       customPrompt: "",
     });
   };
@@ -199,57 +442,137 @@ export default function Studio() {
     options, 
     value, 
     onChange, 
-    showColor = false 
+    showColor = false,
+    columns = 4
   }: { 
     options: { id: string; label: string; emoji?: string; icon?: string; color?: string }[];
     value: string;
     onChange: (id: string) => void;
     showColor?: boolean;
+    columns?: number;
   }) => (
-    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+    <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
       {options.map((option) => (
         <button
           key={option.id}
           onClick={() => onChange(option.id)}
-          className={`character-option p-3 rounded-lg text-center transition-all ${
-            value === option.id ? "selected bg-primary/10" : "bg-secondary hover:bg-secondary/80"
+          className={`character-option p-2 rounded-lg text-center transition-all ${
+            value === option.id ? "selected bg-primary/20 border-primary border-2" : "bg-secondary hover:bg-secondary/80 border border-border"
           }`}
         >
           {showColor && option.color && (
             <div 
-              className="w-8 h-8 rounded-full mx-auto mb-2 border-2 border-border"
+              className="w-6 h-6 rounded-full mx-auto mb-1 border border-border"
               style={{ backgroundColor: option.color }}
             />
           )}
-          {option.emoji && <span className="text-2xl block mb-1">{option.emoji}</span>}
-          {option.icon && <span className="text-xl block mb-1">{option.icon}</span>}
-          <span className="text-xs font-medium">{option.label}</span>
+          {option.emoji && <span className="text-lg block">{option.emoji}</span>}
+          {option.icon && <span className="text-lg block">{option.icon}</span>}
+          <span className="text-[10px] font-medium leading-tight block">{option.label}</span>
         </button>
       ))}
     </div>
   );
 
+  // Section navigation
+  const sections: { id: BuilderSection; label: string; icon: React.ReactNode }[] = [
+    { id: "basics", label: "Basics", icon: <User className="w-4 h-4" /> },
+    { id: "appearance", label: "Appearance", icon: <Eye className="w-4 h-4" /> },
+    { id: "hair", label: "Hair", icon: <Scissors className="w-4 h-4" /> },
+    { id: "outfit", label: "Outfit", icon: <Shirt className="w-4 h-4" /> },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <main className="pt-20 pb-8">
-        <div className="container">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              <span className="text-primary neon-text">AI Influencer</span> Studio
-            </h1>
-            <p className="text-muted-foreground">
-              Design your unique AI influencer with our easy-to-use character builder
-            </p>
+      <main className="pt-16">
+        {/* Higgsfield-style 3-panel layout */}
+        <div className="h-[calc(100vh-64px)] flex">
+          
+          {/* LEFT PANEL: Character Library */}
+          <div className="w-64 border-r border-border bg-card/50 flex flex-col">
+            <div className="p-4 border-b border-border">
+              <h2 className="font-semibold text-sm flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-primary" />
+                Character Library
+              </h2>
+            </div>
+            
+            <ScrollArea className="flex-1 p-3">
+              <div className="space-y-2">
+                {/* Create New Button */}
+                <button
+                  onClick={handleReset}
+                  className="w-full aspect-square rounded-xl border-2 border-dashed border-primary/50 flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-all group"
+                >
+                  <Plus className="w-8 h-8 text-primary/70 group-hover:text-primary mb-1" />
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground">Create New</span>
+                </button>
+                
+                {/* Saved Presets */}
+                {savedPresets.map((preset) => (
+                  <div
+                    key={preset.id}
+                    className="relative group rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all cursor-pointer"
+                    onClick={() => loadPreset(preset)}
+                  >
+                    {preset.thumbnail ? (
+                      <img 
+                        src={preset.thumbnail} 
+                        alt={preset.name}
+                        className="w-full aspect-square object-cover"
+                      />
+                    ) : (
+                      <div className="w-full aspect-square bg-secondary flex items-center justify-center">
+                        <User className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                      <p className="text-xs text-white font-medium truncate">{preset.name}</p>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deletePreset(preset.id); }}
+                      className="absolute top-2 right-2 p-1 rounded bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                    >
+                      <Trash2 className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                ))}
+                
+                {savedPresets.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    No saved characters yet.<br />Generate and save your first one!
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
           </div>
 
-          <div className="grid lg:grid-cols-[1fr_400px] gap-6">
-            {/* Left: Preview */}
-            <div className="order-2 lg:order-1">
-              <div className="sticky top-24">
-                <div className="aspect-[3/4] max-w-md mx-auto rounded-2xl overflow-hidden bg-card border border-border relative">
+          {/* CENTER PANEL: Preview */}
+          <div className="flex-1 flex flex-col bg-gradient-to-b from-background to-card/30">
+            {/* Preview Header */}
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-bold">
+                  <span className="text-primary neon-text">AI Influencer</span> Studio
+                </h1>
+                <p className="text-xs text-muted-foreground">Design your unique AI influencer</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {isAuthenticated && (
+                  <div className="text-sm bg-secondary/50 px-3 py-1 rounded-full">
+                    <span className="text-primary font-semibold">{userCredits?.totalAvailable ?? 0}</span>
+                    <span className="text-muted-foreground ml-1">credits</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Preview Area */}
+            <div className="flex-1 flex items-center justify-center p-6">
+              <div className="relative w-full max-w-lg">
+                <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
                   {generatedImage ? (
                     <>
                       <img 
@@ -262,28 +585,31 @@ export default function Studio() {
                       )}
                     </>
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-8">
-                      <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-4">
-                        <User className="w-10 h-10" />
+                    <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground p-8 bg-gradient-to-b from-secondary/30 to-secondary/10">
+                      <div className="w-24 h-24 rounded-full bg-secondary/50 flex items-center justify-center mb-4 border border-border">
+                        <User className="w-12 h-12 text-primary/50" />
                       </div>
-                      <p className="text-center font-medium mb-2">Your AI influencer lives here</p>
-                      <p className="text-center text-sm">Design and build your AI influencer from scratch</p>
+                      <p className="text-center font-medium mb-2">Your AI influencer preview</p>
+                      <p className="text-center text-sm text-muted-foreground">Customize settings and click Generate</p>
                     </div>
                   )}
                   
                   {isGenerating && (
-                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-background/90 flex items-center justify-center backdrop-blur-sm">
                       <div className="text-center">
-                        <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-                        <p className="font-medium">Generating your influencer...</p>
-                        <p className="text-sm text-muted-foreground">This may take a moment</p>
+                        <div className="relative">
+                          <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto mb-4" />
+                          <Sparkles className="w-6 h-6 text-primary absolute top-0 right-1/4 animate-pulse" />
+                        </div>
+                        <p className="font-medium text-lg">Generating your influencer...</p>
+                        <p className="text-sm text-muted-foreground">This may take 10-30 seconds</p>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Action buttons */}
-                <div className="flex gap-3 mt-4 max-w-md mx-auto">
+                {/* Action Buttons Below Preview */}
+                <div className="mt-4 flex gap-2">
                   <Button
                     onClick={handleGenerate}
                     disabled={isGenerating}
@@ -295,201 +621,447 @@ export default function Studio() {
                       <Sparkles className="w-5 h-5 mr-2" />
                     )}
                     Generate
-                    {isAuthenticated && (
-                      <span className="ml-2 text-xs opacity-80">
-                        ({userCredits?.credits ?? 0} credits)
-                      </span>
-                    )}
                   </Button>
                   
                   {generatedImage && (
-                    <Button variant="secondary" size="icon" className="h-12 w-12">
-                      <Download className="w-5 h-5" />
-                    </Button>
+                    <>
+                      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+                        <DialogTrigger asChild>
+                          <Button variant="secondary" size="icon" className="h-12 w-12">
+                            <Save className="w-5 h-5" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Save Character Preset</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 pt-4">
+                            <div>
+                              <Label>Preset Name</Label>
+                              <Input
+                                value={presetName}
+                                onChange={(e) => setPresetName(e.target.value)}
+                                placeholder="e.g., Summer Beach Model"
+                                className="mt-2"
+                              />
+                            </div>
+                            <Button onClick={savePreset} className="w-full">
+                              <Save className="w-4 h-4 mr-2" />
+                              Save Preset
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+                        <DialogTrigger asChild>
+                          <Button variant="secondary" size="icon" className="h-12 w-12">
+                            <Edit3 className="w-5 h-5" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Edit with Prompt</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 pt-4">
+                            <div>
+                              <Label>What would you like to change?</Label>
+                              <Textarea
+                                value={editPrompt}
+                                onChange={(e) => setEditPrompt(e.target.value)}
+                                placeholder="e.g., change the dress to red, add sunglasses, make her smile more..."
+                                className="mt-2 min-h-[100px]"
+                              />
+                            </div>
+                            <Button onClick={handleEditWithPrompt} className="w-full">
+                              <Edit3 className="w-4 h-4 mr-2" />
+                              Apply Edit
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      <Button variant="secondary" size="icon" className="h-12 w-12">
+                        <Download className="w-5 h-5" />
+                      </Button>
+
+                      <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
+                        <DialogTrigger asChild>
+                          <Button variant="secondary" size="icon" className="h-12 w-12">
+                            <Video className="w-5 h-5" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                              <Video className="w-5 h-5 text-primary" />
+                              Generate Video
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 pt-4">
+                            <div className="p-3 bg-secondary/30 rounded-lg text-sm">
+                              <p className="text-muted-foreground">Video generation costs <span className="text-primary font-semibold">5 credits</span></p>
+                              <p className="text-xs text-muted-foreground mt-1">Requires PRO or CREATOR subscription</p>
+                            </div>
+                            
+                            <div>
+                              <Label>Video Prompt</Label>
+                              <Textarea
+                                value={videoPrompt}
+                                onChange={(e) => setVideoPrompt(e.target.value)}
+                                placeholder="Describe the motion... e.g., 'She turns her head slowly and smiles', 'Wind blowing through her hair'"
+                                className="mt-2 min-h-[80px]"
+                              />
+                            </div>
+
+                            <div>
+                              <Label>Camera Movement (Optional)</Label>
+                              <div className="grid grid-cols-3 gap-2 mt-2">
+                                <button
+                                  onClick={() => setSelectedCameraMovement("")}
+                                  className={`p-2 rounded-lg text-xs transition-all ${
+                                    !selectedCameraMovement ? "bg-primary/20 border-primary border-2" : "bg-secondary hover:bg-secondary/80 border border-border"
+                                  }`}
+                                >
+                                  None
+                                </button>
+                                {cameraMovements?.slice(0, 8).map((movement) => (
+                                  <button
+                                    key={movement.id}
+                                    onClick={() => setSelectedCameraMovement(movement.instruction)}
+                                    className={`p-2 rounded-lg text-xs transition-all ${
+                                      selectedCameraMovement === movement.instruction ? "bg-primary/20 border-primary border-2" : "bg-secondary hover:bg-secondary/80 border border-border"
+                                    }`}
+                                  >
+                                    {movement.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {generatedVideoUrl && (
+                              <div className="rounded-lg overflow-hidden border border-border">
+                                <video 
+                                  src={generatedVideoUrl} 
+                                  controls 
+                                  className="w-full"
+                                  autoPlay
+                                  loop
+                                />
+                              </div>
+                            )}
+
+                            <Button 
+                              onClick={handleGenerateVideo} 
+                              className="w-full gradient-primary"
+                              disabled={isGeneratingVideo || !videoPrompt.trim()}
+                            >
+                              {isGeneratingVideo ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Generating Video...
+                                </>
+                              ) : (
+                                <>
+                                  <Video className="w-4 h-4 mr-2" />
+                                  Generate Video (5 credits)
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
                   )}
                 </div>
 
-                {/* Prompt preview */}
-                <div className="mt-4 p-4 rounded-lg bg-secondary/50 max-w-md mx-auto">
-                  <p className="text-xs text-muted-foreground mb-1">Generated prompt:</p>
-                  <p className="text-sm">{buildPrompt}</p>
+                {/* Prompt Preview */}
+                <div className="mt-4 p-3 rounded-lg bg-secondary/30 border border-border">
+                  <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Generated Prompt</p>
+                  <p className="text-xs leading-relaxed">{buildPrompt}</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Right: Builder */}
-            <div className="order-1 lg:order-2">
-              <div className="bg-card rounded-2xl border border-border overflow-hidden">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <div className="border-b border-border p-2">
-                    <TabsList className="w-full grid grid-cols-2">
-                      <TabsTrigger value="builder" className="gap-2">
-                        <Wand2 className="w-4 h-4" />
-                        Builder
-                      </TabsTrigger>
-                      <TabsTrigger value="prompt" className="gap-2">
-                        <Sparkles className="w-4 h-4" />
-                        Prompt
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
+          {/* RIGHT PANEL: Builder */}
+          <div className="w-80 border-l border-border bg-card/50 flex flex-col">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+              <div className="border-b border-border p-2">
+                <TabsList className="w-full grid grid-cols-2">
+                  <TabsTrigger value="builder" className="gap-2 text-xs">
+                    <Wand2 className="w-3 h-3" />
+                    Builder
+                  </TabsTrigger>
+                  <TabsTrigger value="prompt" className="gap-2 text-xs">
+                    <Sparkles className="w-3 h-3" />
+                    Prompt
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-                  <div className="p-4">
-                    {/* Quick actions */}
-                    <div className="flex gap-2 mb-4">
-                      <Button variant="outline" size="sm" onClick={handleRandomize} className="flex-1">
-                        <Shuffle className="w-4 h-4 mr-2" />
-                        Random
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleReset} className="flex-1">
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        Reset
-                      </Button>
-                    </div>
+              <div className="p-3 border-b border-border">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleRandomize} className="flex-1 text-xs h-8">
+                    <Shuffle className="w-3 h-3 mr-1" />
+                    Random
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleReset} className="flex-1 text-xs h-8">
+                    <RotateCcw className="w-3 h-3 mr-1" />
+                    Reset
+                  </Button>
+                </div>
+              </div>
 
-                    <TabsContent value="builder" className="mt-0">
-                      <ScrollArea className="h-[60vh]">
-                        <div className="space-y-6 pr-4">
-                          {/* Character Type */}
-                          <div>
-                            <Label className="flex items-center gap-2 mb-3">
-                              <User className="w-4 h-4 text-primary" />
-                              Character Type
-                            </Label>
-                            <OptionGrid
-                              options={CHARACTER_TYPES}
-                              value={settings.type}
-                              onChange={(id) => updateSetting("type", id)}
-                            />
-                          </div>
+              <TabsContent value="builder" className="flex-1 flex flex-col mt-0 overflow-hidden">
+                {/* Section Navigation */}
+                <div className="flex border-b border-border">
+                  {sections.map((section) => (
+                    <button
+                      key={section.id}
+                      onClick={() => setActiveSection(section.id)}
+                      className={`flex-1 p-2 text-xs flex flex-col items-center gap-1 transition-colors ${
+                        activeSection === section.id 
+                          ? "bg-primary/10 text-primary border-b-2 border-primary" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      }`}
+                    >
+                      {section.icon}
+                      <span>{section.label}</span>
+                    </button>
+                  ))}
+                </div>
 
-                          {/* Gender */}
-                          <div>
-                            <Label className="flex items-center gap-2 mb-3">
-                              <Heart className="w-4 h-4 text-primary" />
-                              Gender
-                            </Label>
-                            <OptionGrid
-                              options={GENDERS}
-                              value={settings.gender}
-                              onChange={(id) => updateSetting("gender", id)}
-                            />
-                          </div>
-
-                          {/* Ethnicity */}
-                          <div>
-                            <Label className="flex items-center gap-2 mb-3">
-                              <User className="w-4 h-4 text-primary" />
-                              Ethnicity / Origin
-                            </Label>
-                            <OptionGrid
-                              options={ETHNICITIES}
-                              value={settings.ethnicity}
-                              onChange={(id) => updateSetting("ethnicity", id)}
-                            />
-                          </div>
-
-                          {/* Eye Color */}
-                          <div>
-                            <Label className="flex items-center gap-2 mb-3">
-                              <Eye className="w-4 h-4 text-primary" />
-                              Eye Color
-                            </Label>
-                            <OptionGrid
-                              options={EYE_COLORS}
-                              value={settings.eyeColor}
-                              onChange={(id) => updateSetting("eyeColor", id)}
-                              showColor
-                            />
-                          </div>
-
-                          {/* Skin Tone */}
-                          <div>
-                            <Label className="flex items-center gap-2 mb-3">
-                              <Palette className="w-4 h-4 text-primary" />
-                              Skin Tone
-                            </Label>
-                            <OptionGrid
-                              options={SKIN_TONES}
-                              value={settings.skinTone}
-                              onChange={(id) => updateSetting("skinTone", id)}
-                              showColor
-                            />
-                          </div>
-
-                          {/* Skin Condition */}
-                          <div>
-                            <Label className="flex items-center gap-2 mb-3">
-                              <Heart className="w-4 h-4 text-primary" />
-                              Skin Features
-                            </Label>
-                            <OptionGrid
-                              options={SKIN_CONDITIONS}
-                              value={settings.skinCondition}
-                              onChange={(id) => updateSetting("skinCondition", id)}
-                            />
-                          </div>
-
-                          {/* Age */}
-                          <div>
-                            <Label className="flex items-center gap-2 mb-3">
-                              <User className="w-4 h-4 text-primary" />
-                              Age: {settings.age}
-                            </Label>
-                            <Slider
-                              value={[settings.age]}
-                              onValueChange={([value]) => updateSetting("age", value)}
-                              min={18}
-                              max={70}
-                              step={1}
-                              className="py-4"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>18</span>
-                              <span>70</span>
-                            </div>
-                          </div>
-                        </div>
-                      </ScrollArea>
-                    </TabsContent>
-
-                    <TabsContent value="prompt" className="mt-0">
-                      <div className="space-y-4">
+                <ScrollArea className="flex-1">
+                  <div className="p-4 space-y-5">
+                    {activeSection === "basics" && (
+                      <>
+                        {/* Character Type */}
                         <div>
-                          <Label className="mb-2 block">Custom Prompt</Label>
-                          <Textarea
-                            placeholder="Add custom details to your influencer... (e.g., 'wearing a red dress', 'smiling', 'in a coffee shop')"
-                            value={settings.customPrompt}
-                            onChange={(e) => updateSetting("customPrompt", e.target.value)}
-                            className="min-h-[200px] resize-none"
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <User className="w-3 h-3 text-primary" />
+                            Character Type
+                          </Label>
+                          <OptionGrid
+                            options={CHARACTER_TYPES}
+                            value={settings.type}
+                            onChange={(id) => updateSetting("type", id)}
+                            columns={5}
                           />
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Your custom prompt will be added to the generated description based on your builder selections.
-                        </p>
-                      </div>
-                    </TabsContent>
-                  </div>
-                </Tabs>
-              </div>
 
-              {/* Saved Characters */}
-              {isAuthenticated && (
-                <div className="mt-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">Your Characters</h3>
-                    <Button variant="ghost" size="sm" asChild>
-                      <a href="/gallery">View all</a>
-                    </Button>
+                        {/* Gender */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <Heart className="w-3 h-3 text-primary" />
+                            Gender
+                          </Label>
+                          <OptionGrid
+                            options={GENDERS}
+                            value={settings.gender}
+                            onChange={(id) => updateSetting("gender", id)}
+                            columns={3}
+                          />
+                        </div>
+
+                        {/* Ethnicity */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <User className="w-3 h-3 text-primary" />
+                            Ethnicity
+                          </Label>
+                          <OptionGrid
+                            options={ETHNICITIES}
+                            value={settings.ethnicity}
+                            onChange={(id) => updateSetting("ethnicity", id)}
+                            columns={4}
+                          />
+                        </div>
+
+                        {/* Body Type */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <User className="w-3 h-3 text-primary" />
+                            Body Type
+                          </Label>
+                          <OptionGrid
+                            options={BODY_TYPES}
+                            value={settings.bodyType}
+                            onChange={(id) => updateSetting("bodyType", id)}
+                            columns={3}
+                          />
+                        </div>
+
+                        {/* Age */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <User className="w-3 h-3 text-primary" />
+                            Age: <span className="text-primary font-semibold">{settings.age}</span>
+                          </Label>
+                          <Slider
+                            value={[settings.age]}
+                            onValueChange={([value]) => updateSetting("age", value)}
+                            min={18}
+                            max={70}
+                            step={1}
+                            className="py-2"
+                          />
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>18</span>
+                            <span>70</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {activeSection === "appearance" && (
+                      <>
+                        {/* Eye Color */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <Eye className="w-3 h-3 text-primary" />
+                            Eye Color
+                          </Label>
+                          <OptionGrid
+                            options={EYE_COLORS}
+                            value={settings.eyeColor}
+                            onChange={(id) => updateSetting("eyeColor", id)}
+                            showColor
+                            columns={5}
+                          />
+                        </div>
+
+                        {/* Skin Tone */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <Palette className="w-3 h-3 text-primary" />
+                            Skin Tone
+                          </Label>
+                          <OptionGrid
+                            options={SKIN_TONES}
+                            value={settings.skinTone}
+                            onChange={(id) => updateSetting("skinTone", id)}
+                            showColor
+                            columns={4}
+                          />
+                        </div>
+
+                        {/* Skin Features */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <Heart className="w-3 h-3 text-primary" />
+                            Skin Features
+                          </Label>
+                          <OptionGrid
+                            options={SKIN_CONDITIONS}
+                            value={settings.skinCondition}
+                            onChange={(id) => updateSetting("skinCondition", id)}
+                            columns={4}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {activeSection === "hair" && (
+                      <>
+                        {/* Hair Style */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <Scissors className="w-3 h-3 text-primary" />
+                            Hair Style
+                          </Label>
+                          <OptionGrid
+                            options={HAIR_STYLES}
+                            value={settings.hairStyle}
+                            onChange={(id) => updateSetting("hairStyle", id)}
+                            columns={3}
+                          />
+                        </div>
+
+                        {/* Hair Color */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <Palette className="w-3 h-3 text-primary" />
+                            Hair Color
+                          </Label>
+                          <OptionGrid
+                            options={HAIR_COLORS}
+                            value={settings.hairColor}
+                            onChange={(id) => updateSetting("hairColor", id)}
+                            showColor
+                            columns={5}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {activeSection === "outfit" && (
+                      <>
+                        {/* Outfit Style */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <Shirt className="w-3 h-3 text-primary" />
+                            Outfit Style
+                          </Label>
+                          <OptionGrid
+                            options={OUTFIT_STYLES}
+                            value={settings.outfitStyle}
+                            onChange={(id) => updateSetting("outfitStyle", id)}
+                            columns={5}
+                          />
+                        </div>
+
+                        {/* Outfit Color */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <Palette className="w-3 h-3 text-primary" />
+                            Outfit Color
+                          </Label>
+                          <OptionGrid
+                            options={OUTFIT_COLORS}
+                            value={settings.outfitColor}
+                            onChange={(id) => updateSetting("outfitColor", id)}
+                            showColor
+                            columns={5}
+                          />
+                        </div>
+
+                        {/* Accessories */}
+                        <div>
+                          <Label className="flex items-center gap-2 mb-2 text-xs">
+                            <Sparkles className="w-3 h-3 text-primary" />
+                            Accessories
+                          </Label>
+                          <OptionGrid
+                            options={ACCESSORIES}
+                            value={settings.accessory}
+                            onChange={(id) => updateSetting("accessory", id)}
+                            columns={4}
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    <button className="aspect-square rounded-lg border-2 border-dashed border-border flex items-center justify-center hover:border-primary/50 transition-colors">
-                      <Plus className="w-6 h-6 text-muted-foreground" />
-                    </button>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="prompt" className="flex-1 p-4 mt-0">
+                <div className="space-y-4 h-full flex flex-col">
+                  <div className="flex-1">
+                    <Label className="mb-2 block text-xs">Custom Prompt</Label>
+                    <Textarea
+                      placeholder="Add custom details... (e.g., 'on a beach at sunset', 'holding a coffee cup', 'laughing')"
+                      value={settings.customPrompt}
+                      onChange={(e) => updateSetting("customPrompt", e.target.value)}
+                      className="min-h-[200px] resize-none text-sm"
+                    />
                   </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Your custom prompt will be combined with the builder selections to create the final image.
+                  </p>
                 </div>
-              )}
-            </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </main>
