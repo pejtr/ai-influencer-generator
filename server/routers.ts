@@ -1858,6 +1858,80 @@ export const appRouter = router({
         }
         return { success: true };
       }),
+
+    // ============ CHAT ANALYTICS ============
+    
+    getChatAnalyticsOverview: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { getAnalyticsOverview } = await import("./chatAnalytics");
+        return getAnalyticsOverview(input?.startDate, input?.endDate);
+      }),
+
+    getChatTopTopics: protectedProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(50).default(10),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { getTopTopics } = await import("./chatAnalytics");
+        return getTopTopics(input?.limit ?? 10, input?.startDate, input?.endDate);
+      }),
+
+    getChatSentimentDistribution: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { getSentimentDistribution } = await import("./chatAnalytics");
+        return getSentimentDistribution(input?.startDate, input?.endDate);
+      }),
+
+    getChatTimeSeriesData: protectedProcedure
+      .input(z.object({
+        days: z.number().min(1).max(365).default(30),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { getTimeSeriesData } = await import("./chatAnalytics");
+        return getTimeSeriesData(input?.days ?? 30);
+      }),
+
+    getChatRecentConversations: protectedProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(50).default(10),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+        const { getRecentConversations } = await import("./chatAnalytics");
+        return getRecentConversations(input?.limit ?? 10);
+      }),
+
+    getChatMemoryInsights: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const { getMemoryInsights } = await import("./chatAnalytics");
+      return getMemoryInsights();
+    }),
   }),
 });
 

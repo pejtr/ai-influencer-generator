@@ -569,3 +569,33 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Add "View History" button in admin UI
 - [x] Show history dialog with timeline
 - [x] Add "Restore Version" functionality (backend)
+
+
+## Chatbot Analytics Dashboard - COMPLETED
+
+### Backend Analytics
+- [x] Create analytics aggregation queries
+- [x] Total conversations count endpoint
+- [x] Active users count endpoint
+- [x] Average messages per conversation endpoint
+- [x] Top topics/keywords endpoint
+- [x] Sentiment distribution endpoint
+- [x] Engagement metrics (satisfaction score) endpoint
+- [x] Time-series data for charts (daily/weekly/monthly)
+- [x] Memory usage statistics endpoint
+
+### Dashboard UI
+- [x] Create AdminChatAnalytics page
+- [x] Overview cards (total conversations, active users, avg messages, satisfaction score)
+- [x] Conversations over time chart (line chart with recharts)
+- [x] Top topics bar chart
+- [x] Sentiment distribution pie chart
+- [x] Memory insights section with category breakdown
+- [x] Recent conversations table with mood and engagement badges
+- [ ] Date range filter (UI placeholder added)
+- [ ] Export analytics report button (UI placeholder added)
+
+### Integration
+- [x] Add link from Admin Dashboard to Chat Analytics
+- [x] Add route in App.tsx (/admin/chat-analytics)
+- [x] Style with consistent design system

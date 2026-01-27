@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { 
   Users, Image, DollarSign, TrendingUp, 
-  Loader2, AlertTriangle, BookOpen
+  Loader2, AlertTriangle, BookOpen, BarChart3
 } from "lucide-react";
 import {
   Card,
@@ -82,12 +82,20 @@ export default function AdminDashboard() {
                 Monitor your platform's performance and manage users
               </p>
             </div>
-            <Button asChild>
-              <Link href="/admin/knowledge" className="gap-2">
-                <BookOpen className="w-4 h-4" />
-                Knowledge Base
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="outline">
+                <Link href="/admin/chat-analytics" className="gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Chat Analytics
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link href="/admin/knowledge" className="gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Knowledge Base
+                </Link>
+              </Button>
+            </div>
           </div>
 
           {metricsLoading ? (
