@@ -59,6 +59,17 @@ import {
   generateChatResponse, generateWelcomeMessage, generateContentOfferMessage,
   calculatePlatformFee, MESSAGE_COST 
 } from "./chatCompanion";
+import {
+  getPublicCharacters, getCharacterById, incrementCharacterView, toggleCharacterLike,
+  getPublicPresets, togglePresetLike, incrementPresetUse,
+  toggleCreatorFollow, getCreatorFollowers, isFollowingCreator,
+  getTrendingCharacters, getCategories, getStyles
+} from "./explore";
+import {
+  getUserModels, getModelById, createModel, updateModel, deleteModel,
+  duplicateModel, incrementModelUsage, incrementModelImages,
+  getPublicModels, searchPublicModels
+} from "./aiModels";
 
 // Character settings schema
 const characterSettingsSchema = z.object({
@@ -1558,6 +1569,104 @@ export const appRouter = router({
           input.referenceImageUrl
         );
         return result;
+      }),
+  }),
+
+  // AI Models (APOB-style Model Library)
+  aiModels: router({    // Get user's models
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getUserModels(ctx.user.id);
+    }),
+
+    // Get single model
+    get: protectedProcedure
+      .input(z.object({ modelId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const model = await getModelById(input.modelId, ctx.user.id);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        return model;
+      }),
+
+    // Create new model
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().optional(),
+        previewImageUrl: z.string().optional(),
+        characterSettings: z.any(), // JSON object
+        isPublic: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return createModel({
+          userId: ctx.user.id,
+          ...input,
+        });
+      }),
+
+    // Update model
+    update: protectedProcedure
+      .input(z.object({
+        modelId: z.number(),
+        name: z.string().min(1).max(100).optional(),
+        description: z.string().optional(),
+        previewImageUrl: z.string().optional(),
+        characterSettings: z.any().optional(),
+        isPublic: z.boolean().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { modelId, ...updateData } = input;
+        const model = await updateModel(modelId, ctx.user.id, updateData);
+        if (!model) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        return model;
+      }),
+
+    // Delete model
+    delete: protectedProcedure
+      .input(z.object({ modelId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const success = await deleteModel(input.modelId, ctx.user.id);
+        if (!success) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        return { success };
+      }),
+
+    // Duplicate model
+    duplicate: protectedProcedure
+      .input(z.object({ modelId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const newModel = await duplicateModel(input.modelId, ctx.user.id);
+        if (!newModel) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Model not found" });
+        }
+        return newModel;
+      }),
+
+    // Get public models (for explore/marketplace)
+    public: publicProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).default(50),
+        offset: z.number().min(0).default(0),
+      }).optional())
+      .query(async ({ input }) => {
+        const limit = input?.limit ?? 50;
+        const offset = input?.offset ?? 0;
+        return getPublicModels(limit, offset);
+      }),
+
+    // Search public models
+    search: publicProcedure
+      .input(z.object({
+        query: z.string(),
+        limit: z.number().min(1).max(100).default(50),
+      }))
+      .query(async ({ input }) => {
+        return searchPublicModels(input.query, input.limit);
       }),
   }),
 

@@ -1,0 +1,9 @@
+{
+  "query": "\n-- Add explore/discovery columns to influencerPersonalities\nALTER TABLE influencerPersonalities \nADD COLUMN isPublic BOOLEAN DEFAULT FALSE,\nADD COLUMN viewCount INT DEFAULT 0,\nADD COLUMN likeCount INT DEFAULT 0,\nADD COLUMN category VARCHAR(100),\nADD COLUMN style VARCHAR(100);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute \n-- Add explore/discovery columns to influencerPersonalities\nALTER TABLE influencerPersonalities \nADD COLUMN isPublic BOOLEAN DEFAULT FALSE,\nADD COLUMN viewCount INT DEFAULT 0,\nADD COLUMN likeCount INT DEFAULT 0,\nADD COLUMN category VARCHAR(100),\nADD COLUMN style VARCHAR(100);\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1711
+}

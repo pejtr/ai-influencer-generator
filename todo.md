@@ -599,3 +599,149 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Add link from Admin Dashboard to Chat Analytics
 - [x] Add route in App.tsx (/admin/chat-analytics)
 - [x] Style with consistent design system
+
+
+## Explore/Discovery Section (Foxy.ai Inspired) - NEW
+
+### Database Schema
+- [ ] Create public_characters table (shared AI influencers)
+- [ ] Create preset_marketplace table (shareable prompt presets)
+- [ ] Create character_likes table (user engagement tracking)
+- [ ] Create character_views table (analytics)
+- [ ] Add is_public flag to existing characters table
+
+### Character Gallery
+- [ ] Public character gallery with grid/list view
+- [ ] Character detail modal with stats and preview images
+- [ ] Filter by category (fashion, fitness, lifestyle, business, etc.)
+- [ ] Filter by style (realistic, anime, artistic, cinematic)
+- [ ] Search by name, tags, creator
+- [ ] Sort by trending, newest, most liked, most viewed
+- [ ] "Use This Character" button to clone to user's account
+
+### Preset Marketplace
+- [ ] Browse prompt presets created by community
+- [ ] Preset categories (portrait, action, scene, product, etc.)
+- [ ] Preview images for each preset
+- [ ] "Try This Preset" button to apply to user's character
+- [ ] Like and save favorite presets
+- [ ] Creator attribution and stats
+
+### Trending & Discovery
+- [ ] Trending characters section (most views/likes in 7 days)
+- [ ] Featured creators spotlight
+- [ ] "New This Week" section
+- [ ] Personalized recommendations based on user's style
+
+### Collaboration Features
+- [ ] Share character publicly toggle in Studio
+- [ ] Share preset publicly toggle
+- [ ] Creator profile pages with their public characters
+- [ ] Follow/unfollow creators
+- [ ] Activity feed showing new public characters
+
+### Batch Generation
+- [ ] Select multiple presets at once
+- [ ] Generate all selected presets in one batch
+- [ ] Progress indicator for batch jobs
+- [ ] Download all results as ZIP
+
+### Integration
+- [ ] Add "Explore" link to main navigation
+- [ ] Add "Share Publicly" button in Studio
+- [ ] Add "My Public Characters" section in user dashboard
+
+
+## APOB.ai Inspired Features - PRIORITY ⭐
+
+### Model Library System (Phase 1 - Core) ✅
+- [x] Create "My Models" page to manage multiple AI characters
+- [x] Save character settings as reusable models
+- [x] Model cards with preview image, name, description
+- [x] Edit/delete/duplicate models
+- [x] Set model as private or public
+- [x] Model usage statistics (times used, images generated)
+- [x] Quick-load model into Studio
+- [x] Backend API (create, read, update, delete, duplicate)
+- [x] Database table (ai_models)
+- [x] Public models endpoint for marketplace
+
+### Enhanced History Page (Phase 1 - Core)
+- [ ] Comprehensive history with all generations
+- [ ] Filter by date range, model, type (image/video)
+- [ ] Search by prompt or tags
+- [ ] Bulk actions (delete, download, publish)
+- [ ] Private/public toggle for each generation
+- [ ] Watermark removal option (paid tiers)
+- [ ] Export history as CSV/JSON
+
+### Voice Cloning Integration (Phase 2 - Advanced)
+- [ ] Integrate ElevenLabs or similar voice API
+- [ ] Create voice model from audio sample (1-5 min)
+- [ ] Store voice model ID per character
+- [ ] Text-to-speech with custom voice
+- [ ] Voice preview before generation
+- [ ] Voice library management
+- [ ] Assign voice to AI influencer model
+
+### ReVideo System (Phase 2 - Game Changer) 🔥
+- [ ] Research motion transfer technology options
+- [ ] Implement ReMotion: transfer motion from video to AI model
+- [ ] Implement ReCharacter: swap character in video
+- [ ] Implement ReStyle: change video artistic style
+- [ ] Talking avatar with lip sync (Wav2Lip or similar)
+- [ ] Video face swap functionality
+- [ ] Preview before full generation
+
+### Chat-to-Edit Images (Phase 2 - Advanced)
+- [ ] Natural language image editing interface
+- [ ] Parse edit commands ("change dress to red", "add sunglasses")
+- [ ] Use DALL-E edit or SD inpainting
+- [ ] Show before/after comparison
+- [ ] Edit history with undo/redo
+- [ ] Save edited versions
+
+### Clothing Editor (Phase 2 - Advanced)
+- [ ] Segment clothing area automatically
+- [ ] Browse clothing presets (dresses, tops, pants, etc.)
+- [ ] Custom clothing from text prompt
+- [ ] Preserve face/body consistency
+- [ ] Try-on multiple outfits quickly
+- [ ] Save favorite outfits to model
+
+### Monetization Dashboard (Phase 3 - Revenue) 💰
+- [ ] Creator earnings overview
+- [ ] Revenue per model analytics
+- [ ] Integration with OnlyFans/Fanvue API
+- [ ] Stripe Connect for direct payouts
+- [ ] Revenue sharing for public models (marketplace)
+- [ ] Performance metrics (views, likes, conversions)
+- [ ] A/B testing for different content styles
+- [ ] AI recommendations for profitable content
+
+### Community & Marketplace (Phase 4 - Future)
+- [ ] Public model marketplace
+- [ ] Browse community creations
+- [ ] Filter by category, style, popularity
+- [ ] Clone/remix public models
+- [ ] Revenue sharing (70/30 split)
+- [ ] Creator profiles with followers
+- [ ] Trending models section
+- [ ] Featured creators spotlight
+
+### Concurrent Generation (Technical)
+- [ ] Queue system for multiple generations
+- [ ] Background processing with progress tracking
+- [ ] Tier-based concurrent limits (1/3/7/18)
+- [ ] Priority queue for paid tiers
+- [ ] Real-time progress updates via WebSocket
+- [ ] Cancel/pause generation
+
+### Advanced Pricing Tiers (Update)
+- [ ] Update pricing to match APOB model
+- [ ] Free: 10 credits/day, 1 model, watermark
+- [ ] Pro: $10/month, 5,000 credits, 3 models
+- [ ] Creator: $25/month, 50,000 credits, 10 models
+- [ ] Enterprise: $75/month, 150,000 credits, 25 models, revenue sharing
+- [ ] Credits rollover option
+- [ ] Buy additional credit packs

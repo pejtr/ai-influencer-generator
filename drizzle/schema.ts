@@ -272,8 +272,14 @@ export const influencerPersonalities = mysqlTable("influencerPersonalities", {
   isActive: boolean("isActive").default(true).notNull(),
   // Stats
   totalConversations: int("totalConversations").default(0).notNull(),
-  totalMessages: int("totalMessages").default(0).notNull(),
+  messageCount: int("messageCount").default(0).notNull(),
   totalRevenue: decimal("totalRevenue", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  // Explore/Discovery
+  isPublic: boolean("isPublic").default(false).notNull(),
+  viewCount: int("viewCount").default(0).notNull(),
+  likeCount: int("likeCount").default(0).notNull(),
+  category: varchar("category", { length: 100 }), // fashion, fitness, lifestyle, business, etc.
+  style: varchar("style", { length: 100 }), // realistic, anime, artistic, cinematic
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -526,3 +532,61 @@ export const chatContextCache = mysqlTable("chatContextCache", {
 
 export type ChatContextCache = typeof chatContextCache.$inferSelect;
 export type InsertChatContextCache = typeof chatContextCache.$inferInsert;
+
+
+// ============================================
+// EXPLORE / DISCOVERY SECTION (Foxy.ai inspired)
+// ============================================
+
+// Preset Marketplace - shareable prompt presets
+export const presetMarketplace = mysqlTable("presetMarketplace", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // Creator who made the preset
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  promptData: json("promptData").notNull(), // Full prompt configuration
+  category: varchar("category", { length: 100 }), // portrait, action, scene, product, etc.
+  tags: text("tags"), // Comma-separated tags
+  previewImageUrl: text("previewImageUrl"),
+  isPublic: boolean("isPublic").default(true).notNull(),
+  likeCount: int("likeCount").default(0).notNull(),
+  useCount: int("useCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PresetMarketplace = typeof presetMarketplace.$inferSelect;
+export type InsertPresetMarketplace = typeof presetMarketplace.$inferInsert;
+
+// Character Likes - track which characters users like
+export const characterLikes = mysqlTable("characterLikes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  personalityId: int("personalityId").notNull(), // Reference to influencerPersonalities
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CharacterLike = typeof characterLikes.$inferSelect;
+export type InsertCharacterLike = typeof characterLikes.$inferInsert;
+
+// Preset Likes - track which presets users like
+export const presetLikes = mysqlTable("presetLikes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  presetId: int("presetId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PresetLike = typeof presetLikes.$inferSelect;
+export type InsertPresetLike = typeof presetLikes.$inferInsert;
+
+// Creator Follows - follow/unfollow creators
+export const creatorFollows = mysqlTable("creatorFollows", {
+  id: int("id").autoincrement().primaryKey(),
+  followerId: int("followerId").notNull(), // User who follows
+  creatorId: int("creatorId").notNull(), // Creator being followed
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CreatorFollow = typeof creatorFollows.$inferSelect;
+export type InsertCreatorFollow = typeof creatorFollows.$inferInsert;

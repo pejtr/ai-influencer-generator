@@ -19,6 +19,7 @@ import Companions from "./pages/Companions";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import AdminKnowledgeBase from "./pages/AdminKnowledgeBase";
 import { AdminChatAnalytics } from "./pages/AdminChatAnalytics";
+import MyModels from "./pages/MyModels";
 
 function Router() {
   return (
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/creator/personalities" component={CreatorDashboard} />
       <Route path="/admin/knowledge" component={AdminKnowledgeBase} />
       <Route path="/admin/chat-analytics" component={AdminChatAnalytics} />
+      <Route path="/models" component={MyModels} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
