@@ -590,3 +590,40 @@ export const creatorFollows = mysqlTable("creatorFollows", {
 
 export type CreatorFollow = typeof creatorFollows.$inferSelect;
 export type InsertCreatorFollow = typeof creatorFollows.$inferInsert;
+
+
+// ============================================
+// BLOG & SEO SYSTEM
+// ============================================
+
+// Blog articles for SEO and content marketing
+export const blogArticles = mysqlTable("blogArticles", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(), // URL-friendly slug
+  title: varchar("title", { length: 255 }).notNull(),
+  excerpt: text("excerpt"), // Short description for listings
+  content: text("content").notNull(), // Full article content (Markdown)
+  featuredImageUrl: text("featuredImageUrl"),
+  // SEO fields
+  metaTitle: varchar("metaTitle", { length: 70 }), // SEO title (max 70 chars)
+  metaDescription: varchar("metaDescription", { length: 160 }), // SEO description (max 160 chars)
+  keywords: text("keywords"), // Comma-separated keywords
+  // Categorization
+  category: varchar("category", { length: 100 }).notNull(), // tutorials, guides, news, case-studies
+  tags: text("tags"), // Comma-separated tags
+  // Publishing
+  status: mysqlEnum("status", ["draft", "published", "archived"]).default("draft").notNull(),
+  publishedAt: timestamp("publishedAt"),
+  // Author
+  authorId: int("authorId"), // User ID of author (optional)
+  authorName: varchar("authorName", { length: 255 }), // Display name
+  // Stats
+  viewCount: int("viewCount").default(0).notNull(),
+  readTimeMinutes: int("readTimeMinutes").default(5).notNull(),
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BlogArticle = typeof blogArticles.$inferSelect;
+export type InsertBlogArticle = typeof blogArticles.$inferInsert;

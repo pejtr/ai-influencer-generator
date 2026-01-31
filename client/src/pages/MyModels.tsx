@@ -40,7 +40,7 @@ export default function MyModels() {
       utils.aiModels.list.invalidate();
       setIsCreateDialogOpen(false);
       setFormData({ name: "", description: "", isPublic: false });
-      toast({ title: "Model created successfully!" });
+      toast.success("Model created successfully!");
     },
   });
   
@@ -49,21 +49,21 @@ export default function MyModels() {
       utils.aiModels.list.invalidate();
       setIsEditDialogOpen(false);
       setSelectedModel(null);
-      toast({ title: "Model updated successfully!" });
+      toast.success("Model updated successfully!");
     },
   });
   
   const deleteMutation = trpc.aiModels.delete.useMutation({
     onSuccess: () => {
       utils.aiModels.list.invalidate();
-      toast({ title: "Model deleted successfully!" });
+      toast.success("Model deleted successfully!");
     },
   });
   
   const duplicateMutation = trpc.aiModels.duplicate.useMutation({
     onSuccess: () => {
       utils.aiModels.list.invalidate();
-      toast({ title: "Model duplicated successfully!" });
+      toast.success("Model duplicated successfully!");
     },
   });
   
@@ -100,7 +100,7 @@ export default function MyModels() {
   const handleLoadModel = (model: any) => {
     // Load character settings into Studio
     localStorage.setItem("characterSettings", JSON.stringify(model.characterSettings));
-    toast({ title: "Model loaded into Studio!" });
+    toast.success("Model loaded into Studio!");
     setLocation("/studio");
   };
   

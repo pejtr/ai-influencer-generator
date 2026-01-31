@@ -745,3 +745,132 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [ ] Enterprise: $75/month, 150,000 credits, 25 models, revenue sharing
 - [ ] Credits rollover option
 - [ ] Buy additional credit packs
+
+
+## Landing Page Redesign (APOB.ai Style) - PRIORITY ⭐
+
+### Hero Section
+- [ ] Full-screen hero with AI influencer background image
+- [ ] Rotating background images (slider/carousel)
+- [ ] Left-aligned headline "Create your AI Influencer"
+- [ ] CTA button "CREATE FOR FREE" with "No credit card needed"
+- [ ] Bullet points: Scale Impact | Monetize Influence
+- [ ] Stats: "#1 AI Influencer Platform" + "X+ AI Influencers"
+- [ ] Minimal top navigation (Affiliates, Pricing, Blog, Language, Launch App)
+
+### Features Section
+- [ ] Two-column layout (image grid + text)
+- [ ] "Studio-Quality AI Influencer Generator" headline
+- [ ] Expandable text with "Expand" toggle
+- [ ] "CREATE NOW" CTA button
+- [ ] Instagram-style image grid showcase
+
+### Additional Sections
+- [ ] Testimonials/social proof section
+- [ ] Feature highlights with icons
+- [ ] Pricing preview cards
+- [ ] FAQ accordion
+- [ ] Footer with links
+
+### Technical
+- [ ] Responsive design (mobile-first)
+- [ ] Image optimization and lazy loading
+- [ ] Smooth scroll animations
+- [ ] Dark/light theme support
+
+
+## SEO & Marketing System - PRIORITY ⭐
+
+### Technical SEO
+- [ ] Dynamic meta tags per page (title, description, og:image)
+- [ ] XML sitemap generation (/sitemap.xml)
+- [ ] Robots.txt configuration
+- [ ] Canonical URLs
+- [ ] Schema.org structured data (Organization, Product, FAQ)
+- [ ] Open Graph tags for social sharing
+- [ ] Twitter Card meta tags
+
+### Blog System
+- [ ] Create blog page with article listing
+- [ ] Individual blog post pages
+- [ ] Categories and tags
+- [ ] Author profiles
+- [ ] Related posts suggestions
+- [ ] SEO-optimized URLs (/blog/how-to-create-ai-influencer)
+
+### Content Strategy
+- [ ] Keyword research integration
+- [ ] Content calendar management
+- [ ] AI-generated blog post drafts
+- [ ] Internal linking suggestions
+- [ ] Content performance analytics
+
+### Marketing Dashboard
+- [ ] Traffic sources overview
+- [ ] Keyword rankings tracker
+- [ ] Conversion funnel analytics
+- [ ] A/B test results
+- [ ] Social media metrics integration
+- [ ] Email campaign performance
+
+
+## Video Features (from YouTube tutorial) - NEW
+
+### ReVideo Motion Transfer
+- [ ] Upload source video for motion extraction
+- [ ] Apply motion to AI character
+- [ ] Lip sync with audio
+- [ ] Expression transfer
+- [ ] Body pose transfer
+- [ ] Preview before generation
+
+### Talking Avatar
+- [ ] Text-to-speech with custom voice
+- [ ] Lip sync animation
+- [ ] Expression presets (happy, sad, excited, etc.)
+- [ ] Background selection
+- [ ] Export as MP4/GIF
+
+### Video Templates
+- [ ] Pre-made video templates (TikTok, Instagram Reels, YouTube Shorts)
+- [ ] Aspect ratio presets (9:16, 16:9, 1:1)
+- [ ] Duration presets (15s, 30s, 60s)
+- [ ] Music/audio library
+- [ ] Text overlay templates
+
+
+
+## APOB.ai Style Landing Page Redesign - COMPLETED
+- [x] Fullscreen hero section with AI influencer background
+- [x] Rotating background images (3 images)
+- [x] Lime-green accent color scheme
+- [x] Left-aligned headline "Create your AI Influencer"
+- [x] Clear CTA buttons (CREATE FOR FREE, Watch Demo)
+- [x] Minimal top navigation (AFFILIATES, PRICING, BLOG, LAUNCH APP)
+- [x] Stats section (600K+ influencers, 50K+ creators, 4.9/5 rating, $2M+ earnings)
+- [x] Two-column features section with image grid
+- [x] Use cases section (Instagram, Twitter/X, YouTube, OnlyFans)
+- [x] Features grid (6 features)
+- [x] How it works (3 steps)
+- [x] Final CTA section
+- [x] Footer with links
+
+## SEO System & Blog - COMPLETED
+- [x] Create Blog page with article listing
+- [x] Create BlogPost page for individual articles
+- [x] Add blog articles database schema
+- [x] Add seed blog articles (3 SEO-optimized articles)
+- [x] Blog API endpoints (list, getBySlug, getCategories, getRecent, search)
+- [x] Blog unit tests (345 tests passing)
+- [ ] Implement SEO meta tags per page
+- [ ] Add Open Graph tags for social sharing
+- [ ] Create sitemap.xml generator
+- [ ] Add robots.txt
+- [ ] Implement structured data (JSON-LD)
+
+## Video Features (ReVideo, Talking Avatar) - PLANNED
+- [ ] Research ReVideo integration
+- [ ] Implement talking avatar feature
+- [ ] Add lip sync capabilities
+- [ ] Create video generation UI
+

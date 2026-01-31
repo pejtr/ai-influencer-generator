@@ -20,6 +20,8 @@ import CreatorDashboard from "./pages/CreatorDashboard";
 import AdminKnowledgeBase from "./pages/AdminKnowledgeBase";
 import { AdminChatAnalytics } from "./pages/AdminChatAnalytics";
 import MyModels from "./pages/MyModels";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 
 function Router() {
   return (
@@ -40,6 +42,8 @@ function Router() {
       <Route path="/admin/knowledge" component={AdminKnowledgeBase} />
       <Route path="/admin/chat-analytics" component={AdminChatAnalytics} />
       <Route path="/models" component={MyModels} />
+      <Route path="/blog" component={Blog} />
+      <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

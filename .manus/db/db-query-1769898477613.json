@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS blogArticles (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  slug VARCHAR(255) NOT NULL UNIQUE,\n  title VARCHAR(255) NOT NULL,\n  excerpt TEXT,\n  content TEXT NOT NULL,\n  featuredImageUrl TEXT,\n  metaTitle VARCHAR(70),\n  metaDescription VARCHAR(160),\n  keywords TEXT,\n  category VARCHAR(100) NOT NULL,\n  tags TEXT,\n  status ENUM('draft', 'published', 'archived') DEFAULT 'draft' NOT NULL,\n  publishedAt TIMESTAMP NULL,\n  authorId INT,\n  authorName VARCHAR(255),\n  viewCount INT DEFAULT 0 NOT NULL,\n  readTimeMinutes INT DEFAULT 5 NOT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute CREATE TABLE IF NOT EXISTS blogArticles (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  slug VARCHAR(255) NOT NULL UNIQUE,\n  title VARCHAR(255) NOT NULL,\n  excerpt TEXT,\n  content TEXT NOT NULL,\n  featuredImageUrl TEXT,\n  metaTitle VARCHAR(70),\n  metaDescription VARCHAR(160),\n  keywords TEXT,\n  category VARCHAR(100) NOT NULL,\n  tags TEXT,\n  status ENUM('draft', 'published', 'archived') DEFAULT 'draft' NOT NULL,\n  publishedAt TIMESTAMP NULL,\n  authorId INT,\n  authorName VARCHAR(255),\n  viewCount INT DEFAULT 0 NOT NULL,\n  readTimeMinutes INT DEFAULT 5 NOT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 557
+}

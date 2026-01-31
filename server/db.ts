@@ -1032,7 +1032,7 @@ export async function incrementPersonalityStats(personalityId: number, revenue: 
   const db = await getDb();
   if (!db) return;
   await db.update(influencerPersonalities).set({
-    totalMessages: sql`${influencerPersonalities.totalMessages} + 1`,
+    messageCount: sql`${influencerPersonalities.messageCount} + 1`,
     totalRevenue: sql`${influencerPersonalities.totalRevenue} + ${revenue}`,
   }).where(eq(influencerPersonalities.id, personalityId));
 }

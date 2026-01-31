@@ -1478,7 +1478,7 @@ export const appRouter = router({
           id: p.id,
           name: p.name,
           conversations: p.totalConversations,
-          messages: p.totalMessages,
+          messages: p.messageCount,
           revenue: p.totalRevenue,
         })),
       };
@@ -2041,6 +2041,57 @@ export const appRouter = router({
       const { getMemoryInsights } = await import("./chatAnalytics");
       return getMemoryInsights();
     }),
+  }),
+
+  // ============ BLOG SYSTEM ============
+  blog: router({
+    // Get all published articles
+    list: publicProcedure
+      .input(z.object({
+        category: z.string().optional(),
+        limit: z.number().min(1).max(50).default(10),
+        offset: z.number().min(0).default(0),
+      }).optional())
+      .query(async ({ input }) => {
+        const { getBlogArticles } = await import("./blog");
+        return getBlogArticles(input?.category, input?.limit ?? 10, input?.offset ?? 0);
+      }),
+
+    // Get single article by slug
+    getBySlug: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input }) => {
+        const { getBlogArticleBySlug, incrementArticleView } = await import("./blog");
+        const article = await getBlogArticleBySlug(input.slug);
+        if (!article) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Article not found" });
+        }
+        // Increment view count
+        await incrementArticleView(article.id);
+        return article;
+      }),
+
+    // Get categories
+    getCategories: publicProcedure.query(async () => {
+      const { getBlogCategories } = await import("./blog");
+      return getBlogCategories();
+    }),
+
+    // Get recent articles for sidebar
+    getRecent: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(10).default(5) }).optional())
+      .query(async ({ input }) => {
+        const { getRecentBlogArticles } = await import("./blog");
+        return getRecentBlogArticles(input?.limit ?? 5);
+      }),
+
+    // Search articles
+    search: publicProcedure
+      .input(z.object({ query: z.string().min(1).max(100) }))
+      .query(async ({ input }) => {
+        const { searchBlogArticles } = await import("./blog");
+        return searchBlogArticles(input.query);
+      }),
   }),
 });
 

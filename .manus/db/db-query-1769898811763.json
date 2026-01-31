@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id, slug, title, status, publishedAt FROM blogArticles;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute SELECT id, slug, title, status, publishedAt FROM blogArticles;",
+  "rows": [
+    {
+      "id": "1",
+      "slug": "how-to-create-ai-influencer-2026",
+      "title": "How to Create an AI Influencer in 2026: Complete Guide",
+      "status": "published",
+      "publishedAt": "2026-01-31 22:28:21"
+    },
+    {
+      "id": "2",
+      "slug": "best-ai-influencer-generators-2026",
+      "title": "Best AI Influencer Generators in 2026: Top 5 Tools Compared",
+      "status": "published",
+      "publishedAt": "2026-01-31 22:28:21"
+    },
+    {
+      "id": "3",
+      "slug": "monetize-ai-influencer-fanvue",
+      "title": "How to Monetize Your AI Influencer on Fanvue",
+      "status": "published",
+      "publishedAt": "2026-01-31 22:28:21"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tslug\ttitle\tstatus\tpublishedAt\n1\thow-to-create-ai-influencer-2026\tHow to Create an AI Influencer in 2026: Complete Guide\tpublished\t2026-01-31 22:28:21\n2\tbest-ai-influencer-generators-2026\tBest AI Influencer Generators in 2026: Top 5 Tools Compared\tpublished\t2026-01-31 22:28:21\n3\tmonetize-ai-influencer-fanvue\tHow to Monetize Your AI Influencer on Fanvue\tpublished\t2026-01-31 22:28:21\n",
+  "stderr": "",
+  "execution_time_ms": 404
+}
