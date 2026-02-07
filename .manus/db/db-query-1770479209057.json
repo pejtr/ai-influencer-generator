@@ -1,0 +1,145 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "affiliateCommissions"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "affiliatePayouts"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "affiliates"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "ai_models"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "batchJobs"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "blogArticles"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "blogComments"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "blogRatings"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "blog_comments"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "blog_ratings"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "characterLikes"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "character_presets"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "chatContextCache"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "chatConversations"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "chatMessages"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "contentPurchases"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "conversationSummaries"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "conversions"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "creatorEarnings"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "creatorFollows"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "creditPacks"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "creditPurchases"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "creditTransactions"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "exclusiveContent"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "fanTips"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "generations"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "influencerPersonalities"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "influencer_followers"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "knowledgeBase"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "knowledge_base"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "knowledge_base_history"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "marketplace_listings"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "marketplace_transactions"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "notification_preferences"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "notifications"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "page_views"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "presetLikes"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "presetMarketplace"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "push_subscriptions"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "scheduledPosts"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "subscriptions"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "userMemories"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "users"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD": "variant_stats"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD\n__drizzle_migrations\naffiliateCommissions\naffiliatePayouts\naffiliates\nai_models\nbatchJobs\nblogArticles\nblogComments\nblogRatings\nblog_comments\nblog_ratings\ncharacterLikes\ncharacter_presets\nchatContextCache\nchatConversations\nchatMessages\ncontentPurchases\nconversationSummaries\nconversions\ncreatorEarnings\ncreatorFollows\ncreditPacks\ncreditPurchases\ncreditTransactions\nexclusiveContent\nfanTips\ngenerations\ninfluencerPersonalities\ninfluencer_followers\nknowledgeBase\nknowledge_base\nknowledge_base_history\nmarketplace_listings\nmarketplace_transactions\nnotification_preferences\nnotifications\npage_views\npresetLikes\npresetMarketplace\npush_subscriptions\nscheduledPosts\nsubscriptions\nuserMemories\nusers\nvariant_stats\n",
+  "stderr": "",
+  "execution_time_ms": 353
+}

@@ -1,0 +1,25 @@
+{
+  "query": "SHOW TABLES LIKE '%blog%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute SHOW TABLES LIKE '%blog%';",
+  "rows": [
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD (%blog%)": "blogArticles"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD (%blog%)": "blogComments"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD (%blog%)": "blogRatings"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD (%blog%)": "blog_comments"
+    },
+    {
+      "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD (%blog%)": "blog_ratings"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_DtHx6xuQiQvSJ7iXUMCHPD (%blog%)\nblogArticles\nblogComments\nblogRatings\nblog_comments\nblog_ratings\n",
+  "stderr": "",
+  "execution_time_ms": 349
+}

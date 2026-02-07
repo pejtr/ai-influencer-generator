@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, slug, title FROM blogArticles;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute SELECT id, slug, title FROM blogArticles;",
+  "rows": [
+    {
+      "id": "1",
+      "slug": "how-to-create-ai-influencer-2026",
+      "title": "How to Create an AI Influencer in 2026: Complete Guide"
+    },
+    {
+      "id": "2",
+      "slug": "best-ai-influencer-generators-2026",
+      "title": "Best AI Influencer Generators in 2026: Top 5 Tools Compared"
+    },
+    {
+      "id": "3",
+      "slug": "monetize-ai-influencer-fanvue",
+      "title": "How to Monetize Your AI Influencer on Fanvue"
+    },
+    {
+      "id": "30001",
+      "slug": "ai-influencer-tutorial-beginners-guide-2026",
+      "title": "AI Influencer Tutorial: Complete Step-by-Step Guide for Beginners (2026)"
+    },
+    {
+      "id": "30002",
+      "slug": "virtual-influencer-monetization-strategies",
+      "title": "Virtual Influencer Monetization: 7 Proven Strategies to Earn $10K+/Month"
+    },
+    {
+      "id": "30003",
+      "slug": "ai-vs-human-influencer-comparison",
+      "title": "AI Influencer vs Human Influencer: Complete Comparison (2026 Data)"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tslug\ttitle\n1\thow-to-create-ai-influencer-2026\tHow to Create an AI Influencer in 2026: Complete Guide\n2\tbest-ai-influencer-generators-2026\tBest AI Influencer Generators in 2026: Top 5 Tools Compared\n3\tmonetize-ai-influencer-fanvue\tHow to Monetize Your AI Influencer on Fanvue\n30001\tai-influencer-tutorial-beginners-guide-2026\tAI Influencer Tutorial: Complete Step-by-Step Guide for Beginners (2026)\n30002\tvirtual-influencer-monetization-strategies\tVirtual Influencer Monetization: 7 Proven Strategies to Earn $10K+/Month\n30003\tai-vs-human-influencer-comparison\tAI Influencer vs Human Influencer: Complete Comparison (2026 Data)\n",
+  "stderr": "",
+  "execution_time_ms": 363
+}

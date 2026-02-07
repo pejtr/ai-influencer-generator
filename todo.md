@@ -874,3 +874,37 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [ ] Add lip sync capabilities
 - [ ] Create video generation UI
 
+
+
+## Enhancor.ai Design Integration - IN PROGRESS
+- [ ] Redesign landing page in Enhancor.ai style (hero carousel, blue accents, bold condensed typography)
+- [ ] Update navigation: Face Gen, Upscaler, Voice Clone, Motion + ENTER APP button
+- [ ] Add hero carousel with 3 slides rotating (Face Gen, Voice Clone, Build Influencers)
+- [ ] Add "What's New" AI models section with horizontal scrollable cards
+- [ ] Add mission statement section (large italic text + description + CTA)
+- [ ] Add before/after comparison section
+- [ ] Update color scheme to royal blue (#3B5BFE) accent on black background
+- [ ] Add "SCROLL" indicator at bottom of hero
+- [ ] Bold condensed uppercase headlines
+
+## AI Clone Workflow Integration (from nicola.ai docs)
+- [ ] Add Prompt Library page with template categories
+- [ ] Add AI Clone Workflow guide (6-step process)
+- [ ] Add Historical Prompts template section (16 eras)
+- [ ] Add Skyfall-style creative prompt templates
+- [ ] Add prompt template cards with copy-to-clipboard
+
+
+## Enhancor.ai Design Integration - COMPLETED
+- [x] Redesign landing page with Enhancor.ai-style hero carousel
+- [x] Bold condensed Oswald typography for headlines
+- [x] Blue accent color scheme
+- [x] Feature-based navigation (Face Gen, Upscaler, Voice Clone, Motion)
+- [x] White pill ENTER APP button
+- [x] Core Technologies sidebar
+- [x] What's New AI Models section with horizontal scrollable cards
+- [x] Mission statement section
+- [x] Features grid, 3-step workflow, platform icons
+- [x] Dynamic sitemap.xml and robots.txt
+- [x] Blog comments & ratings database tables
+- [x] 6 SEO-optimized blog articles in database
