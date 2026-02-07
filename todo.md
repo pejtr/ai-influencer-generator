@@ -1000,3 +1000,6 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Add swipe indicator (dots/arrows) for What's New cards on mobile
 - [x] Implement sticky bottom navigation bar on mobile
 - [x] Review entire landing page for mobile overflow issues and fix them
+- [x] Implement lazy loading for all images across the site (15 img tags)
+- [x] Redesign mobile hamburger menu into full-screen overlay with large touch targets
+- [x] Add pull-to-refresh feature on Gallery and Studio pages

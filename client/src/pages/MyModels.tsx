@@ -156,7 +156,7 @@ export default function MyModels() {
               {/* Preview Image */}
               <div className="relative aspect-[3/4] bg-muted">
                 {model.previewImageUrl ? (
-                  <img
+                  <img loading="lazy"
                     src={model.previewImageUrl}
                     alt={model.name}
                     className="w-full h-full object-cover"

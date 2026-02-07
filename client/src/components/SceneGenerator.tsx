@@ -260,7 +260,7 @@ export default function SceneGenerator({
                     className="aspect-[4/3] bg-background rounded-lg border border-border flex flex-col items-center justify-center overflow-hidden"
                   >
                     {generatedImage ? (
-                      <img 
+                      <img loading="lazy" 
                         src={generatedImage.imageUrl} 
                         alt={shot?.name || `Shot ${index + 1}`}
                         className="w-full h-full object-cover"

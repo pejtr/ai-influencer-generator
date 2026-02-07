@@ -35,8 +35,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Link } from "wouter";
+import PullToRefresh from "@/components/PullToRefresh";
 
 type SortOption = "newest" | "oldest";
 type StatusFilter = "all" | "completed" | "pending" | "failed";
@@ -53,6 +54,10 @@ export default function Gallery() {
     { limit: 100, offset: 0 },
     { enabled: isAuthenticated }
   );
+
+  const handlePullRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const deleteMutation = trpc.generation.delete.useMutation({
     onSuccess: () => {
@@ -192,6 +197,7 @@ export default function Gallery() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
+      <PullToRefresh onRefresh={handlePullRefresh} className="h-[calc(100vh-4rem)] md:h-auto md:overflow-visible">
       <main className="pt-20 pb-8">
         <div className="container">
           {/* Header */}
@@ -281,7 +287,7 @@ export default function Gallery() {
                   onClick={() => setSelectedImage(gen.id)}
                 >
                   {gen.imageUrl ? (
-                    <img
+                    <img loading="lazy"
                       src={gen.imageUrl}
                       alt={`AI Influencer ${gen.id}`}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -434,7 +440,7 @@ export default function Gallery() {
           {selectedGeneration && (
             <div className="space-y-4">
               <div className="relative aspect-[3/4] max-h-[60vh] rounded-lg overflow-hidden bg-card">
-                <img
+                <img loading="lazy"
                   src={selectedGeneration.imageUrl}
                   alt={`AI Influencer ${selectedGeneration.id}`}
                   className="w-full h-full object-contain"
@@ -538,6 +544,7 @@ export default function Gallery() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </PullToRefresh>
     </div>
   );
 }

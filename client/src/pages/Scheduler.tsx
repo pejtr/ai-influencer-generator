@@ -245,7 +245,7 @@ export default function Scheduler() {
                             : "border-transparent hover:border-[#c8ff00]/50"
                         }`}
                       >
-                        <img
+                        <img loading="lazy"
                           src={gen.imageUrl}
                           alt="Generated"
                           className="w-full h-full object-cover"

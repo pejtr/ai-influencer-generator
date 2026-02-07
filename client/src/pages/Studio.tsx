@@ -32,6 +32,7 @@ import CinematographyPanel from "@/components/CinematographyPanel";
 import SceneGenerator from "@/components/SceneGenerator";
 import ElementsPanel from "@/components/ElementsPanel";
 import TalkingAvatarPanel from "@/components/TalkingAvatarPanel";
+import PullToRefresh from "@/components/PullToRefresh";
 
 // Character options data
 const CHARACTER_TYPES = [
@@ -306,6 +307,10 @@ export default function Studio() {
   const { data: userCredits, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
+
+  const handlePullRefresh = async () => {
+    await refetchCredits();
+  };
 
   const { data: cameraMovements } = trpc.video.getCameraMovements.useQuery();
 
@@ -598,6 +603,7 @@ export default function Studio() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
+      <PullToRefresh onRefresh={handlePullRefresh} className="md:overflow-visible">
       <main className="pt-16">
         {/* Higgsfield-style 3-panel layout */}
         <div className="h-[calc(100vh-64px)] flex">
@@ -630,7 +636,7 @@ export default function Studio() {
                     onClick={() => loadPreset(preset)}
                   >
                     {preset.thumbnail ? (
-                      <img 
+                      <img loading="lazy" 
                         src={preset.thumbnail} 
                         alt={preset.name}
                         className="w-full aspect-square object-cover"
@@ -687,7 +693,7 @@ export default function Studio() {
                 <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
                   {generatedImage ? (
                     <>
-                      <img 
+                      <img loading="lazy" 
                         src={generatedImage} 
                         alt="Generated AI Influencer"
                         className="w-full h-full object-cover"
@@ -1394,6 +1400,7 @@ export default function Studio() {
           </div>
         </div>
       </main>
+      </PullToRefresh>
     </div>
   );
 }
