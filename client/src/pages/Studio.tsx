@@ -31,6 +31,7 @@ import {
 import CinematographyPanel from "@/components/CinematographyPanel";
 import SceneGenerator from "@/components/SceneGenerator";
 import ElementsPanel from "@/components/ElementsPanel";
+import TalkingAvatarPanel from "@/components/TalkingAvatarPanel";
 
 // Character options data
 const CHARACTER_TYPES = [
@@ -946,7 +947,7 @@ export default function Studio() {
           <div className="w-80 border-l border-border bg-card/50 flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
               <div className="border-b border-border p-2">
-                <TabsList className="w-full grid grid-cols-5">
+                <TabsList className="w-full grid grid-cols-6">
                   <TabsTrigger value="builder" className="gap-1 text-[10px] px-1">
                     <Wand2 className="w-3 h-3" />
                     Build
@@ -966,6 +967,10 @@ export default function Studio() {
                   <TabsTrigger value="elements" className="gap-1 text-[10px] px-1">
                     <Image className="w-3 h-3" />
                     Ref
+                  </TabsTrigger>
+                  <TabsTrigger value="voice" className="gap-1 text-[10px] px-1">
+                    <Film className="w-3 h-3" />
+                    Voice
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1372,6 +1377,18 @@ export default function Studio() {
                     toast.success("Reference elements applied!");
                   }}
                 />
+              </TabsContent>
+
+              {/* Voice/Talking Avatar Tab */}
+              <TabsContent value="voice" className="flex-1 flex flex-col mt-0 overflow-hidden">
+                <ScrollArea className="flex-1">
+                  <div className="p-3">
+                    <TalkingAvatarPanel
+                      imageUrl={generatedImage || undefined}
+                      characterName={settings.customPrompt?.split(' ')[0] || 'AI Influencer'}
+                    />
+                  </div>
+                </ScrollArea>
               </TabsContent>
             </Tabs>
           </div>

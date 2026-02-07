@@ -130,6 +130,7 @@ export const creditTransactions = mysqlTable("creditTransactions", {
     "credit_pack_purchase", // One-time credit pack purchase
     "generation", // Credit used for generation
     "video_generation", // Credit used for video generation
+    "audio_generation", // Credit used for talking avatar audio
     "refund", // Refund
     "bonus", // Promotional bonus
     "daily_free", // Daily free credits

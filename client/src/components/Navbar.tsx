@@ -28,6 +28,7 @@ export default function Navbar() {
     { href: "/studio", label: "Studio" },
     { href: "/gallery", label: "Gallery" },
     { href: "/companions", label: "AI Chat" },
+    { href: "/earn", label: "Earn" },
     { href: "/pricing", label: "Pricing" },
   ];
 

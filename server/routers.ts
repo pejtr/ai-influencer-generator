@@ -70,6 +70,14 @@ import {
   duplicateModel, incrementModelUsage, incrementModelImages,
   getPublicModels, searchPublicModels
 } from "./aiModels";
+import {
+  generateTalkingAudio, generateTalkingVideo, listVoices,
+  VOICE_PRESETS, SUPPORTED_LANGUAGES
+} from "./talkingAvatar";
+import {
+  EARN_TIERS, getEarnTier, getNextTierViews, calculateEarnings,
+  MONETIZATION_STRATEGIES, CONTENT_STRATEGY_TIPS, PINTEREST_STRATEGY
+} from "./earnProgram";
 
 // Character settings schema
 const characterSettingsSchema = z.object({
@@ -2139,6 +2147,155 @@ export const appRouter = router({
         const { submitRating } = await import("./blog");
         return submitRating(input.articleId, ctx.user.id, input.rating);
       }),
+  }),
+
+  // ============ TALKING AVATAR ============
+  talkingAvatar: router({
+    // Get available voices
+    getVoices: publicProcedure.query(async () => {
+      return {
+        presets: VOICE_PRESETS,
+        languages: SUPPORTED_LANGUAGES,
+      };
+    }),
+
+    // Generate audio from script
+    generateAudio: protectedProcedure
+      .input(z.object({
+        script: z.string().min(1).max(500),
+        voiceId: z.string().default("Charming_Lady"),
+        emotion: z.enum(["happy", "sad", "angry", "fearful", "disgusted", "surprised", "neutral"]).default("happy"),
+        speed: z.number().min(0.5).max(2.0).default(1.0),
+        language: z.string().default("English"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Check credits - audio costs 2 credits
+        const creditBalance = await getUserCreditBalance(ctx.user.id);
+        const audioCost = 2;
+        if (!creditBalance || creditBalance.totalAvailable < audioCost) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: `Not enough credits. Audio generation costs ${audioCost} credits.`
+          });
+        }
+
+        try {
+          const result = await generateTalkingAudio({
+            script: input.script,
+            voiceId: input.voiceId,
+            emotion: input.emotion,
+            speed: input.speed,
+            language: input.language,
+          });
+
+          // Deduct credits
+          const deductResult = await deductCreditsHybrid(ctx.user.id, audioCost);
+          if (!deductResult.success) {
+            throw new TRPCError({ code: "FORBIDDEN", message: deductResult.error || "Failed to deduct credits" });
+          }
+
+          await createCreditTransaction({
+            userId: ctx.user.id,
+            amount: -audioCost,
+            type: "audio_generation",
+            creditSource: deductResult.source as "free" | "paid" | "subscription",
+            description: "Talking avatar audio generation",
+            balanceBefore: creditBalance.totalAvailable,
+            balanceAfter: creditBalance.totalAvailable - audioCost,
+          });
+
+          return {
+            audioUrl: result.audioUrl,
+          };
+        } catch (error: any) {
+          console.error("Talking avatar audio failed:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to generate audio. Please try again."
+          });
+        }
+      }),
+
+    // Generate talking video from image + script
+    generateVideo: protectedProcedure
+      .input(z.object({
+        imageUrl: z.string().url(),
+        script: z.string().min(1).max(500),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserById(ctx.user.id);
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Video costs 5 credits
+        const creditBalance = await getUserCreditBalance(ctx.user.id);
+        const videoCost = 5;
+        if (!creditBalance || creditBalance.totalAvailable < videoCost) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: `Not enough credits. Talking video costs ${videoCost} credits.`
+          });
+        }
+
+        try {
+          const result = await generateTalkingVideo(input.imageUrl, "", input.script);
+
+          const deductResult = await deductCreditsHybrid(ctx.user.id, videoCost);
+          if (!deductResult.success) {
+            throw new TRPCError({ code: "FORBIDDEN", message: deductResult.error || "Failed to deduct credits" });
+          }
+
+          await createCreditTransaction({
+            userId: ctx.user.id,
+            amount: -videoCost,
+            type: "video_generation",
+            creditSource: deductResult.source as "free" | "paid" | "subscription",
+            description: "Talking avatar video generation",
+            balanceBefore: creditBalance.totalAvailable,
+            balanceAfter: creditBalance.totalAvailable - videoCost,
+          });
+
+          return {
+            taskId: result.taskId,
+            status: result.status,
+          };
+        } catch (error: any) {
+          console.error("Talking avatar video failed:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to generate talking video. Please try again."
+          });
+        }
+      }),
+  }),
+
+  // ============ EARN PROGRAM ============
+  earnProgram: router({
+    // Get earn program info
+    getTiers: publicProcedure.query(() => {
+      return {
+        tiers: EARN_TIERS,
+        strategies: MONETIZATION_STRATEGIES,
+        contentTips: CONTENT_STRATEGY_TIPS,
+        pinterestStrategy: PINTEREST_STRATEGY,
+      };
+    }),
+
+    // Get user's earn stats (mock for now)
+    getMyStats: protectedProcedure.query(async ({ ctx }) => {
+      // In production, this would pull from a real analytics table
+      return {
+        totalViews: 0,
+        totalEarnings: 0,
+        pendingPayout: 0,
+        lifetimeEarnings: 0,
+        contentCount: 0,
+        avgViewsPerContent: 0,
+        tier: "starter" as const,
+        nextTierViews: 10000,
+      };
+    }),
   }),
 });
 

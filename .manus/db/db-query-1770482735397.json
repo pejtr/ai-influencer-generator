@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE creditTransactions MODIFY COLUMN `type` ENUM('subscription_monthly', 'credit_pack_purchase', 'generation', 'video_generation', 'audio_generation', 'refund', 'bonus', 'daily_free', 'admin_adjustment') NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute ALTER TABLE creditTransactions MODIFY COLUMN `type` ENUM('subscription_monthly', 'credit_pack_purchase', 'generation', 'video_generation', 'audio_generation', 'refund', 'bonus', 'daily_free', 'admin_adjustment') NOT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 974
+}

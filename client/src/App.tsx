@@ -24,6 +24,7 @@ import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import PromptLibrary from "./pages/PromptLibrary";
 import CloneWorkflow from "./pages/CloneWorkflow";
+import ContentStrategy from "./pages/ContentStrategy";
 
 function Router() {
   return (
@@ -48,6 +49,8 @@ function Router() {
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/prompts" component={PromptLibrary} />
       <Route path="/workflow" component={CloneWorkflow} />
+      <Route path="/earn" component={ContentStrategy} />
+      <Route path="/content-strategy" component={ContentStrategy} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

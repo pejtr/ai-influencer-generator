@@ -962,3 +962,35 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Full share section in image preview dialog
 - [ ] Copy link to clipboard
 - [ ] Download image button
+
+
+## Higgsfield AI Video Features (from YouTube: BEa0jyDuTrM) - COMPLETED
+- [x] Motion Control: Upload reference video → animate AI character with same motion (already existed)
+- [x] Talking Avatar: Script input → talking video with lip-sync (MiniMax TTS + I2V)
+- [x] Consistent Character: Same face across different poses/outfits/scenes (character presets)
+- [x] Content Strategy Guide page (Pinterest strategy, monetization tips)
+- [x] Enhanced monetization workflow (Earn program with 5 tiers, 6 monetization strategies)
+- [ ] Video export options (MP4, GIF, WebM)
+
+## Talking Avatar Features (New)
+- [x] Voice tab in Studio with 8 voice presets
+- [x] 16 supported languages including Czech
+- [x] 6 emotion options (happy, neutral, sad, angry, surprised, fearful)
+- [x] Speed control (0.5x - 2.0x)
+- [x] Script templates (Product Review, Daily Vlog, Brand Promo, Tutorial, Motivational)
+- [x] Audio generation via MiniMax text_to_audio
+- [x] Video generation via MiniMax I2V model
+- [x] Credit deduction (2 credits for audio, 5 for video)
+- [x] Audio preview with download
+- [x] tRPC router with getVoices, generateAudio, generateVideo endpoints
+
+## Earn Program & Content Strategy (New)
+- [x] Earn Program with 5 tiers (Starter → Legend)
+- [x] Increasing rates per view ($0.001 → $0.008)
+- [x] 6 monetization strategies with step-by-step guides
+- [x] Content Strategy Playbook (5 categories)
+- [x] Pinterest Strategy guide (6 steps)
+- [x] Platform domination section (Instagram, YouTube, Twitter, Pinterest)
+- [x] Earnings calculator
+- [x] Navigation link to /earn page
+- [x] 385 tests passing (20 test files)
