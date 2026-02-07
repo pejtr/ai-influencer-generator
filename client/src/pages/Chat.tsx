@@ -441,7 +441,7 @@ export default function Chat() {
           <div className="py-4">
             {selectedContent?.previewUrl && (
               <div className="relative aspect-video rounded-lg overflow-hidden mb-4">
-                <img loading="lazy"
+                <img loading="lazy" decoding="async"
                   src={selectedContent.previewUrl}
                   alt="Preview"
                   className="w-full h-full object-cover blur-xl"

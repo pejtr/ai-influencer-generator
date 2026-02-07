@@ -636,7 +636,7 @@ export default function Studio() {
                     onClick={() => loadPreset(preset)}
                   >
                     {preset.thumbnail ? (
-                      <img loading="lazy" 
+                      <img loading="lazy" decoding="async" 
                         src={preset.thumbnail} 
                         alt={preset.name}
                         className="w-full aspect-square object-cover"
@@ -693,7 +693,7 @@ export default function Studio() {
                 <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-card border border-border shadow-2xl">
                   {generatedImage ? (
                     <>
-                      <img loading="lazy" 
+                      <img loading="lazy" decoding="async" 
                         src={generatedImage} 
                         alt="Generated AI Influencer"
                         className="w-full h-full object-cover"

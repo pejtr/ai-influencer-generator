@@ -145,7 +145,7 @@ export default function Blog() {
                           {/* Featured Image */}
                           <div className="aspect-video bg-zinc-800 overflow-hidden">
                             {article.featuredImageUrl ? (
-                              <img loading="lazy"
+                              <img loading="lazy" decoding="async"
                                 src={article.featuredImageUrl}
                                 alt={article.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -243,7 +243,7 @@ export default function Blog() {
                       <div className="flex gap-3 group">
                         <div className="w-16 h-16 rounded-lg bg-zinc-800 overflow-hidden flex-shrink-0">
                           {article.featuredImageUrl ? (
-                            <img loading="lazy"
+                            <img loading="lazy" decoding="async"
                               src={article.featuredImageUrl}
                               alt=""
                               className="w-full h-full object-cover"

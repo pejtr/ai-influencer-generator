@@ -1,0 +1,27 @@
+{
+  "name": "AI Influencer Generator",
+  "short_name": "AI Influencer",
+  "description": "Create photorealistic AI influencers in seconds. The #1 AI influencer generator for marketers, brands, and content creators.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "categories": ["creativity", "design", "photo"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

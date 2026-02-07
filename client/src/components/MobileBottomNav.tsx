@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Home, Sparkles, Image, MessageCircle, DollarSign } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { haptic } from "@/lib/haptics";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
@@ -32,6 +33,7 @@ export default function MobileBottomNav() {
           return (
             <Link key={item.href} href={item.href}>
               <button
+                onClick={() => haptic("selection")}
                 className={`flex flex-col items-center justify-center gap-0.5 w-16 h-14 rounded-xl transition-colors ${
                   active
                     ? "text-blue-500"

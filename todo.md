@@ -1003,3 +1003,6 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Implement lazy loading for all images across the site (15 img tags)
 - [x] Redesign mobile hamburger menu into full-screen overlay with large touch targets
 - [x] Add pull-to-refresh feature on Gallery and Studio pages
+- [x] Add decoding="async" to all 15 img tags + ResponsiveImage component with size presets
+- [x] Add PWA manifest, Service Worker (cache-first images, stale-while-revalidate assets, network-first HTML), offline banner
+- [x] Integrate haptic feedback: pull-to-refresh (progressive + threshold), swipe cards, bottom nav, dot indicators

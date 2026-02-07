@@ -208,7 +208,7 @@ export default function BlogPost() {
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <div className="aspect-video rounded-2xl overflow-hidden">
-                <img loading="lazy"
+                <img loading="lazy" decoding="async"
                   src={article.featuredImageUrl}
                   alt={article.title}
                   className="w-full h-full object-cover"
@@ -266,7 +266,7 @@ export default function BlogPost() {
                       <article className="group rounded-xl bg-white/5 border border-white/10 overflow-hidden hover:border-lime-400/50 transition-all">
                         <div className="aspect-video bg-zinc-800 overflow-hidden">
                           {related.featuredImageUrl ? (
-                            <img loading="lazy"
+                            <img loading="lazy" decoding="async"
                               src={related.featuredImageUrl}
                               alt={related.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

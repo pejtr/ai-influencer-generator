@@ -26,6 +26,7 @@ import PromptLibrary from "./pages/PromptLibrary";
 import CloneWorkflow from "./pages/CloneWorkflow";
 import ContentStrategy from "./pages/ContentStrategy";
 import MobileBottomNav from "./components/MobileBottomNav";
+import { useServiceWorker } from "./hooks/useServiceWorker";
 
 function Router() {
   return (
@@ -58,12 +59,37 @@ function Router() {
   );
 }
 
+function OfflineBanner() {
+  const { isOffline, hasUpdate, update } = useServiceWorker();
+
+  if (!isOffline && !hasUpdate) return null;
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[100] text-center text-sm py-1.5 px-4">
+      {isOffline && (
+        <div className="bg-amber-600 text-white">
+          You are offline. Some features may be limited.
+        </div>
+      )}
+      {hasUpdate && !isOffline && (
+        <div className="bg-primary text-white flex items-center justify-center gap-2">
+          <span>A new version is available.</span>
+          <button onClick={update} className="underline font-medium hover:opacity-80">
+            Update now
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
+          <OfflineBanner />
           <Router />
           <MobileBottomNav />
           <ThemeSwitcher />

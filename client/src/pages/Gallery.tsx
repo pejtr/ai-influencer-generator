@@ -287,7 +287,7 @@ export default function Gallery() {
                   onClick={() => setSelectedImage(gen.id)}
                 >
                   {gen.imageUrl ? (
-                    <img loading="lazy"
+                    <img loading="lazy" decoding="async"
                       src={gen.imageUrl}
                       alt={`AI Influencer ${gen.id}`}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -440,7 +440,7 @@ export default function Gallery() {
           {selectedGeneration && (
             <div className="space-y-4">
               <div className="relative aspect-[3/4] max-h-[60vh] rounded-lg overflow-hidden bg-card">
-                <img loading="lazy"
+                <img loading="lazy" decoding="async"
                   src={selectedGeneration.imageUrl}
                   alt={`AI Influencer ${selectedGeneration.id}`}
                   className="w-full h-full object-contain"

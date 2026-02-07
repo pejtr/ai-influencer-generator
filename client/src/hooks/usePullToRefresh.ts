@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { hapticPull, hapticThreshold, hapticSuccess } from "@/lib/haptics";
 
 interface PullToRefreshOptions {
   onRefresh: () => Promise<void>;
@@ -12,15 +13,20 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxPull = 120 }: P
   const [isPulling, setIsPulling] = useState(false);
   const startY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hasPassedThreshold = useRef(false);
+  const lastHapticProgress = useRef(0);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     setPullDistance(threshold);
     try {
       await onRefresh();
+      hapticSuccess();
     } finally {
       setIsRefreshing(false);
       setPullDistance(0);
+      hasPassedThreshold.current = false;
+      lastHapticProgress.current = 0;
     }
   }, [onRefresh, threshold]);
 
@@ -35,6 +41,8 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxPull = 120 }: P
       if (container.scrollTop > 0) return;
       startY.current = e.touches[0].clientY;
       setIsPulling(true);
+      hasPassedThreshold.current = false;
+      lastHapticProgress.current = 0;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -52,6 +60,23 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxPull = 120 }: P
         const resistance = Math.min(diff * 0.5, maxPull);
         setPullDistance(resistance);
         
+        // Progressive haptic feedback during pull
+        const progress = resistance / threshold;
+        if (progress - lastHapticProgress.current > 0.15) {
+          hapticPull(progress);
+          lastHapticProgress.current = progress;
+        }
+
+        // Strong haptic when crossing the threshold
+        if (resistance >= threshold && !hasPassedThreshold.current) {
+          hapticThreshold();
+          hasPassedThreshold.current = true;
+        } else if (resistance < threshold && hasPassedThreshold.current) {
+          // Light haptic when going back below threshold
+          hapticPull(0.3);
+          hasPassedThreshold.current = false;
+        }
+        
         if (resistance > 10) {
           e.preventDefault();
         }
@@ -66,6 +91,8 @@ export function usePullToRefresh({ onRefresh, threshold = 80, maxPull = 120 }: P
         handleRefresh();
       } else {
         setPullDistance(0);
+        hasPassedThreshold.current = false;
+        lastHapticProgress.current = 0;
       }
     };
 

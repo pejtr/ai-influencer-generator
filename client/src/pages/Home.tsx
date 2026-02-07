@@ -10,6 +10,7 @@ import {
   Camera, Mic, Clapperboard, Layers
 } from "lucide-react";
 import ABTestCTA from "../components/ABTestCTA";
+import { hapticSwipe, hapticSuccess } from "@/lib/haptics";
 
 // CDN hero images
 const HERO_SLIDES = [
@@ -388,7 +389,11 @@ export default function Home() {
               const el = e.currentTarget;
               const cardWidth = 300;
               const idx = Math.round(el.scrollLeft / cardWidth);
-              setActiveModelCard(Math.min(idx, AI_MODELS.length - 1));
+              const newIdx = Math.min(idx, AI_MODELS.length - 1);
+              if (newIdx !== activeModelCard) {
+                hapticSwipe();
+              }
+              setActiveModelCard(newIdx);
             }}
           >
             {AI_MODELS.map((model, i) => (
@@ -440,6 +445,7 @@ export default function Home() {
                     : 'bg-white/20 hover:bg-white/40'
                 }`}
                 onClick={() => {
+                  hapticSwipe();
                   const el = modelScrollRef.current;
                   if (el) {
                     const cardWidth = 300;

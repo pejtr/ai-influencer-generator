@@ -149,7 +149,7 @@ export default function ElementsPanel({ onApplyElements, basePrompt }: ElementsP
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center">
                             {element.imageUrl ? (
-                              <img loading="lazy" 
+                              <img loading="lazy" decoding="async" 
                                 src={element.imageUrl} 
                                 alt={element.name}
                                 className="w-full h-full object-cover rounded"
@@ -236,7 +236,7 @@ export default function ElementsPanel({ onApplyElements, basePrompt }: ElementsP
                 />
                 {uploadedImageUrl ? (
                   <div className="relative">
-                    <img loading="lazy" 
+                    <img loading="lazy" decoding="async" 
                       src={uploadedImageUrl} 
                       alt="Uploaded reference"
                       className="w-full h-24 object-cover rounded-lg"
