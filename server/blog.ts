@@ -183,3 +183,135 @@ export async function searchBlogArticles(query: string): Promise<BlogArticle[]> 
     return [];
   }
 }
+
+
+// ==================== COMMENTS ====================
+
+export interface BlogComment {
+  id: number;
+  article_id: number;
+  user_id: number;
+  user_name: string;
+  content: string;
+  parent_id: number | null;
+  status: string;
+  created_at: number;
+  updated_at: number | null;
+}
+
+/**
+ * Get comments for an article
+ */
+export async function getArticleComments(articleId: number): Promise<BlogComment[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const result = await db.execute(sql`
+      SELECT * FROM blog_comments 
+      WHERE article_id = ${articleId} AND status = 'approved'
+      ORDER BY created_at DESC
+    `);
+    return ((result as any)[0] as BlogComment[]) || [];
+  } catch (error) {
+    console.error("[Blog] Error fetching comments:", error);
+    return [];
+  }
+}
+
+/**
+ * Add a comment to an article
+ */
+export async function addComment(
+  articleId: number,
+  userId: number,
+  userName: string,
+  content: string,
+  parentId?: number
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    await db.execute(sql`
+      INSERT INTO blog_comments (article_id, user_id, user_name, content, parent_id, status, created_at)
+      VALUES (${articleId}, ${userId}, ${userName}, ${content}, ${parentId || null}, 'approved', ${Date.now()})
+    `);
+    return true;
+  } catch (error) {
+    console.error("[Blog] Error adding comment:", error);
+    return false;
+  }
+}
+
+// ==================== RATINGS ====================
+
+export interface RatingStats {
+  averageRating: number;
+  totalRatings: number;
+}
+
+/**
+ * Get rating stats for an article
+ */
+export async function getArticleRatingStats(articleId: number): Promise<RatingStats> {
+  const db = await getDb();
+  if (!db) return { averageRating: 0, totalRatings: 0 };
+
+  try {
+    const result = await db.execute(sql`
+      SELECT AVG(rating) as avg_rating, COUNT(*) as total 
+      FROM blog_ratings 
+      WHERE article_id = ${articleId}
+    `);
+    const rows = (result as any)[0] as any[];
+    return {
+      averageRating: rows?.[0]?.avg_rating ? Number(rows[0].avg_rating) : 0,
+      totalRatings: rows?.[0]?.total ? Number(rows[0].total) : 0,
+    };
+  } catch (error) {
+    console.error("[Blog] Error fetching rating stats:", error);
+    return { averageRating: 0, totalRatings: 0 };
+  }
+}
+
+/**
+ * Get user's rating for an article
+ */
+export async function getUserRating(articleId: number, userId: number): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db.execute(sql`
+      SELECT rating FROM blog_ratings 
+      WHERE article_id = ${articleId} AND user_id = ${userId}
+      LIMIT 1
+    `);
+    const rows = (result as any)[0] as any[];
+    return rows?.[0]?.rating ? Number(rows[0].rating) : null;
+  } catch (error) {
+    console.error("[Blog] Error fetching user rating:", error);
+    return null;
+  }
+}
+
+/**
+ * Submit or update a rating
+ */
+export async function submitRating(articleId: number, userId: number, rating: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    await db.execute(sql`
+      INSERT INTO blog_ratings (article_id, user_id, rating, created_at)
+      VALUES (${articleId}, ${userId}, ${rating}, ${Date.now()})
+      ON DUPLICATE KEY UPDATE rating = ${rating}
+    `);
+    return true;
+  } catch (error) {
+    console.error("[Blog] Error submitting rating:", error);
+    return false;
+  }
+}

@@ -908,3 +908,33 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Dynamic sitemap.xml and robots.txt
 - [x] Blog comments & ratings database tables
 - [x] 6 SEO-optimized blog articles in database
+
+
+## Blog Comments UI & Star Rating - COMPLETED
+- [x] Comment form component with text input
+- [x] Star rating component (1-5 stars)
+- [x] Comments list with user avatars and timestamps
+- [x] Reply to comments functionality
+- [x] Average rating display on article cards
+- [x] Integration with existing blog API endpoints
+
+## Google Docs Features Integration - COMPLETED
+- [x] Analyze and implement features from 3 Google documents
+- [x] Prompt Library page with 12 templates (Skyfall, Historical, Portrait, Fashion, Fantasy, Commercial)
+- [x] AI Clone Workflow page (6-step guided process)
+- [x] Category filtering and search in Prompt Library
+- [x] Copy-to-clipboard for all prompts
+- [x] Routes added: /prompts, /workflow
+
+## A/B Testing CTA Buttons - COMPLETED
+- [x] CREATE NOW vs START FREE A/B test
+- [x] Track click events and conversion rates (impressions + clicks)
+- [x] Store variant assignments in localStorage
+- [x] ABTestCTA component with analytics beacon
+- [x] getABTestStats() utility for reading results
+- [ ] Display conversion data in admin dashboard (future)
+
+
+## Bug: Generation fails with empty imageUrl - IN PROGRESS
+- [ ] Fix INSERT into generations failing because imageUrl is empty string
+- [ ] Ensure image generation completes before saving to database

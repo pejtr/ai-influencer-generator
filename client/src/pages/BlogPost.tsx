@@ -6,6 +6,7 @@ import {
   Share2, Twitter, Facebook, Linkedin, Eye
 } from "lucide-react";
 import { Streamdown } from "streamdown";
+import BlogComments from "../components/BlogComments";
 
 export default function BlogPost() {
   const params = useParams<{ slug: string }>();
@@ -241,6 +242,11 @@ export default function BlogPost() {
                 </div>
               </div>
             )}
+
+            {/* Comments & Rating */}
+            <div className="mt-12 pt-8 border-t border-white/10">
+              <BlogComments articleId={article.id} />
+            </div>
           </div>
         </div>
       </section>

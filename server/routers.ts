@@ -2092,6 +2092,53 @@ export const appRouter = router({
         const { searchBlogArticles } = await import("./blog");
         return searchBlogArticles(input.query);
       }),
+
+    // Get comments for an article
+    getComments: publicProcedure
+      .input(z.object({ articleId: z.number() }))
+      .query(async ({ input }) => {
+        const { getArticleComments } = await import("./blog");
+        return getArticleComments(input.articleId);
+      }),
+
+    // Add a comment
+    addComment: protectedProcedure
+      .input(z.object({
+        articleId: z.number(),
+        content: z.string().min(1).max(2000),
+        parentId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { addComment } = await import("./blog");
+        return addComment(input.articleId, ctx.user.id, ctx.user.name || "Anonymous", input.content, input.parentId);
+      }),
+
+    // Get rating stats
+    getRatingStats: publicProcedure
+      .input(z.object({ articleId: z.number() }))
+      .query(async ({ input }) => {
+        const { getArticleRatingStats } = await import("./blog");
+        return getArticleRatingStats(input.articleId);
+      }),
+
+    // Get user's rating
+    getUserRating: protectedProcedure
+      .input(z.object({ articleId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const { getUserRating } = await import("./blog");
+        return getUserRating(input.articleId, ctx.user.id);
+      }),
+
+    // Submit rating
+    submitRating: protectedProcedure
+      .input(z.object({
+        articleId: z.number(),
+        rating: z.number().min(1).max(5),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { submitRating } = await import("./blog");
+        return submitRating(input.articleId, ctx.user.id, input.rating);
+      }),
   }),
 });
 

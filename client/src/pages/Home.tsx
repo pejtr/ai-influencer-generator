@@ -9,6 +9,7 @@ import {
   Wand2, Video, MessageCircle, DollarSign, TrendingUp, Users,
   Camera, Mic, Clapperboard, Layers
 } from "lucide-react";
+import ABTestCTA from "../components/ABTestCTA";
 
 // CDN hero images
 const HERO_SLIDES = [
@@ -266,25 +267,29 @@ export default function Home() {
                   ))}
                 </h1>
 
-                {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                  <Button 
-                    asChild 
-                    size="lg" 
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-base h-14 px-8 rounded-full"
-                  >
-                    {isAuthenticated ? (
-                      <Link href="/studio">
-                        {slide.cta}
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                      </Link>
-                    ) : (
-                      <a href={loginUrl}>
-                        {slide.cta}
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                      </a>
-                    )}
-                  </Button>
+                {/* CTA Buttons - A/B Test on first slide */}
+                <div className="flex flex-col sm:flex-row items-start gap-4 mb-6">
+                  {currentSlide === 0 ? (
+                    <ABTestCTA size="lg" />
+                  ) : (
+                    <Button 
+                      asChild 
+                      size="lg" 
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-base h-14 px-8 rounded-full"
+                    >
+                      {isAuthenticated ? (
+                        <Link href="/studio">
+                          {slide.cta}
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </Link>
+                      ) : (
+                        <a href={loginUrl}>
+                          {slide.cta}
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </a>
+                      )}
+                    </Button>
+                  )}
                   <Button 
                     asChild 
                     variant="outline" 
