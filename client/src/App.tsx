@@ -31,6 +31,7 @@ import { useServiceWorker } from "./hooks/useServiceWorker";
 import InstallBanner from "./components/InstallBanner";
 import { usePwaTracking } from "./hooks/usePwaTracking";
 import { useMobileTracking } from "./hooks/useMobileTracking";
+import { useHeatmapTracking } from "./hooks/useHeatmapTracking";
 
 function Router() {
   return (
@@ -91,6 +92,7 @@ function OfflineBanner() {
 function App() {
   usePwaTracking();
   useMobileTracking();
+  useHeatmapTracking(true);
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">

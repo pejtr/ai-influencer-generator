@@ -1018,3 +1018,14 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] A/B test for PWA install banner (3 variants: Speed/Offline, Creative Studio, Exclusive Features)
 - [x] In-memory cache layer for transformed images (500 entries, 24h TTL, LRU eviction)
 - [x] Connect push notifications with generation completion webhook on backend (notifyGenerationComplete)
+
+## Statistical Significance & Heatmap & Weekly Report
+- [x] A/B test statistical significance: chi-squared test, p-value, confidence interval, winner detection
+- [x] Server-side per-variant A/B analytics query (getPwaABTestResults)
+- [x] Updated PwaAnalytics dashboard with statistical significance cards
+- [x] Touch heatmap visualization component (canvas-based)
+- [x] Heatmap data collection endpoint (per-page touch coordinates)
+- [x] Heatmap section in PWA Analytics dashboard
+- [x] Automated weekly report via scheduled task (PWA metrics, A/B results, mobile engagement)
+- [x] Weekly report notifyOwner integration
+- [x] Unit tests for statistical significance calculations (13 tests, 398 total passing)

@@ -35,7 +35,8 @@ import {
   getOrCreateCreatorEarnings, updateCreatorEarnings, incrementCreatorFans,
   incrementPersonalityStats, incrementPersonalityConversations,
   // PWA Analytics
-  trackPwaEvent, getPwaAnalyticsSummary, getPwaAnalyticsTrend, getPwaAnalyticsByPlatform
+  trackPwaEvent, getPwaAnalyticsSummary, getPwaAnalyticsTrend, getPwaAnalyticsByPlatform,
+  getPwaABTestByVariant, getPwaTouchHeatmapData, getWeeklyReportData
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -2499,6 +2500,68 @@ export const appRouter = router({
       }
       const data = await getPwaAnalyticsByPlatform(input?.days ?? 30);
       return data ?? [];
+    }),
+
+    // Get A/B test per-variant breakdown (admin only)
+    getABTestVariants: protectedProcedure.input(z.object({
+      days: z.number().min(1).max(365).default(30),
+    }).optional()).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const data = await getPwaABTestByVariant(input?.days ?? 30);
+      return data ?? [];
+    }),
+
+    // Get touch heatmap data (admin only)
+    getHeatmapData: protectedProcedure.input(z.object({
+      days: z.number().min(1).max(30).default(7),
+    }).optional()).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const data = await getPwaTouchHeatmapData(input?.days ?? 7);
+      return data ?? [];
+    }),
+
+    // Get weekly report data (admin only)
+    getWeeklyReport: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const data = await getWeeklyReportData();
+      return data;
+    }),
+
+    // Track touch coordinates for heatmap (public)
+    trackTouch: publicProcedure.input(z.object({
+      x: z.number().min(0).max(1), // Normalized 0-1
+      y: z.number().min(0).max(1), // Normalized 0-1
+      page: z.string().max(200),
+      viewportWidth: z.number().int().positive(),
+      viewportHeight: z.number().int().positive(),
+      elementTag: z.string().max(50).optional(),
+      elementId: z.string().max(100).optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const userId = ctx.user?.id;
+      await trackPwaEvent({
+        userId: userId ?? undefined,
+        eventType: "touch_interaction" as any,
+        metadata: {
+          x: input.x,
+          y: input.y,
+          page: input.page,
+          viewportWidth: input.viewportWidth,
+          viewportHeight: input.viewportHeight,
+          elementTag: input.elementTag,
+          elementId: input.elementId,
+          isHeatmapPoint: true,
+        },
+        userAgent: ctx.req?.headers["user-agent"] ?? undefined,
+        platform: /iphone|ipad|ipod/i.test(ctx.req?.headers["user-agent"] || "") ? "ios" :
+                  /android/i.test(ctx.req?.headers["user-agent"] || "") ? "android" : "desktop",
+      });
+      return { success: true };
     }),
   }),
 });

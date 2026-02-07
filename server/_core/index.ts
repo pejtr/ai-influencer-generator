@@ -9,6 +9,39 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleStripeWebhook } from "../stripe/webhook";
 import { registerSeoRoutes } from "../seo";
+import { generateAndSendWeeklyReport } from "../weeklyReportGenerator";
+
+/**
+ * Schedule the weekly report to run every Monday at 8:00 AM UTC.
+ * Uses setInterval with a check for the correct day/hour.
+ */
+function scheduleWeeklyReport() {
+  const CHECK_INTERVAL = 60 * 60 * 1000; // Check every hour
+  let lastReportWeek = -1;
+
+  const checkAndSend = async () => {
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay(); // 0 = Sunday, 1 = Monday
+    const hour = now.getUTCHours();
+    const weekNumber = Math.floor(now.getTime() / (7 * 24 * 60 * 60 * 1000));
+
+    // Send on Monday between 8:00-8:59 UTC, once per week
+    if (dayOfWeek === 1 && hour === 8 && weekNumber !== lastReportWeek) {
+      lastReportWeek = weekNumber;
+      console.log("[Scheduler] Triggering weekly report...");
+      try {
+        await generateAndSendWeeklyReport();
+      } catch (err) {
+        console.error("[Scheduler] Weekly report failed:", err);
+      }
+    }
+  };
+
+  // Run check immediately on startup, then every hour
+  setTimeout(checkAndSend, 5000);
+  setInterval(checkAndSend, CHECK_INTERVAL);
+  console.log("[Scheduler] Weekly report scheduled (Monday 8:00 UTC)");
+}
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -76,6 +109,9 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    
+    // Schedule weekly report - runs every Monday at 8:00 AM UTC
+    scheduleWeeklyReport();
   });
 }
 

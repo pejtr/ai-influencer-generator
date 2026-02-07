@@ -1100,6 +1100,92 @@ export async function getPwaAnalyticsTrend(eventType: string, days: number = 30)
   return rows;
 }
 
+export async function getPwaABTestByVariant(days: number = 30) {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  // Get per-variant stats from metadata JSON
+  const rows = await db.select({
+    eventType: pwaAnalytics.eventType,
+    metadata: pwaAnalytics.metadata,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(pwaAnalytics)
+    .where(and(
+      sql`${pwaAnalytics.eventType} IN ('ab_variant_assigned', 'ab_install_clicked', 'ab_dismiss_clicked')`,
+      gte(pwaAnalytics.createdAt, since)
+    ))
+    .groupBy(pwaAnalytics.eventType, sql`JSON_EXTRACT(${pwaAnalytics.metadata}, '$.variantId')`);
+  return rows;
+}
+
+export async function getPwaTouchHeatmapData(days: number = 7) {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await db.select({
+    metadata: pwaAnalytics.metadata,
+    createdAt: pwaAnalytics.createdAt,
+  })
+    .from(pwaAnalytics)
+    .where(and(
+      eq(pwaAnalytics.eventType, 'touch_interaction' as any),
+      gte(pwaAnalytics.createdAt, since)
+    ))
+    .limit(5000);
+  return rows;
+}
+
+export async function getWeeklyReportData() {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  
+  // Get all events from last 7 days
+  const summary = await db.select({
+    eventType: pwaAnalytics.eventType,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(pwaAnalytics)
+    .where(gte(pwaAnalytics.createdAt, since))
+    .groupBy(pwaAnalytics.eventType);
+
+  // Get platform breakdown
+  const platforms = await db.select({
+    platform: pwaAnalytics.platform,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(pwaAnalytics)
+    .where(gte(pwaAnalytics.createdAt, since))
+    .groupBy(pwaAnalytics.platform);
+
+  // Get session metadata for duration/scroll calculations
+  const sessionEnds = await db.select({
+    metadata: pwaAnalytics.metadata,
+  })
+    .from(pwaAnalytics)
+    .where(and(
+      eq(pwaAnalytics.eventType, 'session_end' as any),
+      gte(pwaAnalytics.createdAt, since)
+    ))
+    .limit(1000);
+
+  // Get page view data for top pages
+  const pageViews = await db.select({
+    metadata: pwaAnalytics.metadata,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(pwaAnalytics)
+    .where(and(
+      eq(pwaAnalytics.eventType, 'page_view' as any),
+      gte(pwaAnalytics.createdAt, since)
+    ))
+    .groupBy(sql`JSON_EXTRACT(${pwaAnalytics.metadata}, '$.url')`)
+    .limit(10);
+
+  return { summary, platforms, sessionEnds, pageViews };
+}
+
 export async function getPwaAnalyticsByPlatform(days: number = 30) {
   const db = await getDb();
   if (!db) return null;
