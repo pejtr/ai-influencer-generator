@@ -628,3 +628,33 @@ export const blogArticles = mysqlTable("blogArticles", {
 
 export type BlogArticle = typeof blogArticles.$inferSelect;
 export type InsertBlogArticle = typeof blogArticles.$inferInsert;
+
+
+// PWA Analytics - Track installs, offline sessions, notification engagement
+export const pwaAnalytics = mysqlTable("pwaAnalytics", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"), // nullable for anonymous events
+  eventType: mysqlEnum("eventType", [
+    "install_prompt_shown",
+    "install_prompt_accepted",
+    "install_prompt_dismissed",
+    "app_installed",
+    "offline_session_start",
+    "offline_session_end",
+    "notification_permission_granted",
+    "notification_permission_denied",
+    "notification_shown",
+    "notification_clicked",
+    "notification_dismissed",
+    "sw_registered",
+    "sw_update_available",
+    "sw_update_applied",
+  ]).notNull(),
+  metadata: json("metadata"), // Additional event data (duration, source, etc.)
+  userAgent: text("userAgent"),
+  platform: varchar("platform", { length: 50 }), // ios, android, desktop
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PwaAnalytic = typeof pwaAnalytics.$inferSelect;
+export type InsertPwaAnalytic = typeof pwaAnalytics.$inferInsert;

@@ -16,8 +16,9 @@ import {
   Sparkles, Shuffle, RotateCcw, Download, Loader2, 
   User, Palette, Eye, Heart, Wand2, Plus, Save, FolderOpen,
   Scissors, Shirt, Video, Edit3, Trash2, ChevronRight, Zap,
-  Camera, Smile, ImageIcon, LayoutGrid, Copy, Clapperboard, Image, Film
+  Camera, Smile, ImageIcon, LayoutGrid, Copy, Clapperboard, Image, Film, Bell
 } from "lucide-react";
+import NotificationSettings from "@/components/NotificationSettings";
 import {
   ALL_TEMPLATES,
   TEMPLATE_CATEGORIES,
@@ -1393,6 +1394,18 @@ export default function Studio() {
                       imageUrl={generatedImage || undefined}
                       characterName={settings.customPrompt?.split(' ')[0] || 'AI Influencer'}
                     />
+                    
+                    {/* Push Notification Settings */}
+                    <div className="mt-6 pt-4 border-t border-border/50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Bell className="w-4 h-4 text-primary" />
+                        <h3 className="text-sm font-semibold">Notification Settings</h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Get notified when your images and videos finish generating.
+                      </p>
+                      <NotificationSettings />
+                    </div>
                   </div>
                 </ScrollArea>
               </TabsContent>

@@ -15,7 +15,8 @@ import {
   exclusiveContent, InsertExclusiveContent,
   contentPurchases, InsertContentPurchase,
   fanTips, InsertFanTip,
-  creatorEarnings, InsertCreatorEarnings
+  creatorEarnings, InsertCreatorEarnings,
+  pwaAnalytics, InsertPwaAnalytic
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -1043,4 +1044,73 @@ export async function incrementPersonalityConversations(personalityId: number) {
   await db.update(influencerPersonalities).set({
     totalConversations: sql`${influencerPersonalities.totalConversations} + 1`,
   }).where(eq(influencerPersonalities.id, personalityId));
+}
+
+
+// ============ PWA Analytics ============
+
+export async function trackPwaEvent(data: {
+  userId?: number;
+  eventType: InsertPwaAnalytic["eventType"];
+  metadata?: Record<string, unknown>;
+  userAgent?: string;
+  platform?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(pwaAnalytics).values({
+    userId: data.userId ?? null,
+    eventType: data.eventType,
+    metadata: data.metadata ?? null,
+    userAgent: data.userAgent ?? null,
+    platform: data.platform ?? null,
+  });
+  return result[0].insertId;
+}
+
+export async function getPwaAnalyticsSummary(days: number = 30) {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await db.select({
+    eventType: pwaAnalytics.eventType,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(pwaAnalytics)
+    .where(gte(pwaAnalytics.createdAt, since))
+    .groupBy(pwaAnalytics.eventType);
+  return rows;
+}
+
+export async function getPwaAnalyticsTrend(eventType: string, days: number = 30) {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await db.select({
+    date: sql<string>`DATE(${pwaAnalytics.createdAt})`,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(pwaAnalytics)
+    .where(and(
+      eq(pwaAnalytics.eventType, eventType as any),
+      gte(pwaAnalytics.createdAt, since)
+    ))
+    .groupBy(sql`DATE(${pwaAnalytics.createdAt})`)
+    .orderBy(sql`DATE(${pwaAnalytics.createdAt})`);
+  return rows;
+}
+
+export async function getPwaAnalyticsByPlatform(days: number = 30) {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await db.select({
+    platform: pwaAnalytics.platform,
+    eventType: pwaAnalytics.eventType,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(pwaAnalytics)
+    .where(gte(pwaAnalytics.createdAt, since))
+    .groupBy(pwaAnalytics.platform, pwaAnalytics.eventType);
+  return rows;
 }

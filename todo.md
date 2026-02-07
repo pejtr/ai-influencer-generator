@@ -1009,3 +1009,6 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Custom "Add to Home Screen" PWA install banner for mobile devices
 - [x] Push notifications via Service Worker for image/video generation completion
 - [x] Server-side image processing for automatic WebP/AVIF conversion (sharp + auto-convert on generation)
+- [x] PWA analytics dashboard (installs, offline sessions, notification engagement) - /admin/pwa-analytics
+- [x] Integrate NotificationSettings into Studio Voice tab
+- [x] Image CDN endpoint for dynamic resize and format conversion (generation.transformImage tRPC endpoint)

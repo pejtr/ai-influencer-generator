@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `pwaAnalytics` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `userId` int,\n  `eventType` enum('install_prompt_shown','install_prompt_accepted','install_prompt_dismissed','app_installed','offline_session_start','offline_session_end','notification_permission_granted','notification_permission_denied','notification_shown','notification_clicked','notification_dismissed','sw_registered','sw_update_available','sw_update_applied') NOT NULL,\n  `metadata` json,\n  `userAgent` text,\n  `platform` varchar(50),\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute CREATE TABLE IF NOT EXISTS `pwaAnalytics` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `userId` int,\n  `eventType` enum('install_prompt_shown','install_prompt_accepted','install_prompt_dismissed','app_installed','offline_session_start','offline_session_end','notification_permission_granted','notification_permission_denied','notification_shown','notification_clicked','notification_dismissed','sw_registered','sw_update_available','sw_update_applied') NOT NULL,\n  `metadata` json,\n  `userAgent` text,\n  `platform` varchar(50),\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 766
+}

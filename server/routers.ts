@@ -33,7 +33,9 @@ import {
   createContentPurchase, getContentPurchasesByFanId, hasUserPurchasedContent,
   createFanTip, getTipsByCreatorId,
   getOrCreateCreatorEarnings, updateCreatorEarnings, incrementCreatorFans,
-  incrementPersonalityStats, incrementPersonalityConversations
+  incrementPersonalityStats, incrementPersonalityConversations,
+  // PWA Analytics
+  trackPwaEvent, getPwaAnalyticsSummary, getPwaAnalyticsTrend, getPwaAnalyticsByPlatform
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -45,7 +47,7 @@ import {
 } from "./stripe/stripe";
 import { TierName, SUBSCRIPTION_TIERS, CREDIT_PACKS } from "./stripe/products";
 import { generateInfluencerImage, buildPromptFromSettings } from "./imageGeneration";
-import { processImageFromUrl, getImageMetadata } from "./imageProcessing";
+import { processImageFromUrl, getImageMetadata, convertToWebP, convertToAvif } from "./imageProcessing";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import {
@@ -289,6 +291,70 @@ export const appRouter = router({
       }
       requireTier(user.tier, ["premium", "vip"]);
       return getUnpublishedGenerations(ctx.user.id, 30);
+    }),
+
+    // Image CDN - Dynamic resize and format conversion
+    transformImage: publicProcedure.input(z.object({
+      imageUrl: z.string().url(),
+      width: z.number().min(16).max(4096).optional(),
+      height: z.number().min(16).max(4096).optional(),
+      format: z.enum(["webp", "avif", "jpeg", "png"]).default("webp"),
+      quality: z.number().min(1).max(100).default(80),
+    })).mutation(async ({ input }) => {
+      try {
+        const response = await fetch(input.imageUrl);
+        if (!response.ok) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Failed to fetch source image" });
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const imageBuffer = Buffer.from(arrayBuffer);
+
+        let convertedBuffer: Buffer;
+        let width: number;
+        let height: number;
+        let mimeType: string;
+
+        const resizeOpts = {
+          quality: input.quality,
+          maxWidth: input.width,
+          maxHeight: input.height,
+        };
+
+        if (input.format === "avif") {
+          const result = await convertToAvif(imageBuffer, resizeOpts);
+          convertedBuffer = result.buffer;
+          width = result.width;
+          height = result.height;
+          mimeType = "image/avif";
+        } else {
+          const result = await convertToWebP(imageBuffer, resizeOpts);
+          convertedBuffer = result.buffer;
+          width = result.width;
+          height = result.height;
+          mimeType = "image/webp";
+        }
+
+        // Upload to S3 with cache-friendly key
+        const hash = nanoid(8);
+        const key = `cdn/${input.format}/${width}x${height}-q${input.quality}-${hash}.${input.format}`;
+        const { url } = await storagePut(key, convertedBuffer, mimeType);
+
+        return {
+          url,
+          width,
+          height,
+          format: input.format,
+          size: convertedBuffer.length,
+          originalSize: imageBuffer.length,
+          savings: Math.round((1 - convertedBuffer.length / imageBuffer.length) * 100),
+        };
+      } catch (error: any) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Image transformation failed: ${error.message}`,
+        });
+      }
     }),
   }),
 
@@ -2309,7 +2375,67 @@ export const appRouter = router({
         nextTierViews: 10000,
       };
     }),
+   }),
+
+  // ============ PWA Analytics ============
+  pwaAnalytics: router({
+    // Track PWA event (public - works for anonymous users too)
+    trackEvent: publicProcedure.input(z.object({
+      eventType: z.enum([
+        "install_prompt_shown", "install_prompt_accepted", "install_prompt_dismissed",
+        "app_installed", "offline_session_start", "offline_session_end",
+        "notification_permission_granted", "notification_permission_denied",
+        "notification_shown", "notification_clicked", "notification_dismissed",
+        "sw_registered", "sw_update_available", "sw_update_applied",
+      ]),
+      metadata: z.record(z.string(), z.unknown()).optional(),
+      platform: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const userId = ctx.user?.id;
+      await trackPwaEvent({
+        userId: userId ?? undefined,
+        eventType: input.eventType,
+        metadata: input.metadata,
+        userAgent: ctx.req?.headers["user-agent"] ?? undefined,
+        platform: input.platform,
+      });
+      return { success: true };
+    }),
+
+    // Get analytics summary (admin only)
+    getSummary: protectedProcedure.input(z.object({
+      days: z.number().min(1).max(365).default(30),
+    }).optional()).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const days = input?.days ?? 30;
+      const summary = await getPwaAnalyticsSummary(days);
+      return summary ?? [];
+    }),
+
+    // Get trend data for specific event type (admin only)
+    getTrend: protectedProcedure.input(z.object({
+      eventType: z.string(),
+      days: z.number().min(1).max(365).default(30),
+    })).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const trend = await getPwaAnalyticsTrend(input.eventType, input.days);
+      return trend ?? [];
+    }),
+
+    // Get platform breakdown (admin only)
+    getByPlatform: protectedProcedure.input(z.object({
+      days: z.number().min(1).max(365).default(30),
+    }).optional()).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const data = await getPwaAnalyticsByPlatform(input?.days ?? 30);
+      return data ?? [];
+    }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

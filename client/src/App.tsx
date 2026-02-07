@@ -25,9 +25,11 @@ import BlogPost from "./pages/BlogPost";
 import PromptLibrary from "./pages/PromptLibrary";
 import CloneWorkflow from "./pages/CloneWorkflow";
 import ContentStrategy from "./pages/ContentStrategy";
+import PwaAnalytics from "./pages/PwaAnalytics";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import InstallBanner from "./components/InstallBanner";
+import { usePwaTracking } from "./hooks/usePwaTracking";
 
 function Router() {
   return (
@@ -54,6 +56,7 @@ function Router() {
       <Route path="/workflow" component={CloneWorkflow} />
       <Route path="/earn" component={ContentStrategy} />
       <Route path="/content-strategy" component={ContentStrategy} />
+      <Route path="/admin/pwa-analytics" component={PwaAnalytics} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -85,6 +88,7 @@ function OfflineBanner() {
 }
 
 function App() {
+  usePwaTracking();
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
