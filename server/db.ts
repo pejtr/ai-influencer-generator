@@ -1186,6 +1186,40 @@ export async function getWeeklyReportData() {
   return { summary, platforms, sessionEnds, pageViews };
 }
 
+export async function getScrollDepthData(days: number = 30) {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await db.select({
+    metadata: pwaAnalytics.metadata,
+    createdAt: pwaAnalytics.createdAt,
+  })
+    .from(pwaAnalytics)
+    .where(and(
+      eq(pwaAnalytics.eventType, 'scroll_depth' as any),
+      gte(pwaAnalytics.createdAt, since)
+    ))
+    .limit(10000);
+  return rows;
+}
+
+export async function getABTestVariantStats() {
+  const db = await getDb();
+  if (!db) return null;
+  // Get all-time variant stats for auto-optimization
+  const rows = await db.select({
+    eventType: pwaAnalytics.eventType,
+    metadata: pwaAnalytics.metadata,
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(pwaAnalytics)
+    .where(
+      sql`${pwaAnalytics.eventType} IN ('ab_variant_assigned', 'ab_install_clicked', 'ab_dismiss_clicked')`
+    )
+    .groupBy(pwaAnalytics.eventType, sql`JSON_EXTRACT(${pwaAnalytics.metadata}, '$.variantId')`);
+  return rows;
+}
+
 export async function getPwaAnalyticsByPlatform(days: number = 30) {
   const db = await getDb();
   if (!db) return null;

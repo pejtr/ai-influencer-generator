@@ -17,17 +17,14 @@ import {
 } from "../shared/abTestStats";
 
 /**
- * Generate and send the weekly report.
- * Called by the scheduled task every Monday.
+ * Build the weekly report data object without sending it.
+ * Used by both the scheduled send and the export endpoints.
  */
-export async function generateAndSendWeeklyReport(): Promise<boolean> {
+export async function generateAndBuildReport(): Promise<WeeklyReportData | null> {
   try {
-    console.log("[WeeklyReport] Generating weekly report...");
-
     const rawData = await getWeeklyReportData();
     if (!rawData || !rawData.summary) {
-      console.warn("[WeeklyReport] No data available for report");
-      return false;
+      return null;
     }
 
     const { summary, platforms, sessionEnds, pageViews } = rawData;
@@ -57,7 +54,6 @@ export async function generateAndSendWeeklyReport(): Promise<boolean> {
     };
 
     if (abData && abData.length > 0) {
-      // Parse per-variant data
       const variantMap = new Map<string, { impressions: number; clicks: number; dismissals: number }>();
       for (const row of abData) {
         const meta = typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata;
@@ -167,6 +163,27 @@ export async function generateAndSendWeeklyReport(): Promise<boolean> {
     };
 
     reportData.recommendations = generateRecommendations(reportData);
+
+    return reportData;
+  } catch (error) {
+    console.error("[WeeklyReport] Error building report:", error);
+    return null;
+  }
+}
+
+/**
+ * Generate and send the weekly report.
+ * Called by the scheduled task every Monday.
+ */
+export async function generateAndSendWeeklyReport(): Promise<boolean> {
+  try {
+    console.log("[WeeklyReport] Generating weekly report...");
+
+    const reportData = await generateAndBuildReport();
+    if (!reportData) {
+      console.warn("[WeeklyReport] No data available for report");
+      return false;
+    }
 
     // Format and send
     const reportText = formatReportForNotification(reportData);

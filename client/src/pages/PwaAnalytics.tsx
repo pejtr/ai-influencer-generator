@@ -5,12 +5,15 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ABTestSignificance from "@/components/admin/ABTestSignificance";
+import ABAutoOptimize from "@/components/admin/ABAutoOptimize";
 import Heatmap from "@/components/admin/Heatmap";
+import ScrollDepthHeatmap from "@/components/admin/ScrollDepthHeatmap";
+import ReportExport from "@/components/admin/ReportExport";
 import { 
   Download, Smartphone, Monitor, Globe, Bell, BellRing, 
   Wifi, WifiOff, RefreshCw, TrendingUp, BarChart3, PieChart,
   ArrowUpRight, ArrowDownRight, Shield, MousePointerClick,
-  FileText, Calendar, Flame
+  FileText, Calendar, Flame, Zap, Layers
 } from "lucide-react";
 import {
   type WeeklyReportData,
@@ -119,7 +122,7 @@ function BarChartSimple({ data, maxValue }: { data: { label: string; value: numb
   );
 }
 
-type TabId = "overview" | "abtest" | "heatmap" | "report";
+type TabId = "overview" | "abtest" | "heatmap" | "scrolldepth" | "report";
 
 export default function PwaAnalytics() {
   const { user } = useAuth();
@@ -152,6 +155,16 @@ export default function PwaAnalytics() {
   const { data: heatmapData } = trpc.pwaAnalytics.getHeatmapData.useQuery(
     { days: Math.min(days, 30) },
     { enabled: isAdmin && activeTab === "heatmap" }
+  );
+
+  const { data: scrollDepthData } = trpc.pwaAnalytics.getScrollDepth.useQuery(
+    { days },
+    { enabled: isAdmin && activeTab === "scrolldepth" }
+  );
+
+  const { data: autoOptimizeData } = trpc.pwaAnalytics.getAutoOptimizeStats.useQuery(
+    undefined,
+    { enabled: isAdmin && activeTab === "abtest" }
   );
 
   const { data: weeklyReportRaw } = trpc.pwaAnalytics.getWeeklyReport.useQuery(
@@ -340,7 +353,8 @@ export default function PwaAnalytics() {
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
     { id: "abtest", label: "A/B Test", icon: <Flame className="w-4 h-4" /> },
-    { id: "heatmap", label: "Heatmap", icon: <MousePointerClick className="w-4 h-4" /> },
+    { id: "heatmap", label: "Touch Map", icon: <MousePointerClick className="w-4 h-4" /> },
+    { id: "scrolldepth", label: "Scroll Depth", icon: <Layers className="w-4 h-4" /> },
     { id: "report", label: "Weekly Report", icon: <FileText className="w-4 h-4" /> },
   ];
 
@@ -609,8 +623,21 @@ export default function PwaAnalytics() {
 
         {/* ==================== A/B TEST TAB ==================== */}
         {activeTab === "abtest" && (
-          <ABTestSignificance
-            variantData={abVariantData ?? []}
+          <div className="space-y-6">
+            <ABTestSignificance
+              variantData={abVariantData ?? []}
+              days={days}
+            />
+            <ABAutoOptimize
+              variantData={autoOptimizeData ?? []}
+            />
+          </div>
+        )}
+
+        {/* ==================== SCROLL DEPTH TAB ==================== */}
+        {activeTab === "scrolldepth" && (
+          <ScrollDepthHeatmap
+            scrollData={scrollDepthData ?? []}
             days={days}
           />
         )}
@@ -872,6 +899,9 @@ export default function PwaAnalytics() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Export Buttons */}
+                <ReportExport />
 
                 {/* Raw Report Preview */}
                 <Card className="bg-card/50 backdrop-blur border-border/50">

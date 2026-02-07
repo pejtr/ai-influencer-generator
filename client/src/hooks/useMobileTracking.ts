@@ -94,10 +94,12 @@ export function useMobileTracking() {
       });
     };
 
-    // Track scroll depth (throttled - max every 5 seconds)
+    // Track scroll depth (throttled - max every 3 seconds)
+    // Tracks at every 10% increment for granular scroll depth heatmap
+    const trackedMilestonesRef = new Set<number>();
     const handleScroll = () => {
       const now = Date.now();
-      if (now - lastScrollTrackRef.current < 5000) return;
+      if (now - lastScrollTrackRef.current < 3000) return;
 
       const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       if (scrollHeight <= 0) return;
@@ -105,18 +107,20 @@ export function useMobileTracking() {
       const currentDepth = Math.round((window.scrollY / scrollHeight) * 100);
       if (currentDepth > maxScrollDepthRef.current) {
         maxScrollDepthRef.current = currentDepth;
+      }
 
-        // Track at 25%, 50%, 75%, 100% milestones
-        const milestones = [25, 50, 75, 100];
-        for (const milestone of milestones) {
-          if (currentDepth >= milestone && maxScrollDepthRef.current - (currentDepth - milestone) < milestone) {
-            track("scroll_depth", {
-              depth: milestone,
-              url: window.location.pathname,
-            });
-            lastScrollTrackRef.current = now;
-            break;
-          }
+      // Track at every 10% milestone (10, 20, 30, ..., 100)
+      const milestones = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+      for (const milestone of milestones) {
+        if (currentDepth >= milestone && !trackedMilestonesRef.has(milestone)) {
+          trackedMilestonesRef.add(milestone);
+          track("scroll_depth", {
+            depth: milestone,
+            url: window.location.pathname,
+            sessionId: sessionStartRef.current.toString(),
+          });
+          lastScrollTrackRef.current = now;
+          break;
         }
       }
     };
@@ -177,6 +181,7 @@ export function useMobileTracking() {
     history.pushState = function (...args) {
       originalPushState.apply(this, args);
       maxScrollDepthRef.current = 0; // Reset scroll depth for new page
+      trackedMilestonesRef.clear(); // Reset tracked milestones for new page
       trackPageView();
     };
 

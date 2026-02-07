@@ -36,7 +36,8 @@ import {
   incrementPersonalityStats, incrementPersonalityConversations,
   // PWA Analytics
   trackPwaEvent, getPwaAnalyticsSummary, getPwaAnalyticsTrend, getPwaAnalyticsByPlatform,
-  getPwaABTestByVariant, getPwaTouchHeatmapData, getWeeklyReportData
+  getPwaABTestByVariant, getPwaTouchHeatmapData, getWeeklyReportData,
+  getScrollDepthData, getABTestVariantStats
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -2562,6 +2563,54 @@ export const appRouter = router({
                   /android/i.test(ctx.req?.headers["user-agent"] || "") ? "android" : "desktop",
       });
       return { success: true };
+    }),
+
+    // Get scroll depth data (admin only)
+    getScrollDepth: protectedProcedure.input(z.object({
+      days: z.number().min(1).max(365).default(30),
+    }).optional()).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const data = await getScrollDepthData(input?.days ?? 30);
+      return data ?? [];
+    }),
+
+    // Get A/B test variant stats for auto-optimization (admin only)
+    getAutoOptimizeStats: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const data = await getABTestVariantStats();
+      return data ?? [];
+    }),
+
+    // Export weekly report as CSV (admin only)
+    exportReportCSV: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const { generateReportCSV } = await import("../shared/reportExport");
+      const { generateAndBuildReport } = await import("./weeklyReportGenerator");
+      const reportData = await generateAndBuildReport();
+      if (!reportData) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No report data available" });
+      }
+      return { csv: generateReportCSV(reportData), filename: `weekly-report-${reportData.period.start}-${reportData.period.end}.csv` };
+    }),
+
+    // Export weekly report as HTML (for PDF rendering client-side) (admin only)
+    exportReportHTML: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const { generateReportHTML } = await import("../shared/reportExport");
+      const { generateAndBuildReport } = await import("./weeklyReportGenerator");
+      const reportData = await generateAndBuildReport();
+      if (!reportData) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No report data available" });
+      }
+      return { html: generateReportHTML(reportData), filename: `weekly-report-${reportData.period.start}-${reportData.period.end}.pdf` };
     }),
   }),
 });

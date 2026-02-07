@@ -1,7 +1,12 @@
 /**
  * A/B Testing system for PWA install banner.
- * Assigns users to variants deterministically based on a hash of their session ID.
- * Tracks variant assignment and conversion events.
+ * Supports two modes:
+ * 1. Equal split (default) - deterministic hash-based assignment
+ * 2. Auto-optimize (Thompson Sampling) - weighted allocation from server
+ * 
+ * When auto-optimize is enabled, variant weights are fetched from the server
+ * and cached locally. New users get assigned based on weights; existing users
+ * keep their assignment for consistency.
  */
 
 export interface ABVariant {
@@ -65,6 +70,10 @@ export const INSTALL_BANNER_VARIANTS: ABVariant[] = [
 
 const AB_STORAGE_KEY = "ab-install-variant";
 const AB_SESSION_KEY = "ab-session-id";
+const AB_WEIGHTS_KEY = "ab-variant-weights";
+const AB_WEIGHTS_TIMESTAMP_KEY = "ab-weights-ts";
+const AB_AUTO_OPTIMIZE_KEY = "ab-auto-optimize";
+const WEIGHTS_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Get or create a persistent session ID for consistent variant assignment
@@ -96,8 +105,89 @@ function simpleHash(str: string): number {
 }
 
 /**
+ * Check if auto-optimization is enabled (set from admin panel)
+ */
+export function isAutoOptimizeEnabled(): boolean {
+  try {
+    return localStorage.getItem(AB_AUTO_OPTIMIZE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Enable or disable auto-optimization
+ */
+export function setAutoOptimize(enabled: boolean): void {
+  try {
+    localStorage.setItem(AB_AUTO_OPTIMIZE_KEY, enabled ? "true" : "false");
+    if (!enabled) {
+      // Clear cached weights and stored variant so next assignment uses equal split
+      localStorage.removeItem(AB_WEIGHTS_KEY);
+      localStorage.removeItem(AB_WEIGHTS_TIMESTAMP_KEY);
+      localStorage.removeItem(AB_STORAGE_KEY);
+    }
+  } catch {
+    // Storage not available
+  }
+}
+
+/**
+ * Store variant weights from server (called by admin panel)
+ */
+export function setCachedWeights(weights: Record<string, number>): void {
+  try {
+    localStorage.setItem(AB_WEIGHTS_KEY, JSON.stringify(weights));
+    localStorage.setItem(AB_WEIGHTS_TIMESTAMP_KEY, String(Date.now()));
+  } catch {
+    // Storage not available
+  }
+}
+
+/**
+ * Get cached variant weights (returns null if expired or not available)
+ */
+function getCachedWeights(): Record<string, number> | null {
+  try {
+    const ts = localStorage.getItem(AB_WEIGHTS_TIMESTAMP_KEY);
+    if (!ts || Date.now() - Number(ts) > WEIGHTS_CACHE_DURATION) return null;
+    const raw = localStorage.getItem(AB_WEIGHTS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Select variant based on weighted random selection (Thompson Sampling weights)
+ */
+function selectByWeight(weights: Record<string, number>): ABVariant {
+  const rand = Math.random();
+  let cumulative = 0;
+
+  for (const variant of INSTALL_BANNER_VARIANTS) {
+    const weight = weights[variant.id] || 0;
+    cumulative += weight;
+    if (rand < cumulative) {
+      return variant;
+    }
+  }
+
+  // Fallback to last variant
+  return INSTALL_BANNER_VARIANTS[INSTALL_BANNER_VARIANTS.length - 1];
+}
+
+/**
  * Get the assigned A/B variant for the current user.
  * Assignment is persistent across sessions.
+ * 
+ * When auto-optimize is enabled and weights are cached:
+ * - New users get assigned based on Thompson Sampling weights
+ * - Existing users keep their assignment
+ * 
+ * When auto-optimize is disabled:
+ * - Uses deterministic hash-based equal split
  */
 export function getAssignedVariant(): ABVariant {
   try {
@@ -111,11 +201,27 @@ export function getAssignedVariant(): ABVariant {
     // Fall through to assignment
   }
 
-  // Assign based on session hash
-  const sessionId = getSessionId();
-  const hash = simpleHash(sessionId);
-  const variantIndex = hash % INSTALL_BANNER_VARIANTS.length;
-  const variant = INSTALL_BANNER_VARIANTS[variantIndex];
+  let variant: ABVariant;
+
+  // Check for auto-optimize with cached weights
+  if (isAutoOptimizeEnabled()) {
+    const weights = getCachedWeights();
+    if (weights) {
+      variant = selectByWeight(weights);
+    } else {
+      // Fallback to hash-based when no weights cached
+      const sessionId = getSessionId();
+      const hash = simpleHash(sessionId);
+      const variantIndex = hash % INSTALL_BANNER_VARIANTS.length;
+      variant = INSTALL_BANNER_VARIANTS[variantIndex];
+    }
+  } else {
+    // Standard equal split: assign based on session hash
+    const sessionId = getSessionId();
+    const hash = simpleHash(sessionId);
+    const variantIndex = hash % INSTALL_BANNER_VARIANTS.length;
+    variant = INSTALL_BANNER_VARIANTS[variantIndex];
+  }
 
   try {
     localStorage.setItem(AB_STORAGE_KEY, variant.id);
@@ -124,6 +230,18 @@ export function getAssignedVariant(): ABVariant {
   }
 
   return variant;
+}
+
+/**
+ * Force reassign variant (used when auto-optimize weights change significantly)
+ */
+export function forceReassignVariant(): ABVariant {
+  try {
+    localStorage.removeItem(AB_STORAGE_KEY);
+  } catch {
+    // Storage not available
+  }
+  return getAssignedVariant();
 }
 
 /**

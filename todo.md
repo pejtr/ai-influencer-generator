@@ -1029,3 +1029,20 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Automated weekly report via scheduled task (PWA metrics, A/B results, mobile engagement)
 - [x] Weekly report notifyOwner integration
 - [x] Unit tests for statistical significance calculations (13 tests, 398 total passing)
+
+## Report Export, A/B Auto-Optimization & Scroll Depth Heatmap
+- [x] Weekly report PDF export (HTML-based, print-to-PDF in new tab)
+- [x] Weekly report CSV export with proper escaping
+- [x] Export buttons in PWA Analytics dashboard (Report tab)
+- [x] Server-side export endpoints (exportReportCSV, exportReportHTML)
+- [x] Thompson Sampling multi-armed bandit algorithm (shared/abAutoOptimize.ts)
+- [x] Auto-optimize toggle in admin panel (A/B Test tab)
+- [x] Weighted variant selection in client-side A/B test library
+- [x] Traffic allocation visualization with P(best) and Beta params
+- [x] Cached weights with 30min TTL for client-side use
+- [x] Scroll depth tracking at every 10% increment (enhanced useMobileTracking)
+- [x] ScrollDepthHeatmap component with per-page visualization
+- [x] Fold line detection (50% drop-off point)
+- [x] New "Scroll Depth" tab in PWA Analytics dashboard
+- [x] Server-side scroll depth data query endpoint
+- [x] Unit tests for all 3 features (31 new tests, 429 total passing)
