@@ -25,6 +25,7 @@ import BlogPost from "./pages/BlogPost";
 import PromptLibrary from "./pages/PromptLibrary";
 import CloneWorkflow from "./pages/CloneWorkflow";
 import ContentStrategy from "./pages/ContentStrategy";
+import MobileBottomNav from "./components/MobileBottomNav";
 
 function Router() {
   return (
@@ -64,6 +65,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <MobileBottomNav />
           <ThemeSwitcher />
         </TooltipProvider>
       </ThemeProvider>

@@ -307,3 +307,15 @@
   pointer-events: none;
   text-shadow: 0 0 10px oklch(0 0 0 / 0.5);
 }
+
+/* Mobile bottom nav safe area */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Add bottom padding to main content on mobile when bottom nav is visible */
+@media (max-width: 767px) {
+  .pb-mobile-nav {
+    padding-bottom: 4.5rem;
+  }
+}

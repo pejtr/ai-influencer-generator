@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { getLoginUrl } from "@/const";
@@ -132,6 +132,8 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [activeModelCard, setActiveModelCard] = useState(0);
+  const modelScrollRef = useRef<HTMLDivElement>(null);
 
   const goToSlide = useCallback((index: number) => {
     if (isTransitioning) return;
@@ -152,7 +154,7 @@ export default function Home() {
   const loginUrl = getLoginUrl();
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-black text-white overflow-x-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Navigation - Enhancor.ai Style */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md">
         <div className="max-w-[1400px] mx-auto px-6">
@@ -378,7 +380,17 @@ export default function Home() {
           </div>
 
           {/* Horizontal Scrollable Cards */}
-          <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div
+            ref={modelScrollRef}
+            className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              const cardWidth = 300;
+              const idx = Math.round(el.scrollLeft / cardWidth);
+              setActiveModelCard(Math.min(idx, AI_MODELS.length - 1));
+            }}
+          >
             {AI_MODELS.map((model, i) => (
               <div 
                 key={i} 
@@ -414,6 +426,28 @@ export default function Home() {
                   )}
                 </Button>
               </div>
+            ))}
+          </div>
+
+          {/* Scroll indicator dots - mobile only */}
+          <div className="flex md:hidden justify-center gap-2 mt-4">
+            {AI_MODELS.map((_, i) => (
+              <button
+                key={i}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  activeModelCard === i
+                    ? 'bg-blue-500 w-5'
+                    : 'bg-white/20 hover:bg-white/40'
+                }`}
+                onClick={() => {
+                  const el = modelScrollRef.current;
+                  if (el) {
+                    const cardWidth = 300;
+                    el.scrollTo({ left: i * cardWidth, behavior: 'smooth' });
+                  }
+                }}
+                aria-label={`Go to card ${i + 1}`}
+              />
             ))}
           </div>
         </div>
@@ -598,7 +632,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-black border-t border-white/5">
+      <footer className="py-12 pb-24 md:pb-12 bg-black border-t border-white/5">
         <div className="max-w-[1400px] mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             {/* Logo & Description */}

@@ -997,3 +997,6 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 
 ## Bug Fixes
 - [x] Fix mobile responsive: "What's New" cards cut off on right side on mobile
+- [x] Add swipe indicator (dots/arrows) for What's New cards on mobile
+- [x] Implement sticky bottom navigation bar on mobile
+- [x] Review entire landing page for mobile overflow issues and fix them
