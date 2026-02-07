@@ -27,6 +27,7 @@ import CloneWorkflow from "./pages/CloneWorkflow";
 import ContentStrategy from "./pages/ContentStrategy";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
+import InstallBanner from "./components/InstallBanner";
 
 function Router() {
   return (
@@ -92,6 +93,7 @@ function App() {
           <OfflineBanner />
           <Router />
           <MobileBottomNav />
+          <InstallBanner />
           <ThemeSwitcher />
         </TooltipProvider>
       </ThemeProvider>

@@ -1006,3 +1006,6 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Add decoding="async" to all 15 img tags + ResponsiveImage component with size presets
 - [x] Add PWA manifest, Service Worker (cache-first images, stale-while-revalidate assets, network-first HTML), offline banner
 - [x] Integrate haptic feedback: pull-to-refresh (progressive + threshold), swipe cards, bottom nav, dot indicators
+- [x] Custom "Add to Home Screen" PWA install banner for mobile devices
+- [x] Push notifications via Service Worker for image/video generation completion
+- [x] Server-side image processing for automatic WebP/AVIF conversion (sharp + auto-convert on generation)

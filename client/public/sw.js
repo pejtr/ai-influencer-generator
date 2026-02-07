@@ -126,6 +126,60 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+// Push notification event - show notification when received from server
+self.addEventListener("push", (event) => {
+  let data = { title: "AI Influencer", body: "Your content is ready!", url: "/gallery" };
+
+  try {
+    if (event.data) {
+      data = { ...data, ...event.data.json() };
+    }
+  } catch (e) {
+    // Use defaults
+  }
+
+  const options = {
+    body: data.body,
+    icon: "/favicon.svg",
+    badge: "/favicon.svg",
+    tag: "ai-influencer-generation",
+    renotify: true,
+    data: { url: data.url || "/gallery" },
+    actions: [
+      { action: "view", title: "View Now" },
+      { action: "dismiss", title: "Dismiss" },
+    ],
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+// Notification click event - open the app when notification is clicked
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  if (event.action === "dismiss") return;
+
+  const targetUrl = event.notification.data?.url || "/gallery";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // If app is already open, focus it and navigate
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.focus();
+          client.navigate(targetUrl);
+          return;
+        }
+      }
+      // Otherwise open a new window
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
 // Listen for messages from the app
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
@@ -135,5 +189,11 @@ self.addEventListener("message", (event) => {
   // Clear image cache on demand
   if (event.data && event.data.type === "CLEAR_IMAGE_CACHE") {
     caches.delete(IMAGE_CACHE);
+  }
+
+  // Show local notification from app
+  if (event.data && event.data.type === "SHOW_NOTIFICATION") {
+    const { title, options } = event.data;
+    self.registration.showNotification(title, options);
   }
 });

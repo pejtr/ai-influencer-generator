@@ -45,6 +45,7 @@ import {
 } from "./stripe/stripe";
 import { TierName, SUBSCRIPTION_TIERS, CREDIT_PACKS } from "./stripe/products";
 import { generateInfluencerImage, buildPromptFromSettings } from "./imageGeneration";
+import { processImageFromUrl, getImageMetadata } from "./imageProcessing";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import {
@@ -195,7 +196,19 @@ export const appRouter = router({
             addWatermark: user.tier === "free",
           });
 
-          const permanentUrl = result.imageUrl;
+          let permanentUrl = result.imageUrl;
+
+          // Auto-convert to WebP for optimized delivery
+          try {
+            const webpResult = await processImageFromUrl(permanentUrl, `generations/${generationId}-${nanoid(6)}`, {
+              format: "webp",
+              quality: 85,
+            });
+            permanentUrl = webpResult.url;
+          } catch (convErr) {
+            // If conversion fails, use original URL
+            console.warn("WebP conversion failed, using original:", convErr);
+          }
 
           // Deduct credit using hybrid system
           const deductResult = await deductCreditsHybrid(ctx.user.id, 1);
