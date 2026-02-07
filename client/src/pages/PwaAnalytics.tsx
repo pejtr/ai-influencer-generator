@@ -25,6 +25,18 @@ const EVENT_LABELS: Record<string, string> = {
   sw_registered: "SW Registered",
   sw_update_available: "SW Update Available",
   sw_update_applied: "SW Update Applied",
+  touch_start: "Touch Interactions",
+  scroll_depth: "Scroll Depth Tracked",
+  viewport_resize: "Viewport Resized",
+  orientation_change: "Orientation Changed",
+  device_info: "Device Info Captured",
+  session_duration: "Session Duration Tracked",
+  ab_banner_impression: "A/B Banner Impression",
+  ab_banner_click: "A/B Banner Click",
+  ab_banner_dismiss: "A/B Banner Dismiss",
+  generation_started: "Generation Started",
+  generation_completed: "Generation Completed",
+  generation_failed: "Generation Failed",
 };
 
 const EVENT_ICONS: Record<string, React.ReactNode> = {
@@ -333,6 +345,120 @@ export default function PwaAnalytics() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* A/B Test Results */}
+            <Card className="bg-card/50 backdrop-blur border-border/50 mb-8">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  A/B Test: Install Banner Variants
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {summary ? (() => {
+                  const abEvents = summary.filter(s => ["ab_variant_assigned", "ab_install_clicked", "ab_dismiss_clicked"].includes(s.eventType));
+                  if (abEvents.length === 0) return <p className="text-muted-foreground text-sm text-center py-4">No A/B test data yet. Install banner variants are being tested automatically.</p>;
+                  const impressions = abEvents.find(e => e.eventType === "ab_variant_assigned");
+                  const clicks = abEvents.find(e => e.eventType === "ab_install_clicked");
+                  const dismissals = abEvents.find(e => e.eventType === "ab_dismiss_clicked");
+                  const impCount = Number(impressions?.count || 0);
+                  const clickCount = Number(clicks?.count || 0);
+                  const dismissCount = Number(dismissals?.count || 0);
+                  const ctr = impCount > 0 ? ((clickCount / impCount) * 100).toFixed(1) : "0";
+                  return (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center p-3 rounded-lg bg-muted/30">
+                          <p className="text-2xl font-bold">{impCount}</p>
+                          <p className="text-xs text-muted-foreground">Impressions</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-green-500/10">
+                          <p className="text-2xl font-bold text-green-500">{clickCount}</p>
+                          <p className="text-xs text-muted-foreground">Installs</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-blue-500/10">
+                          <p className="text-2xl font-bold text-blue-500">{ctr}%</p>
+                          <p className="text-xs text-muted-foreground">CTR</p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <p>Dismissed: {dismissCount} ({impCount > 0 ? ((dismissCount / impCount) * 100).toFixed(1) : 0}%)</p>
+                        <p className="mt-1">3 banner variants are being tested: Speed & Offline, Creative Studio, and Exclusive Features</p>
+                      </div>
+                    </div>
+                  );
+                })() : <p className="text-muted-foreground text-sm text-center py-4">Loading...</p>}
+              </CardContent>
+            </Card>
+
+            {/* Mobile Device Tracking */}
+            <Card className="bg-card/50 backdrop-blur border-border/50 mb-8">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Smartphone className="w-5 h-5 text-primary" />
+                  Mobile Device Behavior
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {summary ? (() => {
+                  const mobileEvents = summary.filter(s => 
+                    ["touch_interaction", "scroll_depth", "viewport_change", "page_view", "session_start", "session_end"].includes(s.eventType)
+                  );
+                  if (mobileEvents.length === 0) return <p className="text-muted-foreground text-sm text-center py-4">No mobile tracking data yet. Data is collected automatically from mobile visitors.</p>;
+                  const maxVal = Math.max(...mobileEvents.map(e => Number(e.count)), 1);
+                  return (
+                    <BarChartSimple
+                      maxValue={maxVal}
+                      data={mobileEvents.map((e, i) => ({
+                        label: EVENT_LABELS[e.eventType] || e.eventType,
+                        value: Number(e.count),
+                        color: ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-yellow-500", "bg-pink-500", "bg-cyan-500"][i % 6],
+                      }))}
+                    />
+                  );
+                })() : <p className="text-muted-foreground text-sm text-center py-4">Loading...</p>}
+              </CardContent>
+            </Card>
+
+            {/* Generation Webhook Stats */}
+            <Card className="bg-card/50 backdrop-blur border-border/50 mb-8">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-primary" />
+                  Generation Notifications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {summary ? (() => {
+                  const genEvents = summary.filter(s => s.eventType.startsWith("generation_"));
+                  if (genEvents.length === 0) return <p className="text-muted-foreground text-sm text-center py-4">No generation events yet.</p>;
+                  const started = Number(genEvents.find(e => e.eventType === "generation_started")?.count || 0);
+                  const completed = Number(genEvents.find(e => e.eventType === "generation_completed")?.count || 0);
+                  const failed = Number(genEvents.find(e => e.eventType === "generation_failed")?.count || 0);
+                  const successRate = started > 0 ? ((completed / started) * 100).toFixed(1) : "0";
+                  return (
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="text-center p-3 rounded-lg bg-muted/30">
+                        <p className="text-2xl font-bold">{started}</p>
+                        <p className="text-xs text-muted-foreground">Started</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-green-500/10">
+                        <p className="text-2xl font-bold text-green-500">{completed}</p>
+                        <p className="text-xs text-muted-foreground">Completed</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-red-500/10">
+                        <p className="text-2xl font-bold text-red-500">{failed}</p>
+                        <p className="text-xs text-muted-foreground">Failed</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-blue-500/10">
+                        <p className="text-2xl font-bold text-blue-500">{successRate}%</p>
+                        <p className="text-xs text-muted-foreground">Success Rate</p>
+                      </div>
+                    </div>
+                  );
+                })() : <p className="text-muted-foreground text-sm text-center py-4">Loading...</p>}
+              </CardContent>
+            </Card>
 
             {/* Install Trend */}
             {installTrend && installTrend.length > 0 && (

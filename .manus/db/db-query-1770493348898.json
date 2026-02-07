@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE pwaAnalytics MODIFY COLUMN eventType ENUM('install_prompt_shown','install_prompt_accepted','install_prompt_dismissed','app_installed','offline_session_start','offline_session_end','notification_permission_granted','notification_permission_denied','notification_shown','notification_clicked','notification_dismissed','sw_registered','sw_update_available','sw_update_applied','page_view','session_start','session_end','scroll_depth','touch_interaction','viewport_change','generation_started','generation_completed','generation_failed','ab_variant_assigned','ab_install_clicked','ab_dismiss_clicked') NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute ALTER TABLE pwaAnalytics MODIFY COLUMN eventType ENUM('install_prompt_shown','install_prompt_accepted','install_prompt_dismissed','app_installed','offline_session_start','offline_session_end','notification_permission_granted','notification_permission_denied','notification_shown','notification_clicked','notification_dismissed','sw_registered','sw_update_available','sw_update_applied','page_view','session_start','session_end','scroll_depth','touch_interaction','viewport_change','generation_started','generation_completed','generation_failed','ab_variant_assigned','ab_install_clicked','ab_dismiss_clicked') NOT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 563
+}

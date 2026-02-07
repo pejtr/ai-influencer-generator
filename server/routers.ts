@@ -49,6 +49,8 @@ import { TierName, SUBSCRIPTION_TIERS, CREDIT_PACKS } from "./stripe/products";
 import { generateInfluencerImage, buildPromptFromSettings } from "./imageGeneration";
 import { processImageFromUrl, getImageMetadata, convertToWebP, convertToAvif } from "./imageProcessing";
 import { storagePut } from "./storage";
+import { imageCache, ImageTransformCache } from "./imageCache";
+import { notifyGenerationComplete, trackGenerationStart } from "./generationNotifier";
 import { nanoid } from "nanoid";
 import {
   generatePKCE, generateState, buildAuthorizationUrl,
@@ -190,6 +192,10 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create generation" });
         }
 
+        // Track generation start
+        const genStartTime = Date.now();
+        trackGenerationStart(ctx.user.id, "image").catch(() => {});
+
         try {
           // Generate image using MiniMax via MCP
           const result = await generateInfluencerImage({
@@ -236,15 +242,36 @@ export const appRouter = router({
             status: "completed",
           });
 
+          // Notify generation complete
+          notifyGenerationComplete({
+            userId: ctx.user.id,
+            type: "image",
+            status: "completed",
+            generationId,
+            imageUrl: permanentUrl,
+            duration: Date.now() - genStartTime,
+          }).catch(() => {});
+
           return {
             id: generationId,
             imageUrl: permanentUrl,
             hasWatermark: user.tier === "free",
           };
-        } catch (error) {
+        } catch (error: any) {
           // Mark as failed
           await updateGeneration(generationId, { status: "failed" });
           console.error("Generation failed:", error);
+
+          // Notify generation failed
+          notifyGenerationComplete({
+            userId: ctx.user.id,
+            type: "image",
+            status: "failed",
+            generationId,
+            error: error.message || "Unknown error",
+            duration: Date.now() - genStartTime,
+          }).catch(() => {});
+
           throw new TRPCError({ 
             code: "INTERNAL_SERVER_ERROR", 
             message: "Failed to generate image. Please try again." 
@@ -302,6 +329,24 @@ export const appRouter = router({
       quality: z.number().min(1).max(100).default(80),
     })).mutation(async ({ input }) => {
       try {
+        // Check cache first
+        const cacheKey = ImageTransformCache.makeKey(input);
+        const cached = imageCache.get(cacheKey);
+        if (cached) {
+          console.log(`[ImageCache] HIT: ${cacheKey.slice(0, 60)}...`);
+          return {
+            url: cached.url,
+            width: cached.width,
+            height: cached.height,
+            format: cached.format,
+            size: cached.size,
+            originalSize: cached.originalSize,
+            savings: cached.savings,
+            fromCache: true,
+          };
+        }
+
+        console.log(`[ImageCache] MISS: ${cacheKey.slice(0, 60)}...`);
         const response = await fetch(input.imageUrl);
         if (!response.ok) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Failed to fetch source image" });
@@ -339,7 +384,7 @@ export const appRouter = router({
         const key = `cdn/${input.format}/${width}x${height}-q${input.quality}-${hash}.${input.format}`;
         const { url } = await storagePut(key, convertedBuffer, mimeType);
 
-        return {
+        const result = {
           url,
           width,
           height,
@@ -348,6 +393,11 @@ export const appRouter = router({
           originalSize: imageBuffer.length,
           savings: Math.round((1 - convertedBuffer.length / imageBuffer.length) * 100),
         };
+
+        // Store in cache
+        imageCache.set(cacheKey, result);
+
+        return { ...result, fromCache: false };
       } catch (error: any) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
@@ -355,6 +405,20 @@ export const appRouter = router({
           message: `Image transformation failed: ${error.message}`,
         });
       }
+    }),
+
+    // Get image cache statistics
+    getCacheStats: protectedProcedure.query(async () => {
+      return imageCache.getStats();
+    }),
+
+    // Clear image cache (admin only)
+    clearCache: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+      }
+      imageCache.clear();
+      return { success: true, message: "Image cache cleared" };
     }),
   }),
 

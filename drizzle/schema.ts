@@ -649,6 +649,20 @@ export const pwaAnalytics = mysqlTable("pwaAnalytics", {
     "sw_registered",
     "sw_update_available",
     "sw_update_applied",
+    // Mobile behavior tracking
+    "page_view",
+    "session_start",
+    "session_end",
+    "scroll_depth",
+    "touch_interaction",
+    "viewport_change",
+    "generation_started",
+    "generation_completed",
+    "generation_failed",
+    // A/B test events
+    "ab_variant_assigned",
+    "ab_install_clicked",
+    "ab_dismiss_clicked",
   ]).notNull(),
   metadata: json("metadata"), // Additional event data (duration, source, etc.)
   userAgent: text("userAgent"),

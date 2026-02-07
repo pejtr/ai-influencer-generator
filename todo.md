@@ -1012,3 +1012,9 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] PWA analytics dashboard (installs, offline sessions, notification engagement) - /admin/pwa-analytics
 - [x] Integrate NotificationSettings into Studio Voice tab
 - [x] Image CDN endpoint for dynamic resize and format conversion (generation.transformImage tRPC endpoint)
+
+## Mobile Device Behavior Tracking & Optimizations
+- [x] Enhanced mobile device tracking (touch events, viewport, device info, session duration, scroll depth)
+- [x] A/B test for PWA install banner (3 variants: Speed/Offline, Creative Studio, Exclusive Features)
+- [x] In-memory cache layer for transformed images (500 entries, 24h TTL, LRU eviction)
+- [x] Connect push notifications with generation completion webhook on backend (notifyGenerationComplete)

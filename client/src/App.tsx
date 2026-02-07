@@ -30,6 +30,7 @@ import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import InstallBanner from "./components/InstallBanner";
 import { usePwaTracking } from "./hooks/usePwaTracking";
+import { useMobileTracking } from "./hooks/useMobileTracking";
 
 function Router() {
   return (
@@ -89,6 +90,7 @@ function OfflineBanner() {
 
 function App() {
   usePwaTracking();
+  useMobileTracking();
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">

@@ -1,18 +1,82 @@
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import { haptic } from "@/lib/haptics";
-import { X, Download, Smartphone, Zap, Wifi } from "lucide-react";
-import { useState } from "react";
+import { getAssignedVariant, type ABVariant } from "@/lib/abTest";
+import { X, Download, Smartphone, Zap, Wifi, Rocket, Bell, Shield, Sparkles, Clock, TrendingUp } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { trpc } from "@/lib/trpc";
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  zap: Zap,
+  wifi: Wifi,
+  download: Download,
+  smartphone: Smartphone,
+  rocket: Rocket,
+  bell: Bell,
+  shield: Shield,
+  sparkles: Sparkles,
+  clock: Clock,
+  "trending-up": TrendingUp,
+};
+
+function BenefitIcon({ icon, className }: { icon: string; className?: string }) {
+  const Icon = ICON_MAP[icon] || Zap;
+  return <Icon className={className} />;
+}
 
 export default function InstallBanner() {
-  const { showBanner, install, dismiss } = useInstallPrompt();
+  const { showBanner, install, dismiss, canInstall } = useInstallPrompt();
   const [isInstalling, setIsInstalling] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const [variant, setVariant] = useState<ABVariant | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const trackedRef = useRef(false);
+  const trackEvent = trpc.pwaAnalytics.trackEvent.useMutation();
 
-  if (!showBanner) return null;
+  // Assign variant on mount
+  useEffect(() => {
+    const assigned = getAssignedVariant();
+    setVariant(assigned);
+  }, []);
+
+  // Track variant assignment and apply delay
+  useEffect(() => {
+    if (!variant || !canInstall) return;
+
+    // Track variant assignment (once per session)
+    if (!trackedRef.current) {
+      trackedRef.current = true;
+      try {
+        trackEvent.mutate({
+          eventType: "ab_variant_assigned" as any,
+          platform: detectPlatform(),
+          metadata: { variantId: variant.id, delayMs: variant.delayMs },
+        });
+      } catch { /* silent */ }
+    }
+
+    // Apply variant-specific delay
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, variant.delayMs);
+
+    return () => clearTimeout(timer);
+  }, [variant, canInstall]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!showBanner || !variant || !isVisible) return null;
 
   const handleInstall = async () => {
     haptic("medium");
     setIsInstalling(true);
+
+    // Track A/B click
+    try {
+      trackEvent.mutate({
+        eventType: "ab_install_clicked" as any,
+        platform: detectPlatform(),
+        metadata: { variantId: variant.id },
+      });
+    } catch { /* silent */ }
+
     const success = await install();
     setIsInstalling(false);
     if (success) {
@@ -23,6 +87,16 @@ export default function InstallBanner() {
   const handleDismiss = () => {
     haptic("light");
     setIsExiting(true);
+
+    // Track A/B dismiss
+    try {
+      trackEvent.mutate({
+        eventType: "ab_dismiss_clicked" as any,
+        platform: detectPlatform(),
+        metadata: { variantId: variant.id },
+      });
+    } catch { /* silent */ }
+
     setTimeout(() => {
       dismiss();
     }, 300);
@@ -48,33 +122,29 @@ export default function InstallBanner() {
           <X className="w-4 h-4" />
         </button>
 
-        {/* Content */}
+        {/* Content - driven by A/B variant */}
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
               <Smartphone className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm">Install AI Influencer</h3>
-              <p className="text-[11px] text-white/70">Add to your home screen</p>
+              <h3 className="font-bold text-sm">{variant.title}</h3>
+              <p className="text-[11px] text-white/70">{variant.subtitle}</p>
             </div>
           </div>
 
-          {/* Benefits */}
-          <div className="flex gap-4 mb-4 text-[11px] text-white/80">
-            <div className="flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-yellow-300" />
-              <span>Faster</span>
+          {/* Benefits - variant-specific */}
+          {variant.benefits.length > 0 && (
+            <div className="flex gap-4 mb-4 text-[11px] text-white/80 flex-wrap">
+              {variant.benefits.map((benefit, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <BenefitIcon icon={benefit.icon} className="w-3.5 h-3.5 text-yellow-300" />
+                  <span>{benefit.label}</span>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center gap-1.5">
-              <Wifi className="w-3.5 h-3.5 text-green-300" />
-              <span>Offline</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Download className="w-3.5 h-3.5 text-blue-200" />
-              <span>No app store</span>
-            </div>
-          </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2">
@@ -91,7 +161,7 @@ export default function InstallBanner() {
               ) : (
                 <>
                   <Download className="w-4 h-4" />
-                  Install App
+                  {variant.ctaText}
                 </>
               )}
             </button>
@@ -102,8 +172,25 @@ export default function InstallBanner() {
               Later
             </button>
           </div>
+
+          {/* A/B variant indicator (only visible in dev) */}
+          {import.meta.env.DEV && (
+            <div className="mt-2 text-[9px] text-white/30 text-center">
+              Variant: {variant.id}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
+}
+
+function detectPlatform(): string {
+  const ua = navigator.userAgent.toLowerCase();
+  if (/iphone|ipad|ipod/.test(ua)) return "ios";
+  if (/android/.test(ua)) return "android";
+  if (/windows/.test(ua)) return "windows";
+  if (/macintosh|mac os/.test(ua)) return "macos";
+  if (/linux/.test(ua)) return "linux";
+  return "unknown";
 }
