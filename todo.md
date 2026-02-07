@@ -935,6 +935,7 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [ ] Display conversion data in admin dashboard (future)
 
 
-## Bug: Generation fails with empty imageUrl - IN PROGRESS
-- [ ] Fix INSERT into generations failing because imageUrl is empty string
-- [ ] Ensure image generation completes before saving to database
+## Bug: Generation fails with empty imageUrl - FIXED
+- [x] Fix INSERT into generations failing because imageUrl is empty string
+- [x] Replaced MCP CLI (sandbox-only) with built-in generateImage helper
+- [x] Ensure image generation completes before saving to database
