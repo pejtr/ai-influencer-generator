@@ -368,8 +368,8 @@ export default function Home() {
       </section>
 
       {/* What's New - AI Models Section */}
-      <section className="py-24 bg-zinc-950">
-        <div className="max-w-[1400px] mx-auto px-6">
+      <section className="py-24 bg-zinc-950 overflow-hidden">
+        <div className="max-w-[1400px] mx-auto px-6 overflow-hidden">
           <div className="mb-12">
             <span className="text-xs text-blue-500 tracking-[0.3em] uppercase font-medium">AI Models</span>
             <h2 className="text-5xl md:text-6xl font-bold mt-2 uppercase tracking-tight" style={{ fontFamily: "'Oswald', sans-serif" }}>
@@ -378,7 +378,7 @@ export default function Home() {
           </div>
 
           {/* Horizontal Scrollable Cards */}
-          <div className="flex gap-5 overflow-x-auto pb-4 -mx-6 px-6 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {AI_MODELS.map((model, i) => (
               <div 
                 key={i} 

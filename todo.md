@@ -994,3 +994,6 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Earnings calculator
 - [x] Navigation link to /earn page
 - [x] 385 tests passing (20 test files)
+
+## Bug Fixes
+- [x] Fix mobile responsive: "What's New" cards cut off on right side on mobile
