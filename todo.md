@@ -939,3 +939,26 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Fix INSERT into generations failing because imageUrl is empty string
 - [x] Replaced MCP CLI (sandbox-only) with built-in generateImage helper
 - [x] Ensure image generation completes before saving to database
+
+
+## Loading Indicator - COMPLETED
+- [x] Add animated loading indicator to Studio image preview area
+- [x] Show generation progress steps (Analyzing prompt → Creating image → Enhancing details → Uploading)
+- [x] Progress bar with smooth animation
+- [x] Step-by-step status with checkmarks
+
+## Gallery with Filtering - PLANNED
+- [ ] Add filtering by date (newest, oldest)
+- [ ] Add filtering by status (completed, failed, pending)
+- [ ] Add search by prompt text
+- [ ] Grid layout with lazy loading
+- [ ] Image preview modal
+
+## Share to Social Media - COMPLETED
+- [x] Share button on generated images (dropdown menu)
+- [x] Share to Twitter/X, Facebook, LinkedIn
+- [x] Copy link to clipboard
+- [x] Native share API integration
+- [x] Full share section in image preview dialog
+- [ ] Copy link to clipboard
+- [ ] Download image button

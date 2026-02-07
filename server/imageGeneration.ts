@@ -1,4 +1,4 @@
-import { generateImage } from "./_core/imageGeneration";
+import { generateImage } from "./_core/imageGeneration.ts";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 

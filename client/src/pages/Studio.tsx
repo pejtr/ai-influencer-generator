@@ -284,6 +284,8 @@ export default function Studio() {
   const [settings, setSettings] = useState<CharacterSettings>(defaultSettings);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState(0);
+  const [generationProgress, setGenerationProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("builder");
   const [activeSection, setActiveSection] = useState<BuilderSection>("basics");
   const [savedPresets, setSavedPresets] = useState<{id: string; name: string; thumbnail?: string; settings: CharacterSettings}[]>([]);
@@ -454,6 +456,35 @@ export default function Studio() {
     return parts.join(" ");
   }, [settings]);
 
+  // Progress simulation for loading indicator
+  useEffect(() => {
+    if (!isGenerating) {
+      setGenerationStep(0);
+      setGenerationProgress(0);
+      return;
+    }
+    const steps = [0, 1, 2, 3];
+    const timings = [0, 3000, 8000, 18000]; // ms for each step
+    const progressValues = [10, 35, 65, 85];
+    
+    const timers = steps.map((step, i) => 
+      setTimeout(() => {
+        setGenerationStep(step);
+        setGenerationProgress(progressValues[i]);
+      }, timings[i])
+    );
+    
+    // Slow progress fill between steps
+    const progressTimer = setInterval(() => {
+      setGenerationProgress(prev => Math.min(prev + 1, 95));
+    }, 500);
+    
+    return () => {
+      timers.forEach(clearTimeout);
+      clearInterval(progressTimer);
+    };
+  }, [isGenerating]);
+
   const handleGenerate = () => {
     if (!isAuthenticated) {
       window.location.href = getLoginUrl();
@@ -466,6 +497,8 @@ export default function Studio() {
     }
 
     setIsGenerating(true);
+    setGenerationStep(0);
+    setGenerationProgress(0);
     generateMutation.mutate({
       prompt: buildPrompt,
       characterSettings: settings,
@@ -673,14 +706,48 @@ export default function Studio() {
                   )}
                   
                   {isGenerating && (
-                    <div className="absolute inset-0 bg-background/90 flex items-center justify-center backdrop-blur-sm">
-                      <div className="text-center">
-                        <div className="relative">
-                          <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto mb-4" />
-                          <Sparkles className="w-6 h-6 text-primary absolute top-0 right-1/4 animate-pulse" />
+                    <div className="absolute inset-0 bg-background/95 flex items-center justify-center backdrop-blur-sm z-10">
+                      <div className="text-center w-full max-w-xs px-6">
+                        {/* Animated spinner */}
+                        <div className="relative mb-6">
+                          <div className="w-20 h-20 mx-auto rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                          <Sparkles className="w-6 h-6 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                         </div>
-                        <p className="font-medium text-lg">Generating your influencer...</p>
-                        <p className="text-sm text-muted-foreground">This may take 10-30 seconds</p>
+                        
+                        {/* Progress bar */}
+                        <div className="w-full h-1.5 bg-secondary rounded-full mb-4 overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
+                            style={{ width: `${generationProgress}%` }}
+                          />
+                        </div>
+                        
+                        {/* Step indicators */}
+                        <div className="space-y-2 mb-4">
+                          {[
+                            { label: "Analyzing prompt", icon: "✨" },
+                            { label: "Creating image", icon: "🎨" },
+                            { label: "Enhancing details", icon: "🔍" },
+                            { label: "Uploading result", icon: "☁️" },
+                          ].map((step, i) => (
+                            <div 
+                              key={i}
+                              className={`flex items-center gap-2 text-sm transition-all duration-300 ${
+                                i < generationStep ? "text-primary" : i === generationStep ? "text-foreground font-medium" : "text-muted-foreground/50"
+                              }`}
+                            >
+                              <span className="w-5 text-center">
+                                {i < generationStep ? "✓" : i === generationStep ? step.icon : "○"}
+                              </span>
+                              <span>{step.label}</span>
+                              {i === generationStep && (
+                                <Loader2 className="w-3 h-3 animate-spin ml-auto" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <p className="text-xs text-muted-foreground">Usually takes 10-30 seconds</p>
                       </div>
                     </div>
                   )}
