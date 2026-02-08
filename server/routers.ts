@@ -46,7 +46,8 @@ import {
   getHistoricalFunnelRates,
   getChannelCosts, addChannelCost, updateChannelCost, deleteChannelCost,
   getChannelCostSummary, getMonthlyCostTrend,
-  addUserTouchpoint, getUserTouchpoints, getAllUserJourneys, getNewCustomersPerChannel
+  addUserTouchpoint, getUserTouchpoints, getAllUserJourneys, getNewCustomersPerChannel,
+  getCohortLtvData, getUnifiedDashboardData
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -111,6 +112,10 @@ import {
   buildChannelROAS, calculateROAS, calculateCAC, generateCostInsights,
   type CostTrackingData
 } from "@shared/costTracking";
+import {
+  buildLtvPredictions, calculateBudgetReallocation,
+  type CohortLtvDataPoint, type PredictedLTV
+} from "@shared/predictiveLtv";
 
 // Character settings schema
 const characterSettingsSchema = z.object({
@@ -2479,6 +2484,8 @@ export const appRouter = router({
         "notification_permission_granted", "notification_permission_denied",
         "notification_shown", "notification_clicked", "notification_dismissed",
         "sw_registered", "sw_update_available", "sw_update_applied",
+        "session_start", "session_end", "page_view", "scroll_depth",
+        "touch_interaction", "viewport_change",
       ]),
       metadata: z.record(z.string(), z.unknown()).optional(),
       platform: z.string().optional(),
@@ -3057,6 +3064,138 @@ export const appRouter = router({
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       await deleteChannelCost(input.id);
       return { success: true };
+    }),
+  }),
+
+  // ============ Predictive LTV & Budget Reallocation ============
+  predictive: router({
+    getLtvPredictions: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+
+      // Get cohort LTV data
+      const rawCohortData = await getCohortLtvData();
+      const cohortData: CohortLtvDataPoint[] = rawCohortData.map(d => ({
+        cohortMonth: d.cohortMonth,
+        channel: d.channel as AcquisitionChannel,
+        monthsSinceSignup: d.monthsSinceSignup,
+        cumulativeRevenue: d.cumulativeRevenue,
+        userCount: d.userCount,
+        ltvPerUser: d.userCount > 0 ? d.cumulativeRevenue / d.userCount : 0,
+      }));
+
+      // Get current LTV per channel
+      const revenueData = await getRevenueByChannel();
+      const currentLtv: Record<AcquisitionChannel, number> = {
+        organic: 0, paid: 0, affiliate: 0, direct: 0, social: 0,
+      };
+      for (const r of revenueData) {
+        const ch = r.channel as AcquisitionChannel;
+        if (currentLtv.hasOwnProperty(ch)) {
+          const totalRev = Number(r.subscriptionRevenue || 0) + Number(r.creditPackRevenue || 0);
+          const totalUsers = Number(r.totalUsers || 1);
+          currentLtv[ch] = totalUsers > 0 ? Math.round((totalRev / totalUsers) * 100) / 100 : 0;
+        }
+      }
+
+      const predictions = buildLtvPredictions(cohortData, currentLtv);
+      return { predictions, cohortDataPoints: cohortData.length };
+    }),
+
+    getBudgetReallocation: protectedProcedure.input(z.object({
+      totalBudget: z.number().min(0).optional(),
+    }).optional()).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+
+      // Get revenue per channel
+      const revenueData = await getRevenueByChannel();
+      // Get cost per channel
+      const costData = await getChannelCostSummary();
+      // Get new customers per channel
+      const newCustomers = await getNewCustomersPerChannel();
+      // Get LTV predictions
+      const rawCohortData = await getCohortLtvData();
+      const cohortData: CohortLtvDataPoint[] = rawCohortData.map(d => ({
+        cohortMonth: d.cohortMonth,
+        channel: d.channel as AcquisitionChannel,
+        monthsSinceSignup: d.monthsSinceSignup,
+        cumulativeRevenue: d.cumulativeRevenue,
+        userCount: d.userCount,
+        ltvPerUser: d.userCount > 0 ? d.cumulativeRevenue / d.userCount : 0,
+      }));
+
+      const currentLtv: Record<AcquisitionChannel, number> = {
+        organic: 0, paid: 0, affiliate: 0, direct: 0, social: 0,
+      };
+      for (const r of revenueData) {
+        const ch = r.channel as AcquisitionChannel;
+        if (currentLtv.hasOwnProperty(ch)) {
+          const totalRev = Number(r.subscriptionRevenue || 0) + Number(r.creditPackRevenue || 0);
+          const totalUsers = Number(r.totalUsers || 1);
+          currentLtv[ch] = totalUsers > 0 ? Math.round((totalRev / totalUsers) * 100) / 100 : 0;
+        }
+      }
+      const predictions = buildLtvPredictions(cohortData, currentLtv);
+
+      // Build channel performance data
+      const channels: AcquisitionChannel[] = ["organic", "paid", "affiliate", "direct", "social"];
+      const channelPerformance = channels.map(channel => {
+        const rev = revenueData.find(r => r.channel === channel);
+        const cost = costData.find((c: any) => c.channel === channel);
+        const cust = newCustomers.find((c: any) => c.channel === channel);
+        const pred = predictions.find(p => p.channel === channel);
+        return {
+          channel,
+          currentSpend: Number(cost?.totalAmount || 0),
+          revenue: Number(rev?.subscriptionRevenue || 0) + Number(rev?.creditPackRevenue || 0),
+          newCustomers: Number(cust?.count || 0),
+          predictedLtv365d: pred?.predicted365d || 0,
+        };
+      });
+
+      return calculateBudgetReallocation(channelPerformance, input?.totalBudget);
+    }),
+  }),
+
+  // ============ Unified Analytics Dashboard ============
+  dashboard: router({
+    getSummary: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const data = await getUnifiedDashboardData();
+      if (!data) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to load dashboard data" });
+
+      // Get active alerts count
+      const alerts = await getUnacknowledgedAlerts();
+
+      // Get cost data for ROAS
+      const costSummary = await getChannelCostSummary();
+      const totalSpend = costSummary.reduce((sum: number, c: any) => sum + Number(c.totalSpend || 0), 0);
+      const overallRoas = totalSpend > 0 ? Math.round((data.totalRevenue / totalSpend) * 100) / 100 : 0;
+
+      // Get best channel
+      const revenueData = await getRevenueByChannel();
+      let bestChannel: AcquisitionChannel | null = null;
+      let bestChannelLtv = 0;
+      for (const r of revenueData) {
+        const totalRev = Number(r.subscriptionRevenue || 0) + Number(r.creditPackRevenue || 0);
+        const totalUsers = Number(r.totalUsers || 1);
+        const ltv = totalUsers > 0 ? totalRev / totalUsers : 0;
+        if (ltv > bestChannelLtv) {
+          bestChannelLtv = Math.round(ltv * 100) / 100;
+          bestChannel = r.channel as AcquisitionChannel;
+        }
+      }
+
+      return {
+        ...data,
+        activeAlerts: alerts.length,
+        funnelHealth: alerts.some((a: any) => a.severity === "critical") ? "critical" as const
+          : alerts.length > 0 ? "warning" as const : "healthy" as const,
+        overallRoas,
+        totalSpend,
+        totalProfit: Math.round((data.totalRevenue - totalSpend) * 100) / 100,
+        bestChannel,
+        bestChannelLtv,
+      };
     }),
   }),
 });

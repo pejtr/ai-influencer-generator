@@ -1919,3 +1919,173 @@ export async function getNewCustomersPerChannel(startDate?: Date) {
   
   return query;
 }
+
+
+// ============ Predictive LTV & Unified Dashboard ============
+
+export async function getCohortLtvData(): Promise<Array<{
+  cohortMonth: string;
+  channel: string;
+  monthsSinceSignup: number;
+  cumulativeRevenue: number;
+  userCount: number;
+}>> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get users with their cohort month and channel
+  const userRows = await db.select({
+    id: users.id,
+    channel: users.acquisitionChannel,
+    createdAt: users.createdAt,
+  }).from(users);
+
+  if (userRows.length === 0) return [];
+
+  // Get all credit purchases
+  const purchases = await db.select({
+    userId: creditPurchases.userId,
+    amount: creditPurchases.amountPaid,
+    createdAt: creditPurchases.createdAt,
+  }).from(creditPurchases);
+
+  // Get all subscriptions - use price from tier (no amountPaid column)
+  const subs = await db.select({
+    userId: subscriptions.userId,
+    tier: subscriptions.tier,
+    createdAt: subscriptions.createdAt,
+  }).from(subscriptions);
+
+  // Build user map
+  const userMap = new Map<number, { channel: string; createdAt: Date }>();
+  for (const u of userRows) {
+    userMap.set(u.id, { channel: u.channel || "direct", createdAt: new Date(u.createdAt) });
+  }
+
+  // Aggregate revenue by cohort month, channel, and months since signup
+  const cohortMap = new Map<string, { revenue: number; users: Set<number> }>();
+
+  const addRevenue = (userId: number, amount: number, purchaseDate: Date) => {
+    const user = userMap.get(userId);
+    if (!user) return;
+    const cohortMonth = `${user.createdAt.getFullYear()}-${String(user.createdAt.getMonth() + 1).padStart(2, "0")}`;
+    const monthsSince = Math.floor((purchaseDate.getTime() - user.createdAt.getTime()) / (30.44 * 24 * 60 * 60 * 1000));
+    const key = `${cohortMonth}|${user.channel}|${Math.max(0, monthsSince)}`;
+    const existing = cohortMap.get(key) || { revenue: 0, users: new Set<number>() };
+    existing.revenue += Number(amount) || 0;
+    existing.users.add(userId);
+    cohortMap.set(key, existing);
+  };
+
+  for (const p of purchases) addRevenue(p.userId, Number(p.amount), new Date(p.createdAt));
+  // Estimate subscription revenue from tier
+  for (const s of subs) {
+    const subAmount = s.tier === "creator" ? 49.99 : 19.99;
+    addRevenue(s.userId, subAmount, new Date(s.createdAt));
+  }
+
+  // Also count users with no revenue (for user count)
+  for (const u of userRows) {
+    const cohortMonth = `${new Date(u.createdAt).getFullYear()}-${String(new Date(u.createdAt).getMonth() + 1).padStart(2, "0")}`;
+    const key = `${cohortMonth}|${u.channel || "direct"}|0`;
+    if (!cohortMap.has(key)) {
+      cohortMap.set(key, { revenue: 0, users: new Set<number>() });
+    }
+    cohortMap.get(key)!.users.add(u.id);
+  }
+
+  return Array.from(cohortMap.entries()).map(([key, data]) => {
+    const [cohortMonth, channel, monthsSince] = key.split("|");
+    return {
+      cohortMonth,
+      channel,
+      monthsSinceSignup: parseInt(monthsSince),
+      cumulativeRevenue: Math.round(data.revenue * 100) / 100,
+      userCount: data.users.size,
+    };
+  });
+}
+
+export async function getUnifiedDashboardData() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+  // Total users
+  const totalUsersResult = await db.select({ count: sql<number>`COUNT(*)` }).from(users);
+  const totalUsers = totalUsersResult[0]?.count || 0;
+
+  // Users last 30 days
+  const recentUsersResult = await db.select({ count: sql<number>`COUNT(*)` }).from(users)
+    .where(gte(users.createdAt, thirtyDaysAgo));
+  const recentUsers = recentUsersResult[0]?.count || 0;
+
+  // Users previous 30 days
+  const prevUsersResult = await db.select({ count: sql<number>`COUNT(*)` }).from(users)
+    .where(and(gte(users.createdAt, sixtyDaysAgo), sql`${users.createdAt} < ${thirtyDaysAgo}`));
+  const prevUsers = prevUsersResult[0]?.count || 0;
+
+  // Total revenue (credit purchases)
+  const creditRevResult = await db.select({ total: sql<number>`COALESCE(SUM(${creditPurchases.amountPaid}), 0)` }).from(creditPurchases);
+  const creditRev = Number(creditRevResult[0]?.total) || 0;
+
+  // Total revenue (subscriptions) - count by tier price
+  const subCountResult = await db.select({
+    tier: subscriptions.tier,
+    count: sql<number>`COUNT(*)`,
+  }).from(subscriptions).groupBy(subscriptions.tier);
+  let subRev = 0;
+  for (const s of subCountResult) {
+    subRev += (s.tier === "creator" ? 49.99 : 19.99) * (s.count || 0);
+  }
+
+  const totalRevenue = creditRev + subRev;
+
+  // Revenue last 30 days
+  const recentCreditRev = await db.select({ total: sql<number>`COALESCE(SUM(${creditPurchases.amountPaid}), 0)` })
+    .from(creditPurchases).where(gte(creditPurchases.createdAt, thirtyDaysAgo));
+  const recentSubCount = await db.select({ tier: subscriptions.tier, count: sql<number>`COUNT(*)` })
+    .from(subscriptions).where(gte(subscriptions.createdAt, thirtyDaysAgo)).groupBy(subscriptions.tier);
+  let recentSubRev = 0;
+  for (const s of recentSubCount) recentSubRev += (s.tier === "creator" ? 49.99 : 19.99) * (s.count || 0);
+  const recentRevenue = (Number(recentCreditRev[0]?.total) || 0) + recentSubRev;
+
+  // Revenue previous 30 days
+  const prevCreditRev = await db.select({ total: sql<number>`COALESCE(SUM(${creditPurchases.amountPaid}), 0)` })
+    .from(creditPurchases).where(and(gte(creditPurchases.createdAt, sixtyDaysAgo), sql`${creditPurchases.createdAt} < ${thirtyDaysAgo}`));
+  const prevSubCount = await db.select({ tier: subscriptions.tier, count: sql<number>`COUNT(*)` })
+    .from(subscriptions).where(and(gte(subscriptions.createdAt, sixtyDaysAgo), sql`${subscriptions.createdAt} < ${thirtyDaysAgo}`)).groupBy(subscriptions.tier);
+  let prevSubRevTotal = 0;
+  for (const s of prevSubCount) prevSubRevTotal += (s.tier === "creator" ? 49.99 : 19.99) * (s.count || 0);
+  const prevRevenue = (Number(prevCreditRev[0]?.total) || 0) + prevSubRevTotal;
+
+  // Total generations
+  const genResult = await db.select({ count: sql<number>`COUNT(*)` }).from(generations);
+  const totalGenerations = genResult[0]?.count || 0;
+
+  // Generations last 30 days
+  const recentGenResult = await db.select({ count: sql<number>`COUNT(*)` }).from(generations)
+    .where(gte(generations.createdAt, thirtyDaysAgo));
+  const recentGenerations = recentGenResult[0]?.count || 0;
+
+  // Total cost (channel costs)
+  const costResult = await db.select({ total: sql<number>`COALESCE(SUM(${channelCosts.amount}), 0)` }).from(channelCosts);
+  const totalSpend = Number(costResult[0]?.total) || 0;
+
+  return {
+    totalUsers,
+    recentUsers,
+    prevUsers,
+    totalRevenue,
+    recentRevenue,
+    prevRevenue,
+    totalGenerations,
+    recentGenerations,
+    totalSpend,
+    userGrowthPct: prevUsers > 0 ? Math.round(((recentUsers - prevUsers) / prevUsers) * 1000) / 10 : 0,
+    revenueGrowthPct: prevRevenue > 0 ? Math.round(((recentRevenue - prevRevenue) / prevRevenue) * 1000) / 10 : 0,
+  };
+}

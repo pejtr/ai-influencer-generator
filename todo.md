@@ -1107,3 +1107,16 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] CAC calculation (cost / new customers per channel)
 - [x] Cost tracking admin UI with add/delete entries, ROAS chart, details table, insights
 - [x] Unit tests for all 3 features (35 tests, 537 total passing)
+
+## Bug Fix: Invalid eventType
+- [x] Fix eventType validation error - added session_start, session_end, page_view, scroll_depth, touch_interaction, viewport_change to enum
+
+## Unified Analytics Dashboard, Predictive LTV & Budget Reallocation
+- [x] Unified Analytics Command Center at /admin/analytics-dashboard with KPI cards, health status, nav grid
+- [x] Predictive LTV model with log curve fitting at /admin/predictive-ltv (90d/180d/365d predictions per channel)
+- [x] Budget reallocation recommendations with composite scoring (ROAS 40% + LTV 30% + Efficiency 30%)
+- [x] Allocation visualization bar, insights, and methodology note
+- [x] Server-side queries: getLtvCohortData, getDashboardSummary, getNewCustomersByChannel
+- [x] tRPC endpoints: predictive.getLtvPredictions, predictive.getBudgetReallocation, dashboard.getSummary
+- [x] Routes + admin dashboard navigation (Analytics Command Center as primary CTA)
+- [x] Unit tests (18 new tests, 555 total passing)

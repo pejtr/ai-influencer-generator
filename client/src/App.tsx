@@ -32,6 +32,8 @@ import RevenueAttribution from "./pages/RevenueAttribution";
 import FunnelAlerts from "./pages/FunnelAlerts";
 import AttributionModels from "./pages/AttributionModels";
 import CostTracking from "./pages/CostTracking";
+import UnifiedDashboard from "./pages/UnifiedDashboard";
+import PredictiveLtv from "./pages/PredictiveLtv";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import InstallBanner from "./components/InstallBanner";
@@ -72,6 +74,8 @@ function Router() {
       <Route path="/admin/funnel-alerts" component={FunnelAlerts} />
       <Route path="/admin/attribution" component={AttributionModels} />
       <Route path="/admin/costs" component={CostTracking} />
+      <Route path="/admin/analytics-dashboard" component={UnifiedDashboard} />
+      <Route path="/admin/predictive-ltv" component={PredictiveLtv} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

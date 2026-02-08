@@ -83,6 +83,18 @@ export default function AdminDashboard() {
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <Button asChild>
+                <Link href="/admin/analytics-dashboard" className="gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Analytics Command Center
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/admin/predictive-ltv" className="gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Predictive LTV
+                </Link>
+              </Button>
               <Button asChild variant="outline">
                 <Link href="/admin/funnel" className="gap-2">
                   <BarChart3 className="w-4 h-4" />
