@@ -1234,3 +1234,133 @@ export async function getPwaAnalyticsByPlatform(days: number = 30) {
     .groupBy(pwaAnalytics.platform, pwaAnalytics.eventType);
   return rows;
 }
+
+
+// ============================================
+// COHORT ANALYSIS QUERIES
+// ============================================
+
+/**
+ * Get all users with their registration dates for cohort grouping.
+ */
+export async function getCohortUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({
+    id: users.id,
+    createdAt: users.createdAt,
+    tier: users.tier,
+  }).from(users).orderBy(users.createdAt);
+  return rows;
+}
+
+/**
+ * Get user activity data for cohort retention analysis.
+ * Activity = any generation, login (lastSignedIn), or credit transaction.
+ * Returns one row per user per day they were active.
+ */
+export async function getCohortActivityData(sinceDate: Date) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Combine multiple activity sources into a unified activity stream
+  // 1. Generations (most important - shows product usage)
+  const genActivity = await db.select({
+    userId: generations.userId,
+    date: sql<Date>`DATE(${generations.createdAt})`.as("date"),
+    revenue: sql<number>`0`.as("revenue"),
+    generations: sql<number>`COUNT(*)`.as("generations"),
+  })
+    .from(generations)
+    .where(gte(generations.createdAt, sinceDate))
+    .groupBy(generations.userId, sql`DATE(${generations.createdAt})`);
+
+  // 2. Credit purchases (revenue tracking)
+  const purchaseActivity = await db.select({
+    userId: creditPurchases.userId,
+    date: sql<Date>`DATE(${creditPurchases.createdAt})`.as("date"),
+    revenue: sql<number>`SUM(CAST(${creditPurchases.amountPaid} AS DECIMAL(10,2)))`.as("revenue"),
+    generations: sql<number>`0`.as("generations"),
+  })
+    .from(creditPurchases)
+    .where(and(
+      gte(creditPurchases.createdAt, sinceDate),
+      eq(creditPurchases.status, "completed")
+    ))
+    .groupBy(creditPurchases.userId, sql`DATE(${creditPurchases.createdAt})`);
+
+  // 3. PWA session starts (engagement tracking)
+  const sessionActivity = await db.select({
+    userId: pwaAnalytics.userId,
+    date: sql<Date>`DATE(${pwaAnalytics.createdAt})`.as("date"),
+    revenue: sql<number>`0`.as("revenue"),
+    generations: sql<number>`0`.as("generations"),
+  })
+    .from(pwaAnalytics)
+    .where(and(
+      gte(pwaAnalytics.createdAt, sinceDate),
+      eq(pwaAnalytics.eventType, "session_start"),
+      sql`${pwaAnalytics.userId} IS NOT NULL`
+    ))
+    .groupBy(pwaAnalytics.userId, sql`DATE(${pwaAnalytics.createdAt})`);
+
+  // Merge all activities
+  const activityMap = new Map<string, { userId: number; date: Date; revenue: number; generations: number }>();
+
+  const mergeActivity = (rows: { userId: number | null; date: Date; revenue: number; generations: number }[]) => {
+    for (const row of rows) {
+      if (!row.userId) continue;
+      const key = `${row.userId}-${row.date}`;
+      const existing = activityMap.get(key);
+      if (existing) {
+        existing.revenue += Number(row.revenue) || 0;
+        existing.generations += Number(row.generations) || 0;
+      } else {
+        activityMap.set(key, {
+          userId: row.userId,
+          date: new Date(row.date),
+          revenue: Number(row.revenue) || 0,
+          generations: Number(row.generations) || 0,
+        });
+      }
+    }
+  };
+
+  mergeActivity(genActivity);
+  mergeActivity(purchaseActivity);
+  mergeActivity(sessionActivity);
+
+  return Array.from(activityMap.values());
+}
+
+/**
+ * Get subscription revenue data per user per period for cohort revenue tracking.
+ */
+export async function getCohortSubscriptionRevenue(sinceDate: Date) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db.select({
+    userId: subscriptions.userId,
+    date: sql<Date>`DATE(${subscriptions.currentPeriodStart})`.as("date"),
+    tier: subscriptions.tier,
+  })
+    .from(subscriptions)
+    .where(and(
+      gte(subscriptions.currentPeriodStart, sinceDate),
+      eq(subscriptions.status, "active")
+    ));
+
+  // Map subscription tier to approximate monthly revenue
+  const tierRevenue: Record<string, number> = {
+    pro: 19.99,
+    creator: 49.99,
+  };
+
+  return rows.map(r => ({
+    userId: r.userId,
+    date: new Date(r.date),
+    revenue: tierRevenue[r.tier] || 0,
+    generations: 0,
+  }));
+}

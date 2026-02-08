@@ -1046,3 +1046,18 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] New "Scroll Depth" tab in PWA Analytics dashboard
 - [x] Server-side scroll depth data query endpoint
 - [x] Unit tests for all 3 features (31 new tests, 429 total passing)
+
+## Cohort Analysis
+- [x] Shared cohort analysis types and utility functions (shared/cohortAnalysis.ts)
+- [x] Server-side cohort retention query (group users by registration week/month, track activity per period)
+- [x] Server-side cohort revenue query (credit purchases + subscription revenue per cohort)
+- [x] Server-side cohort engagement query (generations, sessions, PWA events per cohort)
+- [x] tRPC endpoint for cohort data (admin-only, cohort.getAnalysis)
+- [x] Cohort retention heatmap component (color-coded grid with retention/revenue/generations views)
+- [x] Cohort summary cards (avg retention, best/worst cohort, LTV, trend detection)
+- [x] Average retention curve SVG visualization
+- [x] Period selector (weekly/monthly) + time range selector (3/6/12 months)
+- [x] Key insights section with actionable recommendations
+- [x] New Cohort Analysis page at /admin/cohort-analysis
+- [x] Route registration in App.tsx + admin dashboard navigation link
+- [x] Unit tests for cohort analysis (31 tests, 460 total passing)

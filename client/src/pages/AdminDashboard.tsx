@@ -82,7 +82,19 @@ export default function AdminDashboard() {
                 Monitor your platform's performance and manage users
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button asChild variant="outline">
+                <Link href="/admin/cohort-analysis" className="gap-2">
+                  <Users className="w-4 h-4" />
+                  Cohort Analysis
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/admin/pwa-analytics" className="gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  PWA Analytics
+                </Link>
+              </Button>
               <Button asChild variant="outline">
                 <Link href="/admin/chat-analytics" className="gap-2">
                   <BarChart3 className="w-4 h-4" />

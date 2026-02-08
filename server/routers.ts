@@ -37,7 +37,8 @@ import {
   // PWA Analytics
   trackPwaEvent, getPwaAnalyticsSummary, getPwaAnalyticsTrend, getPwaAnalyticsByPlatform,
   getPwaABTestByVariant, getPwaTouchHeatmapData, getWeeklyReportData,
-  getScrollDepthData, getABTestVariantStats
+  getScrollDepthData, getABTestVariantStats,
+  getCohortUsers, getCohortActivityData, getCohortSubscriptionRevenue
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -2611,6 +2612,54 @@ export const appRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "No report data available" });
       }
       return { html: generateReportHTML(reportData), filename: `weekly-report-${reportData.period.start}-${reportData.period.end}.pdf` };
+    }),
+  }),
+
+  // ============================================
+  // COHORT ANALYSIS
+  // ============================================
+  cohort: router({
+    getAnalysis: protectedProcedure.input(z.object({
+      period: z.enum(["weekly", "monthly"]).default("weekly"),
+      months: z.number().min(1).max(24).default(6),
+    })).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+      }
+
+      const { buildCohortRows, calculateCohortSummary } = await import("../shared/cohortAnalysis");
+
+      const sinceDate = new Date();
+      sinceDate.setMonth(sinceDate.getMonth() - input.months);
+
+      const [allUsers, activities, subRevenue] = await Promise.all([
+        getCohortUsers(),
+        getCohortActivityData(sinceDate),
+        getCohortSubscriptionRevenue(sinceDate),
+      ]);
+
+      // Filter users to only those registered since sinceDate
+      const cohortUsers = allUsers.filter(u => new Date(u.createdAt) >= sinceDate);
+
+      // Merge subscription revenue into activities
+      const allActivities = [...activities, ...subRevenue];
+
+      const maxPeriods = input.period === "weekly" ? input.months * 4 : input.months;
+      const cohorts = buildCohortRows(
+        cohortUsers.map(u => ({ id: u.id, createdAt: new Date(u.createdAt) })),
+        allActivities,
+        input.period,
+        maxPeriods
+      );
+
+      const summary = calculateCohortSummary(cohorts);
+
+      return {
+        period: input.period,
+        cohorts,
+        summary,
+        maxPeriodOffset: maxPeriods,
+      };
     }),
   }),
 });
