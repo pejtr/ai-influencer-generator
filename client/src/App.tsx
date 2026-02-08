@@ -28,12 +28,14 @@ import ContentStrategy from "./pages/ContentStrategy";
 import PwaAnalytics from "./pages/PwaAnalytics";
 import CohortAnalysis from "./pages/CohortAnalysis";
 import ConversionFunnel from "./pages/ConversionFunnel";
+import RevenueAttribution from "./pages/RevenueAttribution";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import InstallBanner from "./components/InstallBanner";
 import { usePwaTracking } from "./hooks/usePwaTracking";
 import { useMobileTracking } from "./hooks/useMobileTracking";
 import { useHeatmapTracking } from "./hooks/useHeatmapTracking";
+import { useUtmCapture } from "./hooks/useUtmCapture";
 
 function Router() {
   return (
@@ -63,6 +65,7 @@ function Router() {
       <Route path="/admin/pwa-analytics" component={PwaAnalytics} />
       <Route path="/admin/cohort-analysis" component={CohortAnalysis} />
       <Route path="/admin/funnel" component={ConversionFunnel} />
+      <Route path="/admin/revenue" component={RevenueAttribution} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -97,6 +100,7 @@ function App() {
   usePwaTracking();
   useMobileTracking();
   useHeatmapTracking(true);
+  useUtmCapture();
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">

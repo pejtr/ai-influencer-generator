@@ -96,6 +96,12 @@ export default function AdminDashboard() {
                 </Link>
               </Button>
               <Button asChild variant="outline">
+                <Link href="/admin/revenue" className="gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  Revenue Attribution
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
                 <Link href="/admin/pwa-analytics" className="gap-2">
                   <BarChart3 className="w-4 h-4" />
                   PWA Analytics

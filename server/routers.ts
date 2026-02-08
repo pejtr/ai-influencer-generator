@@ -39,7 +39,8 @@ import {
   getPwaABTestByVariant, getPwaTouchHeatmapData, getWeeklyReportData,
   getScrollDepthData, getABTestVariantStats,
   getCohortUsers, getCohortActivityData, getCohortSubscriptionRevenue,
-  getFunnelData, getFunnelTrend
+  getFunnelData, getFunnelTrend,
+  getRevenueByChannel, getLtvTrendByChannel, updateUserAcquisitionChannel
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -87,6 +88,11 @@ import {
   EARN_TIERS, getEarnTier, getNextTierViews, calculateEarnings,
   MONETIZATION_STRATEGIES, CONTENT_STRATEGY_TIPS, PINTEREST_STRATEGY
 } from "./earnProgram";
+import {
+  buildChannelMetrics, generateRevenueInsights, buildChannelComparison,
+  calculateLTV, calculateConversionRate, ALL_CHANNELS,
+  type AcquisitionChannel, type RevenueAttributionData, type LtvTrendPoint
+} from "@shared/revenueAttribution";
 
 // Character settings schema
 const characterSettingsSchema = z.object({
@@ -2727,6 +2733,88 @@ export const appRouter = router({
 
       const trend = await getFunnelTrend(startDate, endDate);
       return trend;
+    }),
+  }),
+
+  // Revenue Attribution & LTV
+  revenue: router({
+    getAttribution: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+      }
+      const rawChannels = await getRevenueByChannel();
+      const channels = rawChannels.map((raw: any) => buildChannelMetrics(raw));
+      
+      const totalUsers = channels.reduce((s, c) => s + c.totalUsers, 0);
+      const totalPaidUsers = channels.reduce((s, c) => s + c.paidUsers, 0);
+      const totalRevenue = channels.reduce((s, c) => s + c.totalRevenue, 0);
+      
+      const result: RevenueAttributionData = {
+        channels,
+        totals: {
+          totalUsers,
+          totalPaidUsers,
+          totalRevenue,
+          overallLtv: calculateLTV(totalRevenue, totalUsers),
+          overallConversionRate: calculateConversionRate(totalPaidUsers, totalUsers),
+        },
+        topChannel: channels.length > 0 ? channels.reduce((best, c) => c.ltv > best.ltv ? c : best).channel : null,
+        worstChannel: channels.length > 0 ? channels.filter(c => c.totalUsers >= 3).reduce((worst, c) => c.ltv < worst.ltv ? c : worst, channels[0]).channel : null,
+        ltvTrend: [],
+      };
+      return result;
+    }),
+
+    getLtvTrend: protectedProcedure.input(z.object({
+      days: z.number().min(7).max(365).default(90),
+    })).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+      }
+      const trend = await getLtvTrendByChannel(input.days);
+      return trend;
+    }),
+
+    getInsights: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+      }
+      const rawChannels = await getRevenueByChannel();
+      const channels = rawChannels.map((raw: any) => buildChannelMetrics(raw));
+      
+      const totalUsers = channels.reduce((s, c) => s + c.totalUsers, 0);
+      const totalPaidUsers = channels.reduce((s, c) => s + c.paidUsers, 0);
+      const totalRevenue = channels.reduce((s, c) => s + c.totalRevenue, 0);
+      
+      const data: RevenueAttributionData = {
+        channels,
+        totals: {
+          totalUsers,
+          totalPaidUsers,
+          totalRevenue,
+          overallLtv: calculateLTV(totalRevenue, totalUsers),
+          overallConversionRate: calculateConversionRate(totalPaidUsers, totalUsers),
+        },
+        topChannel: null,
+        worstChannel: null,
+        ltvTrend: [],
+      };
+      return {
+        insights: generateRevenueInsights(data),
+        comparison: buildChannelComparison(channels),
+      };
+    }),
+
+    updateChannel: protectedProcedure.input(z.object({
+      utmSource: z.string().optional(),
+      utmMedium: z.string().optional(),
+      utmCampaign: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      // Auto-detect channel from UTM params
+      const { determineChannel } = await import("@shared/revenueAttribution");
+      const channel = determineChannel(input.utmSource, input.utmMedium);
+      await updateUserAcquisitionChannel(ctx.user.id, channel, input.utmSource, input.utmMedium, input.utmCampaign);
+      return { channel };
     }),
   }),
 });

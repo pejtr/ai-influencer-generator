@@ -1515,3 +1515,168 @@ export async function getFunnelTrend(startDate: Date, endDate: Date) {
 
   return Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
+
+
+// ============ Revenue Attribution & LTV ============
+
+export async function getRevenueByChannel() {
+  const db = await getDb();
+  if (!db) return [];
+  // Get user counts per channel
+  const userCounts = await db.select({
+    channel: users.acquisitionChannel,
+    totalUsers: sql<number>`COUNT(*)`,
+  }).from(users).groupBy(users.acquisitionChannel);
+
+  // Get paid users per channel (users with at least one completed purchase or active subscription)
+  const paidUsersByChannel = await db.select({
+    channel: users.acquisitionChannel,
+    paidUsers: sql<number>`COUNT(DISTINCT ${users.id})`,
+  }).from(users)
+    .leftJoin(creditPurchases, sql`${creditPurchases.userId} = ${users.id} AND ${creditPurchases.status} = 'completed'`)
+    .leftJoin(subscriptions, sql`${subscriptions.userId} = ${users.id}`)
+    .where(sql`${creditPurchases.id} IS NOT NULL OR ${subscriptions.id} IS NOT NULL`)
+    .groupBy(users.acquisitionChannel);
+
+  // Get credit pack revenue per channel
+  const creditRevenue = await db.select({
+    channel: users.acquisitionChannel,
+    revenue: sql<number>`COALESCE(SUM(${creditPurchases.amountPaid}), 0)`,
+    orderCount: sql<number>`COUNT(${creditPurchases.id})`,
+  }).from(users)
+    .leftJoin(creditPurchases, sql`${creditPurchases.userId} = ${users.id} AND ${creditPurchases.status} = 'completed'`)
+    .groupBy(users.acquisitionChannel);
+
+  // Get subscription revenue per channel (estimate from active subscriptions * price)
+  const subRevenue = await db.select({
+    channel: users.acquisitionChannel,
+    revenue: sql<number>`COUNT(DISTINCT ${subscriptions.id}) * 19.99`, // Approximate monthly revenue
+    subCount: sql<number>`COUNT(DISTINCT ${subscriptions.id})`,
+  }).from(users)
+    .leftJoin(subscriptions, sql`${subscriptions.userId} = ${users.id}`)
+    .where(sql`${subscriptions.id} IS NOT NULL`)
+    .groupBy(users.acquisitionChannel);
+
+  // Get avg days to first purchase per channel
+  const daysToFirstPurchase = await db.select({
+    channel: users.acquisitionChannel,
+    avgDays: sql<number>`COALESCE(AVG(DATEDIFF(${creditPurchases.createdAt}, ${users.createdAt})), 0)`,
+  }).from(users)
+    .innerJoin(creditPurchases, sql`${creditPurchases.userId} = ${users.id} AND ${creditPurchases.status} = 'completed'`)
+    .groupBy(users.acquisitionChannel);
+
+  // Get 30-day active users per channel
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const activeUsers30d = await db.select({
+    channel: users.acquisitionChannel,
+    activeCount: sql<number>`COUNT(DISTINCT ${users.id})`,
+  }).from(users)
+    .where(sql`${users.lastSignedIn} >= ${thirtyDaysAgo}`)
+    .groupBy(users.acquisitionChannel);
+
+  // Merge all data
+  const channelMap = new Map<string, {
+    channel: string;
+    totalUsers: number;
+    paidUsers: number;
+    subscriptionRevenue: number;
+    creditPackRevenue: number;
+    totalOrders: number;
+    avgDaysToFirstPurchase: number;
+    activeUsersLast30d: number;
+  }>();
+
+  const channels = ["organic", "paid", "affiliate", "direct", "social"];
+  channels.forEach(ch => {
+    channelMap.set(ch, {
+      channel: ch,
+      totalUsers: 0,
+      paidUsers: 0,
+      subscriptionRevenue: 0,
+      creditPackRevenue: 0,
+      totalOrders: 0,
+      avgDaysToFirstPurchase: 0,
+      activeUsersLast30d: 0,
+    });
+  });
+
+  userCounts.forEach(row => {
+    const ch = row.channel || "direct";
+    const entry = channelMap.get(ch);
+    if (entry) entry.totalUsers = Number(row.totalUsers);
+  });
+
+  paidUsersByChannel.forEach(row => {
+    const ch = row.channel || "direct";
+    const entry = channelMap.get(ch);
+    if (entry) entry.paidUsers = Number(row.paidUsers);
+  });
+
+  creditRevenue.forEach(row => {
+    const ch = row.channel || "direct";
+    const entry = channelMap.get(ch);
+    if (entry) {
+      entry.creditPackRevenue = Number(row.revenue);
+      entry.totalOrders += Number(row.orderCount);
+    }
+  });
+
+  subRevenue.forEach(row => {
+    const ch = row.channel || "direct";
+    const entry = channelMap.get(ch);
+    if (entry) {
+      entry.subscriptionRevenue = Number(row.revenue);
+      entry.totalOrders += Number(row.subCount);
+    }
+  });
+
+  daysToFirstPurchase.forEach(row => {
+    const ch = row.channel || "direct";
+    const entry = channelMap.get(ch);
+    if (entry) entry.avgDaysToFirstPurchase = Number(row.avgDays);
+  });
+
+  activeUsers30d.forEach(row => {
+    const ch = row.channel || "direct";
+    const entry = channelMap.get(ch);
+    if (entry) entry.activeUsersLast30d = Number(row.activeCount);
+  });
+
+  return Array.from(channelMap.values());
+}
+
+export async function getLtvTrendByChannel(days: number = 90) {
+  const db = await getDb();
+  if (!db) return [];
+  const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  // Get cumulative revenue per channel per week
+  const weeklyRevenue = await db.select({
+    channel: users.acquisitionChannel,
+    week: sql<string>`DATE_FORMAT(${creditPurchases.createdAt}, '%Y-%m-%d')`,
+    revenue: sql<number>`SUM(${creditPurchases.amountPaid})`,
+    userCount: sql<number>`COUNT(DISTINCT ${users.id})`,
+  }).from(creditPurchases)
+    .innerJoin(users, sql`${users.id} = ${creditPurchases.userId}`)
+    .where(sql`${creditPurchases.createdAt} >= ${startDate} AND ${creditPurchases.status} = 'completed'`)
+    .groupBy(users.acquisitionChannel, sql`DATE_FORMAT(${creditPurchases.createdAt}, '%Y-%m-%d')`)
+    .orderBy(sql`DATE_FORMAT(${creditPurchases.createdAt}, '%Y-%m-%d')`);
+
+  return weeklyRevenue.map(row => ({
+    date: String(row.week),
+    channel: (row.channel || "direct") as string,
+    revenue: Number(row.revenue),
+    userCount: Number(row.userCount),
+  }));
+}
+
+export async function updateUserAcquisitionChannel(userId: number, channel: string, utmSource?: string, utmMedium?: string, utmCampaign?: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({
+    acquisitionChannel: channel as any,
+    utmSource: utmSource || null,
+    utmMedium: utmMedium || null,
+    utmCampaign: utmCampaign || null,
+  }).where(eq(users.id, userId));
+}

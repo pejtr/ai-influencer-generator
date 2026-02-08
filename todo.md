@@ -1076,3 +1076,18 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] New Conversion Funnel page at /admin/funnel
 - [x] Route registration in App.tsx + admin dashboard navigation link
 - [x] Unit tests for funnel analysis (22 tests, 482 total passing)
+
+## Revenue Attribution & LTV per Acquisition Channel
+- [x] Schema update: acquisitionChannel, utmSource, utmMedium, utmCampaign added to users table
+- [x] UTM parameter capture hook (useUtmCapture) auto-detects channel from URL params
+- [x] Shared revenue attribution types and LTV calculation utilities (shared/revenueAttribution.ts)
+- [x] Server-side queries: revenue per channel, LTV per channel, paid users, retention, days to first purchase
+- [x] tRPC endpoints: revenue.getAttribution, revenue.getLtvTrend, revenue.getInsights, revenue.updateChannel
+- [x] Revenue Attribution page at /admin/revenue with LTV bar chart per channel
+- [x] Channel comparison table with 9 metrics (users, paid, conv rate, LTV, LTV paid, revenue, AOV, retention, days to purchase)
+- [x] Revenue breakdown (subscription vs credit pack per channel)
+- [x] Retention & engagement chart per channel
+- [x] Stacked bar LTV trend chart with 30/60/90d filter
+- [x] Key insights & recommendations (highest LTV, best conversion, low conversion warnings, retention)
+- [x] Route registration in App.tsx + admin dashboard navigation link
+- [x] Unit tests for revenue attribution (20 tests, 502 total passing)

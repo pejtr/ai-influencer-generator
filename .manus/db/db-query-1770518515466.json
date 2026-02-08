@@ -1,0 +1,42 @@
+{
+  "query": "SHOW COLUMNS FROM users WHERE Field IN ('acquisitionChannel', 'utmSource', 'utmMedium', 'utmCampaign');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user dtffFtxzpGHwBQ5.0a644b1e7093 --database DtHx6xuQiQvSJ7iXUMCHPD --execute SHOW COLUMNS FROM users WHERE Field IN ('acquisitionChannel', 'utmSource', 'utmMedium', 'utmCampaign');",
+  "rows": [
+    {
+      "Field": "acquisitionChannel",
+      "Type": "enum('organic','paid','affiliate','direct','social')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "direct",
+      "Extra": ""
+    },
+    {
+      "Field": "utmSource",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "utmMedium",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "utmCampaign",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nacquisitionChannel\tenum('organic','paid','affiliate','direct','social')\tYES\t\tdirect\t\nutmSource\tvarchar(255)\tYES\t\tNULL\t\nutmMedium\tvarchar(255)\tYES\t\tNULL\t\nutmCampaign\tvarchar(255)\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 349
+}

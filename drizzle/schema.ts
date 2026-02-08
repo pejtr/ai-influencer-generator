@@ -29,6 +29,11 @@ export const users = mysqlTable("users", {
   referredBy: varchar("referredBy", { length: 32 }),
   referredByLevel2: varchar("referredByLevel2", { length: 32 }),
   referredByLevel3: varchar("referredByLevel3", { length: 32 }),
+  // Acquisition tracking
+  acquisitionChannel: mysqlEnum("acquisitionChannel", ["organic", "paid", "affiliate", "direct", "social"]).default("direct"),
+  utmSource: varchar("utmSource", { length: 255 }),
+  utmMedium: varchar("utmMedium", { length: 255 }),
+  utmCampaign: varchar("utmCampaign", { length: 255 }),
   // Fanvue integration
   fanvueAccessToken: text("fanvueAccessToken"),
   fanvueRefreshToken: text("fanvueRefreshToken"),
