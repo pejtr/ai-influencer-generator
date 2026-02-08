@@ -40,7 +40,13 @@ import {
   getScrollDepthData, getABTestVariantStats,
   getCohortUsers, getCohortActivityData, getCohortSubscriptionRevenue,
   getFunnelData, getFunnelTrend,
-  getRevenueByChannel, getLtvTrendByChannel, updateUserAcquisitionChannel
+  getRevenueByChannel, getLtvTrendByChannel, updateUserAcquisitionChannel,
+  // Funnel Alerts, Attribution, Cost Tracking
+  getFunnelAlertHistory, getUnacknowledgedAlerts, saveFunnelAlert, acknowledgeFunnelAlert,
+  getHistoricalFunnelRates,
+  getChannelCosts, addChannelCost, updateChannelCost, deleteChannelCost,
+  getChannelCostSummary, getMonthlyCostTrend,
+  addUserTouchpoint, getUserTouchpoints, getAllUserJourneys, getNewCustomersPerChannel
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -93,6 +99,18 @@ import {
   calculateLTV, calculateConversionRate, ALL_CHANNELS,
   type AcquisitionChannel, type RevenueAttributionData, type LtvTrendPoint
 } from "@shared/revenueAttribution";
+import {
+  checkFunnelAlerts, calculateHistoricalAverages, buildAlertNotification,
+  type AlertThreshold, DEFAULT_THRESHOLDS
+} from "@shared/funnelAlerts";
+import {
+  compareAttributionModels, buildModelComparisonTable, generateAttributionInsights,
+  type AttributionModel, ALL_MODELS, ATTRIBUTION_MODELS
+} from "@shared/attributionModels";
+import {
+  buildChannelROAS, calculateROAS, calculateCAC, generateCostInsights,
+  type CostTrackingData
+} from "@shared/costTracking";
 
 // Character settings schema
 const characterSettingsSchema = z.object({
@@ -2815,6 +2833,230 @@ export const appRouter = router({
       const channel = determineChannel(input.utmSource, input.utmMedium);
       await updateUserAcquisitionChannel(ctx.user.id, channel, input.utmSource, input.utmMedium, input.utmCampaign);
       return { channel };
+    }),
+  }),
+
+  // ============================================================
+  // Funnel Alerts Router
+  // ============================================================
+  funnelAlerts: router({
+    check: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      
+      // Get current funnel rates
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      const funnelData = await getFunnelData(startDate, endDate);
+      const currentRates = [
+        { stepId: "signups", stepLabel: "Visit → Sign Up", rate: 0, count: (funnelData?.signups ?? 0) + (funnelData?.visits ?? 0) },
+        { stepId: "generations", stepLabel: "Sign Up → First Generation", rate: 0, count: funnelData?.signups ?? 0 },
+        { stepId: "paid", stepLabel: "Generation → Purchase", rate: 0, count: funnelData?.generations ?? 0 },
+      ];
+      
+      if (funnelData && funnelData.visits > 0) currentRates[0].rate = (funnelData.signups / funnelData.visits) * 100;
+      if (funnelData && funnelData.signups > 0) currentRates[1].rate = (funnelData.generations / funnelData.signups) * 100;
+      if (funnelData && funnelData.generations > 0) currentRates[2].rate = (funnelData.paidUsers / funnelData.generations) * 100;
+      
+      // Get historical averages
+      const historicalData = await getHistoricalFunnelRates(4);
+      const historicalAverages = calculateHistoricalAverages(historicalData);
+      
+      // Check for alerts
+      const alerts = checkFunnelAlerts(currentRates, historicalAverages);
+      
+      // Save alerts to DB
+      for (const alert of alerts) {
+        await saveFunnelAlert({
+          stepId: alert.stepId,
+          stepLabel: alert.stepLabel,
+          severity: alert.severity,
+          currentRate: Math.round(alert.currentRate * 10),
+          averageRate: Math.round(alert.averageRate * 10),
+          dropPercent: Math.round(alert.dropPercent * 10),
+          message: alert.message,
+        });
+      }
+      
+      // Notify owner if critical alerts
+      if (alerts.some(a => a.severity === "critical")) {
+        const { notifyOwner } = await import("./_core/notification");
+        const notification = buildAlertNotification(alerts);
+        await notifyOwner(notification);
+      }
+      
+      return { alerts, historicalAverages, currentRates };
+    }),
+
+    getHistory: protectedProcedure.input(z.object({
+      limit: z.number().min(1).max(200).default(50),
+    }).optional()).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return getFunnelAlertHistory(input?.limit ?? 50);
+    }),
+
+    getUnacknowledged: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return getUnacknowledgedAlerts();
+    }),
+
+    acknowledge: protectedProcedure.input(z.object({
+      alertId: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      await acknowledgeFunnelAlert(input.alertId, ctx.user.id);
+      return { success: true };
+    }),
+
+    getThresholds: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return DEFAULT_THRESHOLDS;
+    }),
+  }),
+
+  // ============================================================
+  // Attribution Models Router
+  // ============================================================
+  attribution: router({
+    compare: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      
+      const journeys = await getAllUserJourneys();
+      const results = compareAttributionModels(journeys);
+      const comparison = buildModelComparisonTable(results);
+      const insights = generateAttributionInsights(results);
+      
+      return {
+        results,
+        comparison,
+        insights,
+        models: ATTRIBUTION_MODELS,
+        totalJourneys: journeys.length,
+        journeysWithRevenue: journeys.filter(j => j.revenue > 0).length,
+      };
+    }),
+
+    trackTouchpoint: protectedProcedure.input(z.object({
+      eventType: z.string(),
+      utmSource: z.string().optional(),
+      utmMedium: z.string().optional(),
+      utmCampaign: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const { determineChannel } = await import("@shared/revenueAttribution");
+      const channel = determineChannel(input.utmSource, input.utmMedium);
+      await addUserTouchpoint({
+        userId: ctx.user.id,
+        channel,
+        eventType: input.eventType,
+        utmSource: input.utmSource,
+        utmMedium: input.utmMedium,
+        utmCampaign: input.utmCampaign,
+      });
+      return { success: true, channel };
+    }),
+
+    getUserJourney: protectedProcedure.input(z.object({
+      userId: z.number(),
+    })).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      return getUserTouchpoints(input.userId);
+    }),
+  }),
+
+  // ============================================================
+  // Cost Tracking & ROAS Router
+  // ============================================================
+  costTracking: router({
+    getData: protectedProcedure.input(z.object({
+      periodStart: z.string().optional(),
+      periodEnd: z.string().optional(),
+    }).optional()).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      
+      const costs = await getChannelCosts(input?.periodStart, input?.periodEnd);
+      const costSummary = await getChannelCostSummary();
+      const monthlyTrend = await getMonthlyCostTrend();
+      const newCustomers = await getNewCustomersPerChannel();
+      const revenueData = await getRevenueByChannel();
+      
+      // Build ROAS per channel
+      const channels: ("organic" | "paid" | "affiliate" | "direct" | "social")[] = ["organic", "paid", "affiliate", "direct", "social"];
+      const channelROAS = channels.map(ch => {
+        const costEntry = costSummary.find(c => c.channel === ch);
+        const revenueEntry = revenueData.find(r => r.channel === ch);
+        const customerEntry = newCustomers.find(c => c.channel === ch);
+        const channelRevenue = Number(revenueEntry?.subscriptionRevenue ?? 0) + Number(revenueEntry?.creditPackRevenue ?? 0);
+        
+        return buildChannelROAS({
+          channel: ch,
+          totalSpend: (costEntry?.totalAmount ?? 0) / 100, // cents to dollars
+          totalRevenue: channelRevenue / 100,
+          newCustomers: customerEntry?.count ?? 0,
+        });
+      });
+      
+      const totalSpend = channelROAS.reduce((s, c) => s + c.totalSpend, 0);
+      const totalRevenue = channelROAS.reduce((s, c) => s + c.totalRevenue, 0);
+      const totalNewCustomers = channelROAS.reduce((s, c) => s + c.newCustomers, 0);
+      
+      const data: CostTrackingData = {
+        channels: channelROAS,
+        totals: {
+          totalSpend: Math.round(totalSpend * 100) / 100,
+          totalRevenue: Math.round(totalRevenue * 100) / 100,
+          totalRoas: calculateROAS(totalRevenue, totalSpend),
+          totalCac: calculateCAC(totalSpend, totalNewCustomers),
+          totalNewCustomers,
+          totalProfit: Math.round((totalRevenue - totalSpend) * 100) / 100,
+        },
+        monthlyTrend: monthlyTrend.map(m => ({
+          month: m.period,
+          channel: m.channel as "organic" | "paid" | "affiliate" | "direct" | "social",
+          spend: (m.totalAmount ?? 0) / 100,
+          revenue: 0, // Would need per-month revenue query
+          roas: 0,
+          newCustomers: 0,
+        })),
+      };
+      
+      const insights = generateCostInsights(data);
+      
+      return { ...data, insights, rawCosts: costs };
+    }),
+
+    addCost: protectedProcedure.input(z.object({
+      channel: z.enum(["organic", "paid", "affiliate", "direct", "social"]),
+      amount: z.number().min(0), // In cents
+      period: z.string().regex(/^\d{4}-\d{2}$/),
+      description: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      await addChannelCost({
+        channel: input.channel,
+        amount: input.amount,
+        period: input.period,
+        description: input.description,
+        createdBy: ctx.user.id,
+      });
+      return { success: true };
+    }),
+
+    updateCost: protectedProcedure.input(z.object({
+      id: z.number(),
+      amount: z.number().min(0),
+      description: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      await updateChannelCost(input.id, input.amount, input.description);
+      return { success: true };
+    }),
+
+    deleteCost: protectedProcedure.input(z.object({
+      id: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      await deleteChannelCost(input.id);
+      return { success: true };
     }),
   }),
 });

@@ -113,6 +113,24 @@ export default function AdminDashboard() {
                   Chat Analytics
                 </Link>
               </Button>
+              <Button asChild variant="outline">
+                <Link href="/admin/funnel-alerts" className="gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Funnel Alerts
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/admin/attribution" className="gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  Attribution Models
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/admin/costs" className="gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  Cost Tracking & ROAS
+                </Link>
+              </Button>
               <Button asChild>
                 <Link href="/admin/knowledge" className="gap-2">
                   <BookOpen className="w-4 h-4" />

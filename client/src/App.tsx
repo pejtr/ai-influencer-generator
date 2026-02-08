@@ -29,6 +29,9 @@ import PwaAnalytics from "./pages/PwaAnalytics";
 import CohortAnalysis from "./pages/CohortAnalysis";
 import ConversionFunnel from "./pages/ConversionFunnel";
 import RevenueAttribution from "./pages/RevenueAttribution";
+import FunnelAlerts from "./pages/FunnelAlerts";
+import AttributionModels from "./pages/AttributionModels";
+import CostTracking from "./pages/CostTracking";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import InstallBanner from "./components/InstallBanner";
@@ -66,6 +69,9 @@ function Router() {
       <Route path="/admin/cohort-analysis" component={CohortAnalysis} />
       <Route path="/admin/funnel" component={ConversionFunnel} />
       <Route path="/admin/revenue" component={RevenueAttribution} />
+      <Route path="/admin/funnel-alerts" component={FunnelAlerts} />
+      <Route path="/admin/attribution" component={AttributionModels} />
+      <Route path="/admin/costs" component={CostTracking} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

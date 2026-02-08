@@ -16,7 +16,10 @@ import {
   contentPurchases, InsertContentPurchase,
   fanTips, InsertFanTip,
   creatorEarnings, InsertCreatorEarnings,
-  pwaAnalytics, InsertPwaAnalytic
+  pwaAnalytics, InsertPwaAnalytic,
+  channelCosts, InsertChannelCost,
+  funnelAlerts, InsertFunnelAlert,
+  userTouchpoints, InsertUserTouchpoint
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { nanoid } from 'nanoid';
@@ -1679,4 +1682,240 @@ export async function updateUserAcquisitionChannel(userId: number, channel: stri
     utmMedium: utmMedium || null,
     utmCampaign: utmCampaign || null,
   }).where(eq(users.id, userId));
+}
+
+// ============================================================
+// Funnel Alerts
+// ============================================================
+
+export async function getFunnelAlertHistory(limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(funnelAlerts).orderBy(desc(funnelAlerts.createdAt)).limit(limit);
+}
+
+export async function getUnacknowledgedAlerts() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(funnelAlerts).where(eq(funnelAlerts.acknowledged, false)).orderBy(desc(funnelAlerts.createdAt));
+}
+
+export async function saveFunnelAlert(alert: InsertFunnelAlert) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(funnelAlerts).values(alert);
+  return result;
+}
+
+export async function acknowledgeFunnelAlert(alertId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  return db.update(funnelAlerts)
+    .set({ acknowledged: true, acknowledgedBy: userId, acknowledgedAt: new Date() })
+    .where(eq(funnelAlerts.id, alertId));
+}
+
+export async function getHistoricalFunnelRates(weeks: number = 4) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - weeks * 7);
+  
+  // Get weekly signup counts
+  const weeklySignups = await db.select({
+    week: sql<string>`DATE_FORMAT(${users.createdAt}, '%Y-%u')`,
+    count: sql<number>`COUNT(*)`,
+  }).from(users).where(gte(users.createdAt, startDate)).groupBy(sql`DATE_FORMAT(${users.createdAt}, '%Y-%u')`);
+  
+  // Get weekly generation counts (unique users)
+  const weeklyGenerations = await db.select({
+    week: sql<string>`DATE_FORMAT(${generations.createdAt}, '%Y-%u')`,
+    count: sql<number>`COUNT(DISTINCT ${generations.userId})`,
+  }).from(generations).where(gte(generations.createdAt, startDate)).groupBy(sql`DATE_FORMAT(${generations.createdAt}, '%Y-%u')`);
+  
+  // Get weekly paid user counts
+  const weeklyPaid = await db.select({
+    week: sql<string>`DATE_FORMAT(${creditPurchases.createdAt}, '%Y-%u')`,
+    count: sql<number>`COUNT(DISTINCT ${creditPurchases.userId})`,
+  }).from(creditPurchases).where(gte(creditPurchases.createdAt, startDate)).groupBy(sql`DATE_FORMAT(${creditPurchases.createdAt}, '%Y-%u')`);
+  
+  // Get weekly visits
+  const weeklyVisits = await db.select({
+    week: sql<string>`DATE_FORMAT(${pwaAnalytics.createdAt}, '%Y-%u')`,
+    count: sql<number>`COUNT(DISTINCT ${pwaAnalytics.userId})`,  // Count distinct users as proxy for sessions
+  }).from(pwaAnalytics)
+    .where(and(
+      gte(pwaAnalytics.createdAt, startDate),
+      sql`${pwaAnalytics.eventType} IN ('page_view', 'session_start')`
+    ))
+    .groupBy(sql`DATE_FORMAT(${pwaAnalytics.createdAt}, '%Y-%u')`);
+  
+  // Build weekly rates
+  const weeks_set = new Set<string>();
+  weeklyVisits.forEach(v => weeks_set.add(v.week));
+  weeklySignups.forEach(v => weeks_set.add(v.week));
+  
+  const result: { stepId: string; rate: number; week: string }[] = [];
+  
+  for (const week of Array.from(weeks_set)) {
+    const visits = weeklyVisits.find(v => v.week === week)?.count ?? 0;
+    const signups = weeklySignups.find(v => v.week === week)?.count ?? 0;
+    const gens = weeklyGenerations.find(v => v.week === week)?.count ?? 0;
+    const paid = weeklyPaid.find(v => v.week === week)?.count ?? 0;
+    
+    if (visits > 0) result.push({ stepId: "signups", rate: (signups / visits) * 100, week });
+    if (signups > 0) result.push({ stepId: "generations", rate: (gens / signups) * 100, week });
+    if (gens > 0) result.push({ stepId: "paid", rate: (paid / gens) * 100, week });
+  }
+  
+  return result;
+}
+
+// ============================================================
+// Channel Cost Tracking
+// ============================================================
+
+export async function getChannelCosts(periodStart?: string, periodEnd?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let query = db.select().from(channelCosts);
+  if (periodStart && periodEnd) {
+    return db.select().from(channelCosts)
+      .where(and(gte(channelCosts.period, periodStart), lte(channelCosts.period, periodEnd)))
+      .orderBy(desc(channelCosts.period));
+  }
+  return db.select().from(channelCosts).orderBy(desc(channelCosts.period));
+}
+
+export async function addChannelCost(cost: InsertChannelCost) {
+  const db = await getDb();
+  if (!db) return null;
+  return db.insert(channelCosts).values(cost);
+}
+
+export async function updateChannelCost(id: number, amount: number, description?: string) {
+  const db = await getDb();
+  if (!db) return null;
+  return db.update(channelCosts)
+    .set({ amount, description: description ?? undefined, updatedAt: new Date() })
+    .where(eq(channelCosts.id, id));
+}
+
+export async function deleteChannelCost(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  return db.delete(channelCosts).where(eq(channelCosts.id, id));
+}
+
+export async function getChannelCostSummary() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    channel: channelCosts.channel,
+    totalAmount: sql<number>`SUM(${channelCosts.amount})`,
+    periodCount: sql<number>`COUNT(DISTINCT ${channelCosts.period})`,
+  }).from(channelCosts).groupBy(channelCosts.channel);
+}
+
+export async function getMonthlyCostTrend() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    period: channelCosts.period,
+    channel: channelCosts.channel,
+    totalAmount: sql<number>`SUM(${channelCosts.amount})`,
+  }).from(channelCosts)
+    .groupBy(channelCosts.period, channelCosts.channel)
+    .orderBy(channelCosts.period);
+}
+
+// ============================================================
+// User Touchpoints for Attribution
+// ============================================================
+
+export async function addUserTouchpoint(tp: InsertUserTouchpoint) {
+  const db = await getDb();
+  if (!db) return null;
+  return db.insert(userTouchpoints).values(tp);
+}
+
+export async function getUserTouchpoints(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(userTouchpoints)
+    .where(eq(userTouchpoints.userId, userId))
+    .orderBy(userTouchpoints.createdAt);
+}
+
+export async function getAllUserJourneys() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Get all touchpoints grouped by user
+  const touchpoints = await db.select({
+    userId: userTouchpoints.userId,
+    channel: userTouchpoints.channel,
+    eventType: userTouchpoints.eventType,
+    createdAt: userTouchpoints.createdAt,
+  }).from(userTouchpoints).orderBy(userTouchpoints.userId, userTouchpoints.createdAt);
+  
+  // Get user revenue
+  const userRevenue = await db.select({
+    userId: creditPurchases.userId,
+    totalRevenue: sql<number>`SUM(${creditPurchases.amountPaid})`,  // amountPaid is the correct column
+  }).from(creditPurchases).groupBy(creditPurchases.userId);
+  
+  // Also include subscription revenue
+  const subRevenue = await db.select({
+    userId: subscriptions.userId,
+    totalRevenue: sql<number>`SUM(CASE WHEN ${subscriptions.tier} = 'pro' THEN 1999 WHEN ${subscriptions.tier} = 'creator' THEN 4999 ELSE 0 END)`,
+  }).from(subscriptions).where(eq(subscriptions.status, "active")).groupBy(subscriptions.userId);
+  
+  // Merge revenue
+  const revenueMap = new Map<number, number>();
+  for (const r of userRevenue) {
+    revenueMap.set(r.userId, (revenueMap.get(r.userId) || 0) + (r.totalRevenue || 0) / 100);
+  }
+  for (const r of subRevenue) {
+    revenueMap.set(r.userId, (revenueMap.get(r.userId) || 0) + (r.totalRevenue || 0) / 100);
+  }
+  
+  // Group touchpoints by user
+  const journeyMap = new Map<number, typeof touchpoints>();
+  for (const tp of touchpoints) {
+    if (!journeyMap.has(tp.userId)) journeyMap.set(tp.userId, []);
+    journeyMap.get(tp.userId)!.push(tp);
+  }
+  
+  return Array.from(journeyMap).map(([userId, tps]) => ({
+    userId,
+    touchpoints: tps.map(tp => ({
+      channel: tp.channel as "organic" | "paid" | "affiliate" | "direct" | "social",
+      timestamp: new Date(tp.createdAt).getTime(),
+      eventType: tp.eventType,
+    })),
+    revenue: revenueMap.get(userId) || 0,
+  }));
+}
+
+export async function getNewCustomersPerChannel(startDate?: Date) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let query;
+  if (startDate) {
+    query = db.select({
+      channel: users.acquisitionChannel,
+      count: sql<number>`COUNT(*)`,
+    }).from(users).where(gte(users.createdAt, startDate)).groupBy(users.acquisitionChannel);
+  } else {
+    query = db.select({
+      channel: users.acquisitionChannel,
+      count: sql<number>`COUNT(*)`,
+    }).from(users).groupBy(users.acquisitionChannel);
+  }
+  
+  return query;
 }

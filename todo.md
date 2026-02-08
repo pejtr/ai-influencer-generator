@@ -1091,3 +1091,19 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Key insights & recommendations (highest LTV, best conversion, low conversion warnings, retention)
 - [x] Route registration in App.tsx + admin dashboard navigation link
 - [x] Unit tests for revenue attribution (20 tests, 502 total passing)
+
+## Funnel Alerts, Attribution Models & Cost Tracking
+- [x] Automated funnel alerts: detect conversion rate drops vs 4-week average, notify owner
+- [x] Alert threshold configuration (admin-settable warning/critical % thresholds)
+- [x] Alert history log with acknowledge/dismiss in admin dashboard (/admin/funnel-alerts)
+- [x] Manual alert check trigger + automated via weekly report
+- [x] Attribution models: first-touch, last-touch, linear, time-decay (/admin/attribution)
+- [x] Touchpoint tracking via user journey reconstruction from DB events
+- [x] Attribution model comparison UI with side-by-side table and bar chart
+- [x] Attribution insights: awareness drivers, conversion closers, model disagreements
+- [x] Cost tracking: ad spend input per channel per period (/admin/costs)
+- [x] Cost tracking schema (channelCosts table created in DB)
+- [x] ROAS calculation (revenue / cost per channel) with break-even line
+- [x] CAC calculation (cost / new customers per channel)
+- [x] Cost tracking admin UI with add/delete entries, ROAS chart, details table, insights
+- [x] Unit tests for all 3 features (35 tests, 537 total passing)

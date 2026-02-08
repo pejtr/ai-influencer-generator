@@ -677,3 +677,49 @@ export const pwaAnalytics = mysqlTable("pwaAnalytics", {
 
 export type PwaAnalytic = typeof pwaAnalytics.$inferSelect;
 export type InsertPwaAnalytic = typeof pwaAnalytics.$inferInsert;
+
+// Channel cost tracking for ROAS/CAC calculation
+export const channelCosts = mysqlTable("channel_costs", {
+  id: int("id").autoincrement().primaryKey(),
+  channel: mysqlEnum("channel", ["organic", "paid", "affiliate", "direct", "social"]).notNull(),
+  amount: int("amount").notNull(), // Amount in cents
+  period: varchar("period", { length: 7 }).notNull(), // YYYY-MM format
+  description: text("description"),
+  createdBy: int("createdBy").notNull(), // Admin user ID
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type ChannelCost = typeof channelCosts.$inferSelect;
+export type InsertChannelCost = typeof channelCosts.$inferInsert;
+
+// Funnel alert history
+export const funnelAlerts = mysqlTable("funnel_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  stepId: varchar("stepId", { length: 50 }).notNull(),
+  stepLabel: varchar("stepLabel", { length: 100 }).notNull(),
+  severity: mysqlEnum("severity", ["critical", "warning", "info"]).notNull(),
+  currentRate: int("currentRate").notNull(), // Rate * 10 for 1 decimal precision
+  averageRate: int("averageRate").notNull(), // Rate * 10
+  dropPercent: int("dropPercent").notNull(), // Drop * 10
+  message: text("message").notNull(),
+  acknowledged: boolean("acknowledged").default(false).notNull(),
+  acknowledgedBy: int("acknowledgedBy"),
+  acknowledgedAt: timestamp("acknowledgedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type FunnelAlertRecord = typeof funnelAlerts.$inferSelect;
+export type InsertFunnelAlert = typeof funnelAlerts.$inferInsert;
+
+// User touchpoints for multi-touch attribution
+export const userTouchpoints = mysqlTable("user_touchpoints", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  channel: mysqlEnum("channel", ["organic", "paid", "affiliate", "direct", "social"]).notNull(),
+  eventType: varchar("eventType", { length: 50 }).notNull(), // page_view, signup, generation, purchase
+  utmSource: varchar("utmSource", { length: 255 }),
+  utmMedium: varchar("utmMedium", { length: 255 }),
+  utmCampaign: varchar("utmCampaign", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type UserTouchpoint = typeof userTouchpoints.$inferSelect;
+export type InsertUserTouchpoint = typeof userTouchpoints.$inferInsert;
