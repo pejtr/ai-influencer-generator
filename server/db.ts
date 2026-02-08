@@ -1364,3 +1364,154 @@ export async function getCohortSubscriptionRevenue(sinceDate: Date) {
     generations: 0,
   }));
 }
+
+
+// ============================================
+// CONVERSION FUNNEL QUERIES
+// ============================================
+
+/**
+ * Get funnel raw data for a given date range.
+ * Returns counts for each funnel step: visits, signups, generations, paid users.
+ */
+export async function getFunnelData(startDate: Date, endDate: Date) {
+  const db = await getDb();
+  if (!db) return null;
+
+  // 1. Visits: unique sessions (session_start events or page_view for anonymous)
+  const visitRows = await db.select({
+    count: sql<number>`COUNT(DISTINCT COALESCE(${pwaAnalytics.userId}, ${pwaAnalytics.id}))`,
+  })
+    .from(pwaAnalytics)
+    .where(and(
+      sql`${pwaAnalytics.eventType} IN ('session_start', 'page_view')`,
+      gte(pwaAnalytics.createdAt, startDate),
+      lte(pwaAnalytics.createdAt, endDate),
+    ));
+  const visits = Number(visitRows[0]?.count ?? 0);
+
+  // 2. Signups: users registered in this period
+  const signupRows = await db.select({
+    count: sql<number>`COUNT(*)`,
+  })
+    .from(users)
+    .where(and(
+      gte(users.createdAt, startDate),
+      lte(users.createdAt, endDate),
+    ));
+  const signups = Number(signupRows[0]?.count ?? 0);
+
+  // 3. First Generation: unique users who generated at least 1 completed image
+  //    (users who registered in this period AND generated)
+  const genRows = await db.select({
+    count: sql<number>`COUNT(DISTINCT ${generations.userId})`,
+  })
+    .from(generations)
+    .where(and(
+      gte(generations.createdAt, startDate),
+      lte(generations.createdAt, endDate),
+      eq(generations.status, "completed"),
+    ));
+  const generationUsers = Number(genRows[0]?.count ?? 0);
+
+  // 4. Paid Conversions: unique users who made a purchase (credit pack or subscription)
+  const creditPurchaseRows = await db.select({
+    count: sql<number>`COUNT(DISTINCT ${creditPurchases.userId})`,
+  })
+    .from(creditPurchases)
+    .where(and(
+      gte(creditPurchases.createdAt, startDate),
+      lte(creditPurchases.createdAt, endDate),
+      eq(creditPurchases.status, "completed"),
+    ));
+
+  const subscriptionRows = await db.select({
+    count: sql<number>`COUNT(DISTINCT ${subscriptions.userId})`,
+  })
+    .from(subscriptions)
+    .where(and(
+      gte(subscriptions.createdAt, startDate),
+      lte(subscriptions.createdAt, endDate),
+    ));
+
+  // Combine unique paid users (union of credit purchasers + subscribers)
+  const paidUsers = Number(creditPurchaseRows[0]?.count ?? 0) + Number(subscriptionRows[0]?.count ?? 0);
+
+  return {
+    visits,
+    signups,
+    generations: generationUsers,
+    paidUsers,
+  };
+}
+
+/**
+ * Get daily funnel trend data for charting.
+ */
+export async function getFunnelTrend(startDate: Date, endDate: Date) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Daily signups
+  const dailySignups = await db.select({
+    date: sql<string>`DATE(${users.createdAt})`.as("date"),
+    count: sql<number>`COUNT(*)`.as("count"),
+  })
+    .from(users)
+    .where(and(
+      gte(users.createdAt, startDate),
+      lte(users.createdAt, endDate),
+    ))
+    .groupBy(sql`DATE(${users.createdAt})`)
+    .orderBy(sql`DATE(${users.createdAt})`);
+
+  // Daily generations (unique users)
+  const dailyGens = await db.select({
+    date: sql<string>`DATE(${generations.createdAt})`.as("date"),
+    count: sql<number>`COUNT(DISTINCT ${generations.userId})`.as("count"),
+  })
+    .from(generations)
+    .where(and(
+      gte(generations.createdAt, startDate),
+      lte(generations.createdAt, endDate),
+      eq(generations.status, "completed"),
+    ))
+    .groupBy(sql`DATE(${generations.createdAt})`)
+    .orderBy(sql`DATE(${generations.createdAt})`);
+
+  // Daily visits
+  const dailyVisits = await db.select({
+    date: sql<string>`DATE(${pwaAnalytics.createdAt})`.as("date"),
+    count: sql<number>`COUNT(DISTINCT COALESCE(${pwaAnalytics.userId}, ${pwaAnalytics.id}))`.as("count"),
+  })
+    .from(pwaAnalytics)
+    .where(and(
+      sql`${pwaAnalytics.eventType} IN ('session_start', 'page_view')`,
+      gte(pwaAnalytics.createdAt, startDate),
+      lte(pwaAnalytics.createdAt, endDate),
+    ))
+    .groupBy(sql`DATE(${pwaAnalytics.createdAt})`)
+    .orderBy(sql`DATE(${pwaAnalytics.createdAt})`);
+
+  // Merge into a unified daily trend
+  const dateMap = new Map<string, { date: string; visits: number; signups: number; generations: number }>();
+
+  for (const row of dailyVisits) {
+    const d = String(row.date);
+    dateMap.set(d, { date: d, visits: Number(row.count), signups: 0, generations: 0 });
+  }
+  for (const row of dailySignups) {
+    const d = String(row.date);
+    const existing = dateMap.get(d) || { date: d, visits: 0, signups: 0, generations: 0 };
+    existing.signups = Number(row.count);
+    dateMap.set(d, existing);
+  }
+  for (const row of dailyGens) {
+    const d = String(row.date);
+    const existing = dateMap.get(d) || { date: d, visits: 0, signups: 0, generations: 0 };
+    existing.generations = Number(row.count);
+    dateMap.set(d, existing);
+  }
+
+  return Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+}

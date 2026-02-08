@@ -27,6 +27,7 @@ import CloneWorkflow from "./pages/CloneWorkflow";
 import ContentStrategy from "./pages/ContentStrategy";
 import PwaAnalytics from "./pages/PwaAnalytics";
 import CohortAnalysis from "./pages/CohortAnalysis";
+import ConversionFunnel from "./pages/ConversionFunnel";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
 import InstallBanner from "./components/InstallBanner";
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/content-strategy" component={ContentStrategy} />
       <Route path="/admin/pwa-analytics" component={PwaAnalytics} />
       <Route path="/admin/cohort-analysis" component={CohortAnalysis} />
+      <Route path="/admin/funnel" component={ConversionFunnel} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

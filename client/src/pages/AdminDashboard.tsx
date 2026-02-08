@@ -84,6 +84,12 @@ export default function AdminDashboard() {
             </div>
             <div className="flex gap-2 flex-wrap">
               <Button asChild variant="outline">
+                <Link href="/admin/funnel" className="gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  Conversion Funnel
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
                 <Link href="/admin/cohort-analysis" className="gap-2">
                   <Users className="w-4 h-4" />
                   Cohort Analysis

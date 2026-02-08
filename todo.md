@@ -1061,3 +1061,18 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] New Cohort Analysis page at /admin/cohort-analysis
 - [x] Route registration in App.tsx + admin dashboard navigation link
 - [x] Unit tests for cohort analysis (31 tests, 460 total passing)
+
+## Conversion Funnel Visualization
+- [x] Shared funnel types and utility functions (shared/conversionFunnel.ts)
+- [x] Server-side funnel data queries (visits, signups, generations, purchases per period)
+- [x] tRPC endpoints for funnel data (funnel.getAnalysis + funnel.getTrend, admin-only)
+- [x] Interactive funnel visualization with animated gradient bars and drop-off percentages
+- [x] Step-to-step conversion rates, drop-off analysis, and absolute rates
+- [x] Time range filter (7d, 30d, 90d, all-time)
+- [x] Funnel trend comparison (current vs previous period with pp change indicators)
+- [x] Actionable insights: low signup/activation/monetization warnings, biggest drop-off, period comparison
+- [x] Daily trend SVG chart (visits, signups, generations)
+- [x] Overall conversion rate banner
+- [x] New Conversion Funnel page at /admin/funnel
+- [x] Route registration in App.tsx + admin dashboard navigation link
+- [x] Unit tests for funnel analysis (22 tests, 482 total passing)

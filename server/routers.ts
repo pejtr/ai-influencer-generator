@@ -38,7 +38,8 @@ import {
   trackPwaEvent, getPwaAnalyticsSummary, getPwaAnalyticsTrend, getPwaAnalyticsByPlatform,
   getPwaABTestByVariant, getPwaTouchHeatmapData, getWeeklyReportData,
   getScrollDepthData, getABTestVariantStats,
-  getCohortUsers, getCohortActivityData, getCohortSubscriptionRevenue
+  getCohortUsers, getCohortActivityData, getCohortSubscriptionRevenue,
+  getFunnelData, getFunnelTrend
 } from "./db";
 import { 
   getOrCreateCustomer, 
@@ -2660,6 +2661,72 @@ export const appRouter = router({
         summary,
         maxPeriodOffset: maxPeriods,
       };
+    }),
+  }),
+
+  // ============================================
+  // CONVERSION FUNNEL
+  // ============================================
+  funnel: router({
+    getAnalysis: protectedProcedure.input(z.object({
+      days: z.number().min(1).max(365).default(30),
+    })).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+      }
+
+      const { buildFunnelSteps, compareFunnels, generateFunnelInsights, getPeriodBoundaries } = await import("../shared/conversionFunnel");
+
+      const { current, previous } = getPeriodBoundaries(input.days);
+
+      const [currentData, previousData] = await Promise.all([
+        getFunnelData(current.start, current.end),
+        getFunnelData(previous.start, previous.end),
+      ]);
+
+      if (!currentData) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch funnel data" });
+      }
+
+      const currentFunnel = buildFunnelSteps(currentData);
+      let comparison = null;
+      if (previousData) {
+        const previousFunnel = buildFunnelSteps(previousData);
+        comparison = compareFunnels(currentFunnel, previousFunnel);
+      }
+
+      const insights = generateFunnelInsights(currentFunnel, comparison);
+
+      const periodLabel = input.days <= 7 ? "Last 7 days"
+        : input.days <= 30 ? "Last 30 days"
+        : input.days <= 90 ? "Last 90 days" : "All time";
+
+      return {
+        funnel: currentFunnel,
+        comparison,
+        insights,
+        periodLabel,
+        totalVisits: currentData.visits,
+        totalConversions: currentData.paidUsers,
+        overallConversionRate: currentData.visits > 0
+          ? Math.round((currentData.paidUsers / currentData.visits) * 1000) / 10
+          : 0,
+      };
+    }),
+
+    getTrend: protectedProcedure.input(z.object({
+      days: z.number().min(1).max(365).default(30),
+    })).query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+      }
+
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - input.days);
+
+      const trend = await getFunnelTrend(startDate, endDate);
+      return trend;
     }),
   }),
 });
