@@ -14,8 +14,10 @@ import {
   saveUserTemplate,
   getUserTemplates,
   deleteUserTemplate,
+  getUserTemplateById,
   SEED_VIDEO_TEMPLATES,
 } from "./videoTemplatesDb";
+import { generateImage } from "./_core/imageGeneration";
 
 export const videoTemplatesRouter = router({
   // Public: list templates with filtering
@@ -97,10 +99,39 @@ export const videoTemplatesRouter = router({
       return { id };
     }),
 
-  // Protected: get user's saved templates
+  // Protected: get user's saved templates (with original template data)
   mySaved: protectedProcedure.query(async ({ ctx }) => {
     return getUserTemplates(ctx.user.id);
   }),
+
+  // Protected: get single saved template by id
+  getSaved: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const saved = await getUserTemplateById(input.id, ctx.user.id);
+      if (!saved) throw new TRPCError({ code: "NOT_FOUND", message: "Saved template not found" });
+      // Also fetch original template
+      const original = await getVideoTemplateById(saved.templateId);
+      return { ...saved, originalTemplate: original };
+    }),
+
+  // Protected: update user's saved template
+  updateSaved: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      customImagePrompt: z.string().optional(),
+      customVideoPrompt: z.string().optional(),
+      customSettings: z.record(z.string(), z.string()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      const saved = await getUserTemplateById(id, ctx.user.id);
+      if (!saved) throw new TRPCError({ code: "NOT_FOUND", message: "Saved template not found" });
+      const { updateUserTemplate } = await import("./videoTemplatesDb");
+      await updateUserTemplate(id, ctx.user.id, data);
+      return { success: true };
+    }),
 
   // Protected: delete user's saved template
   deleteSaved: protectedProcedure
@@ -183,6 +214,51 @@ export const videoTemplatesRouter = router({
       await deleteVideoTemplate(input.id);
       return { success: true };
     }),
+
+  // Admin: generate thumbnail for a template
+  adminGenerateThumbnail: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+      }
+      const template = await getVideoTemplateById(input.id);
+      if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Template not found" });
+      
+      try {
+        const { url } = await generateImage({ prompt: template.imagePrompt });
+        if (url) {
+          await updateVideoTemplate(input.id, { thumbnailUrl: url });
+        }
+        return { success: true, thumbnailUrl: url };
+      } catch (e: any) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: e.message || "Failed to generate thumbnail" });
+      }
+    }),
+
+  // Admin: bulk generate thumbnails for all templates without thumbnails
+  adminBulkGenerateThumbnails: protectedProcedure.mutation(async ({ ctx }) => {
+    if (ctx.user.role !== "admin") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
+    }
+    const allTemplates = await listVideoTemplates({ limit: 100 });
+    const noThumbnail = allTemplates.filter(t => !t.thumbnailUrl);
+    let generated = 0;
+    let failed = 0;
+    
+    for (const tpl of noThumbnail) {
+      try {
+        const { url } = await generateImage({ prompt: tpl.imagePrompt });
+        if (url) {
+          await updateVideoTemplate(tpl.id, { thumbnailUrl: url });
+          generated++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+    return { generated, failed, total: noThumbnail.length };
+  }),
 
   // Admin: seed default templates
   adminSeed: protectedProcedure.mutation(async ({ ctx }) => {

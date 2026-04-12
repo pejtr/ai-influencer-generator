@@ -34,6 +34,7 @@ import SceneGenerator from "@/components/SceneGenerator";
 import ElementsPanel from "@/components/ElementsPanel";
 import TalkingAvatarPanel from "@/components/TalkingAvatarPanel";
 import PullToRefresh from "@/components/PullToRefresh";
+import { useSearch, useLocation } from "wouter";
 
 // Character options data
 const CHARACTER_TYPES = [
@@ -304,6 +305,42 @@ export default function Studio() {
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [selectedTemplateCategory, setSelectedTemplateCategory] = useState<PromptCategory>("portrait");
   const [selectedAspectRatio, setSelectedAspectRatio] = useState<AspectRatio>("1:1");
+  const [templateLoaded, setTemplateLoaded] = useState(false);
+
+  // Read URL params for video template auto-fill
+  const searchString = useSearch();
+  const [, navigate] = useLocation();
+
+  const videoTemplateId = useMemo(() => {
+    const params = new URLSearchParams(searchString);
+    return params.get("videoTemplate");
+  }, [searchString]);
+
+  // Fetch template data if videoTemplate param is present
+  const { data: loadedTemplate } = trpc.videoTemplates.getById.useQuery(
+    { id: Number(videoTemplateId) },
+    { enabled: !!videoTemplateId && !templateLoaded }
+  );
+
+  // Auto-fill prompts when template is loaded
+  useEffect(() => {
+    if (loadedTemplate && !templateLoaded) {
+      setVideoPrompt(loadedTemplate.videoPrompt);
+      if (loadedTemplate.aspectRatio) {
+        const ar = loadedTemplate.aspectRatio as AspectRatio;
+        if (["1:1", "16:9", "9:16", "4:5", "3:4"].includes(ar)) {
+          setSelectedAspectRatio(ar);
+        }
+      }
+      setShowVideoDialog(true);
+      setTemplateLoaded(true);
+      toast.success(`Template "${loadedTemplate.name}" loaded! Generate an image first, then create the video.`, { duration: 5000 });
+      // Update custom prompt with the template's image prompt
+      setSettings(prev => ({ ...prev, customPrompt: loadedTemplate.imagePrompt }));
+      // Clean URL
+      navigate("/studio", { replace: true });
+    }
+  }, [loadedTemplate, templateLoaded]);
 
   const { data: userCredits, refetch: refetchCredits } = trpc.credits.getBalance.useQuery(undefined, {
     enabled: isAuthenticated,

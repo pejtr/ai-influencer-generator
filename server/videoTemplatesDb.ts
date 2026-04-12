@@ -124,6 +124,20 @@ export async function getUserTemplates(userId: number) {
     .orderBy(desc(userVideoTemplates.createdAt));
 }
 
+export async function getUserTemplateById(id: number, userId: number) {
+  const d = await getDbOrThrow();
+  const rows = await d.select().from(userVideoTemplates)
+    .where(and(eq(userVideoTemplates.id, id), eq(userVideoTemplates.userId, userId)))
+    .limit(1);
+  return rows[0] || null;
+}
+
+export async function updateUserTemplate(id: number, userId: number, data: Partial<InsertUserVideoTemplate>) {
+  const d = await getDbOrThrow();
+  await d.update(userVideoTemplates).set(data)
+    .where(and(eq(userVideoTemplates.id, id), eq(userVideoTemplates.userId, userId)));
+}
+
 export async function deleteUserTemplate(id: number, userId: number) {
   const d = await getDbOrThrow();
   await d.delete(userVideoTemplates).where(

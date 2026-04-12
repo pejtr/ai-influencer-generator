@@ -1215,3 +1215,15 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Backend API for CRUD operations on templates
 - [x] Admin can add/edit templates, users can browse and use
 - [x] 28 vitest tests passing
+
+
+## Video Template Enhancements (User Request)
+- [x] AI thumbnail generation for each video template (server-side using imageGeneration)
+- [x] Admin UI button to trigger thumbnail generation per template / bulk
+- [x] Store generated thumbnail URL in videoTemplates table
+- [x] Display thumbnails in Video Templates gallery cards
+- [x] Connect "Use Template" button to Studio with auto-fill prompts
+- [x] Studio page reads template params from URL/state and pre-fills fields
+- [x] User custom template saving — save edited prompts as personal presets
+- [x] "My Templates" tab/section showing user's saved custom templates
+- [x] Delete/edit saved custom templates

@@ -170,6 +170,22 @@ describe("Video Templates", () => {
     it("should have adminSeed mutation", () => {
       expect(appRouter.videoTemplates.adminSeed).toBeDefined();
     });
+
+    it("should have adminGenerateThumbnail mutation", () => {
+      expect(appRouter.videoTemplates.adminGenerateThumbnail).toBeDefined();
+    });
+
+    it("should have adminBulkGenerateThumbnails mutation", () => {
+      expect(appRouter.videoTemplates.adminBulkGenerateThumbnails).toBeDefined();
+    });
+
+    it("should have getSaved query", () => {
+      expect(appRouter.videoTemplates.getSaved).toBeDefined();
+    });
+
+    it("should have updateSaved mutation", () => {
+      expect(appRouter.videoTemplates.updateSaved).toBeDefined();
+    });
   });
 
   describe("Template content quality", () => {
