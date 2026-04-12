@@ -1019,3 +1019,79 @@ export const userVideoTemplates = mysqlTable("user_video_templates", {
 });
 export type UserVideoTemplate = typeof userVideoTemplates.$inferSelect;
 export type InsertUserVideoTemplate = typeof userVideoTemplates.$inferInsert;
+
+// ============================================================
+// AIFluencer Studio — Course & Education System
+// ============================================================
+
+export const courseModules = mysqlTable("course_modules", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  order: int("order").default(0).notNull(),
+  duration: varchar("duration", { length: 50 }),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CourseModule = typeof courseModules.$inferSelect;
+
+export const courseLessons = mysqlTable("course_lessons", {
+  id: int("id").autoincrement().primaryKey(),
+  moduleId: int("moduleId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  videoUrl: text("videoUrl"),
+  content: text("content"),
+  order: int("order").default(0).notNull(),
+  duration: varchar("duration", { length: 50 }),
+  isPreview: boolean("isPreview").default(false),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CourseLesson = typeof courseLessons.$inferSelect;
+
+export const courseEnrollments = mysqlTable("course_enrollments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  paymentPlan: mysqlEnum("paymentPlan", ["full", "installment"]).default("full"),
+  amountPaid: decimal("amountPaid", { precision: 10, scale: 2 }).default("0"),
+  enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
+
+export const courseProgress = mysqlTable("course_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  lessonId: int("lessonId").notNull(),
+  completedAt: timestamp("completedAt").defaultNow().notNull(),
+});
+export type CourseProgress = typeof courseProgress.$inferSelect;
+
+export const testimonials = mysqlTable("testimonials", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  role: varchar("role", { length: 255 }),
+  content: text("content").notNull(),
+  avatarUrl: text("avatarUrl"),
+  rating: int("rating").default(5),
+  isFeatured: boolean("isFeatured").default(false),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Testimonial = typeof testimonials.$inferSelect;
+
+export const courseBonuses = mysqlTable("course_bonuses", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  value: decimal("value", { precision: 10, scale: 2 }).default("0"),
+  icon: varchar("icon", { length: 100 }),
+  isActive: boolean("isActive").default(true),
+  order: int("order").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CourseBonus = typeof courseBonuses.$inferSelect;

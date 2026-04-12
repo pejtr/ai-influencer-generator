@@ -5,7 +5,7 @@ import { Link, useLocation } from "wouter";
 import { 
   Sparkles, Menu, X, User, LogOut, CreditCard, LayoutDashboard, 
   Image, Calendar, Zap, Link2, MessageCircle, Users,
-  Home, Palette, DollarSign, ArrowRight
+  Home, Palette, DollarSign, ArrowRight, BookOpen, Crown
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
@@ -49,6 +49,7 @@ export default function Navbar() {
     { href: "/companions", label: "AI Chat", icon: MessageCircle },
     { href: "/earn", label: "Earn", icon: DollarSign },
     { href: "/video-templates", label: "Templates", icon: Palette },
+    { href: "/aifluencer-studio", label: "Studio Course", icon: Crown },
     { href: "/pricing", label: "Pricing", icon: CreditCard },
   ];
 

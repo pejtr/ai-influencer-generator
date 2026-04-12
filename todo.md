@@ -1227,3 +1227,49 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] User custom template saving — save edited prompts as personal presets
 - [x] "My Templates" tab/section showing user's saved custom templates
 - [x] Delete/edit saved custom templates
+
+## AIFluencer Studio Integration (Stan Store)
+- [ ] Create courseModules table (title, description, videoUrl, order, isLocked, duration)
+- [ ] Create courseLessons table (moduleId, title, content, videoUrl, order, isCompleted)
+- [ ] Create courseProgress table (userId, lessonId, completedAt)
+- [ ] Create courseEnrollments table (userId, purchasedAt, paymentMethod, stripePaymentIntentId)
+- [ ] Create testimonials table (name, role, content, avatarUrl, rating, isFeatured)
+- [ ] Create bonuses table (title, description, value, isActive)
+- [ ] AIFluencer Studio sales landing page (/aifluencer-studio) — Hormozi-style value stack
+- [ ] Pricing section: $97 one-time OR 2x $49 payment plan (Stripe)
+- [ ] Course modules display: 5 core modules with lesson list
+- [ ] Free bonuses section: 3 bonuses with value display
+- [ ] Testimonials/social proof section
+- [ ] "What You'll Master" section with skills grid
+- [ ] "What You Can Do After" section with outcomes
+- [ ] "Who Is It For" section with target audience
+- [ ] FAQ section with expandable answers
+- [ ] About the creator section
+- [ ] Affiliate program integration (stan.store affiliate link tracking)
+- [ ] Course dashboard for enrolled users (/course)
+- [ ] Lesson progress tracking
+- [ ] Certificate of completion
+- [ ] Admin: manage modules, lessons, testimonials
+
+## AIFluencer Studio Sales Page + Nina Profile
+- [x] Register courseRouter in appRouter
+- [x] AIFluencer Studio sales page (/aifluencer-studio) — Stan Store inspired, Hormozi value stack
+- [x] Pricing section: $97 one-time OR 2x $49 (Stripe checkout)
+- [x] Course modules accordion with lesson previews
+- [x] Free bonuses section with value display ($591 total value)
+- [x] Testimonials grid with star ratings
+- [x] "What You'll Master" skills grid
+- [x] "What You Can Do After" outcomes section
+- [x] "Who Is It For" target audience section
+- [x] FAQ accordion
+- [x] About the creator section
+- [x] Admin seed button for course data
+- [x] Nina Koskivaara sample AI influencer profile (/profile/nina)
+- [x] Instagram-style profile header (avatar, stats, bio, highlights)
+- [x] Story highlights: SERVICES, STUDIO, WORK, METHOD
+- [x] Content grid (3-column, pinned posts, reels indicator)
+- [x] Editorial aesthetic: dark bg, gold accents, luxury fashion niche
+- [x] "AI Identity & Story" positioning copy
+- [x] CTA: "Get Free Framework" → /aifluencer-studio
+- [x] Course page (/course) for enrolled users with progress tracking
+- [x] 15 vitest tests passing for course system

@@ -7,6 +7,7 @@ import {
   vaultRouter, ppvOptimizerRouter, teamRouter, socialTrafficRouter, snapshotRouter
 } from "./creatorToolsRouter";
 import { videoTemplatesRouter } from "./videoTemplatesRouter";
+import { courseRouter } from "./courseRouter";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { 
@@ -160,6 +161,9 @@ export const appRouter = router({
 
   // Video Templates (@chalkleyvisuals workflows)
   videoTemplates: videoTemplatesRouter,
+
+  // AIFluencer Studio Course
+  course: courseRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
