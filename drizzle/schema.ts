@@ -1095,3 +1095,43 @@ export const courseBonuses = mysqlTable("course_bonuses", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type CourseBonus = typeof courseBonuses.$inferSelect;
+
+// ============ AFFILIATE CLICK TRACKING ============
+export const affiliateClicks = mysqlTable("affiliateClicks", {
+  id: int("id").autoincrement().primaryKey(),
+  affiliateCode: varchar("affiliateCode", { length: 32 }).notNull(),
+  affiliateId: int("affiliateId"),
+  referrerUrl: text("referrerUrl"),
+  landingPage: varchar("landingPage", { length: 500 }),
+  utmSource: varchar("utmSource", { length: 100 }),
+  utmMedium: varchar("utmMedium", { length: 100 }),
+  utmCampaign: varchar("utmCampaign", { length: 100 }),
+  ipHash: varchar("ipHash", { length: 64 }),
+  userAgent: text("userAgent"),
+  converted: boolean("converted").default(false),
+  convertedAt: timestamp("convertedAt"),
+  convertedUserId: int("convertedUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AffiliateClick = typeof affiliateClicks.$inferSelect;
+export type InsertAffiliateClick = typeof affiliateClicks.$inferInsert;
+
+// ============ AFFILIATE DAILY STATS ============
+export const affiliateDailyStats = mysqlTable("affiliateDailyStats", {
+  id: int("id").autoincrement().primaryKey(),
+  affiliateId: int("affiliateId").notNull(),
+  affiliateCode: varchar("affiliateCode", { length: 32 }).notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  clicks: int("clicks").default(0).notNull(),
+  uniqueClicks: int("uniqueClicks").default(0).notNull(),
+  conversions: int("conversions").default(0).notNull(),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0").notNull(),
+  commissions: decimal("commissions", { precision: 10, scale: 2 }).default("0").notNull(),
+  level1Commissions: decimal("level1Commissions", { precision: 10, scale: 2 }).default("0").notNull(),
+  level2Commissions: decimal("level2Commissions", { precision: 10, scale: 2 }).default("0").notNull(),
+  level3Commissions: decimal("level3Commissions", { precision: 10, scale: 2 }).default("0").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AffiliateDailyStat = typeof affiliateDailyStats.$inferSelect;
+export type InsertAffiliateDailyStat = typeof affiliateDailyStats.$inferInsert;

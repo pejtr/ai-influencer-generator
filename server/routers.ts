@@ -8,6 +8,7 @@ import {
 } from "./creatorToolsRouter";
 import { videoTemplatesRouter } from "./videoTemplatesRouter";
 import { courseRouter } from "./courseRouter";
+import { affiliateTrackingRouter } from "./affiliateTrackingRouter";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { 
@@ -164,6 +165,9 @@ export const appRouter = router({
 
   // AIFluencer Studio Course
   course: courseRouter,
+
+  // Affiliate Commission Tracking
+  affiliateTracking: affiliateTrackingRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

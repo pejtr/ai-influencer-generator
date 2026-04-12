@@ -1273,3 +1273,30 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] CTA: "Get Free Framework" → /aifluencer-studio
 - [x] Course page (/course) for enrolled users with progress tracking
 - [x] 15 vitest tests passing for course system
+
+## Affiliate Commission Tracking System
+- [x] affiliateClicks table (affiliateCode, referrerUrl, landingPage, ip, userAgent, converted, convertedAt)
+- [x] affiliateDailyStats table (affiliateCode, date, clicks, conversions, revenue, commissions)
+- [x] Click tracking endpoint (public, records every affiliate link click)
+- [x] Multi-tier commission calculation (L1: 30%, L2: 10%, L3: 5%)
+- [x] Affiliate Tracking Dashboard page (/affiliate/tracking) with real-time stats
+- [x] KPI cards: total earnings, pending, paid out, conversion rate, clicks
+- [x] Earnings chart (daily/weekly/monthly toggle)
+- [x] Commission history table with status badges
+- [x] Referral link generator with UTM builder + QR code
+- [x] Top referrals leaderboard with badge tiers
+- [x] Payout request form (min $50, PayPal)
+- [x] Payout history table
+- [x] Admin payout management panel
+- [x] Admin: approve/reject payout requests
+- [x] Admin: affiliate performance overview table
+- [x] 25 vitest tests passing for commission logic
+
+## OFM Agency Best Practices Integration (YouTube: abC_aHYwmaw)
+- [x] EOS (End of Shift) Reports — per-chatter shift summary with grade (A/B/C/D)
+- [x] Golden Ratio metric — revenue per message sent, gauge with target $2.50+
+- [x] Chatting Ratio dashboard — conversion rate per chatter
+- [x] Weekly Agency Report — auto-generated summary from daily snapshots
+- [x] Founder Dashboard (/agency) — high-level 2-4h/day view (revenue, team performance, alerts)
+- [x] OFM Best Practices panel — Infrastructure First, Golden Ratio targets, EOS checklist
+- [x] Common mistakes warnings ("One More Creator" fallacy, bottleneck, manual ops)

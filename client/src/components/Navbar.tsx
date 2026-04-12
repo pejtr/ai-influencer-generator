@@ -5,7 +5,7 @@ import { Link, useLocation } from "wouter";
 import { 
   Sparkles, Menu, X, User, LogOut, CreditCard, LayoutDashboard, 
   Image, Calendar, Zap, Link2, MessageCircle, Users,
-  Home, Palette, DollarSign, ArrowRight, BookOpen, Crown
+  Home, Palette, DollarSign, ArrowRight, BookOpen, Crown, BarChart3
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
@@ -152,6 +152,18 @@ export default function Navbar() {
                             <Link href="/creator/tools" className="flex items-center gap-2 cursor-pointer">
                               <Zap className="w-4 h-4" />
                               <span>Creator Tools</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/affiliate/tracking" className="flex items-center gap-2 cursor-pointer">
+                              <BarChart3 className="w-4 h-4" />
+                              <span>Commission Tracker</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href="/agency" className="flex items-center gap-2 cursor-pointer">
+                              <Crown className="w-4 h-4" />
+                              <span>Agency Dashboard</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>

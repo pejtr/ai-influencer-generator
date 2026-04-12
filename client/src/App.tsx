@@ -38,6 +38,8 @@ import VideoTemplates from "./pages/VideoTemplates";
 import AIFluencerStudio from "./pages/AIFluencerStudio";
 import NinaProfile from "./pages/NinaProfile";
 import CoursePage from "./pages/CoursePage";
+import AffiliateTracking from "./pages/AffiliateTracking";
+import AgencyDashboard from "./pages/AgencyDashboard";
 import PredictiveLtv from "./pages/PredictiveLtv";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
@@ -86,6 +88,8 @@ function Router() {
       <Route path="/aifluencer-studio" component={AIFluencerStudio} />
       <Route path="/profile/nina" component={NinaProfile} />
       <Route path="/course" component={CoursePage} />
+      <Route path="/affiliate/tracking" component={AffiliateTracking} />
+      <Route path="/agency" component={AgencyDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
