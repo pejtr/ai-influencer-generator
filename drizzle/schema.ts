@@ -961,3 +961,61 @@ export const dailyMetricSnapshots = mysqlTable("daily_metric_snapshots", {
 });
 export type DailyMetricSnapshot = typeof dailyMetricSnapshots.$inferSelect;
 export type InsertDailyMetricSnapshot = typeof dailyMetricSnapshots.$inferInsert;
+
+
+// Video Templates - Pre-built video generation templates inspired by @chalkleyvisuals workflows
+export const videoTemplates = mysqlTable("video_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
+  description: text("description"),
+  category: mysqlEnum("category", [
+    "cinematic_ads", "emotional_atmospheric", "action_adventure",
+    "dark_moody", "timelapse", "vfx_integration",
+    "character_animation", "scene_transformation"
+  ]).notNull(),
+  // Prompt data
+  imagePrompt: text("imagePrompt").notNull(), // Prompt for generating the base image
+  videoPrompt: text("videoPrompt").notNull(), // Prompt for animating the image
+  negativePrompt: text("negativePrompt"), // What to avoid
+  // Style & settings
+  style: varchar("style", { length: 100 }), // e.g. "cinematic", "photorealistic", "dark_moody"
+  cameraMovement: varchar("cameraMovement", { length: 100 }), // e.g. "slow_push", "tracking", "pan_left"
+  lighting: varchar("lighting", { length: 255 }), // e.g. "volumetric", "rembrandt", "neon"
+  aspectRatio: varchar("aspectRatio", { length: 20 }).default("16:9"),
+  duration: int("duration").default(5), // seconds
+  // Tools reference
+  imageModel: varchar("imageModel", { length: 100 }).default("nano_banana_pro"),
+  videoModel: varchar("videoModel", { length: 100 }).default("kling_3"),
+  // Metadata
+  thumbnailUrl: text("thumbnailUrl"),
+  previewVideoUrl: text("previewVideoUrl"),
+  difficulty: mysqlEnum("difficulty", ["beginner", "intermediate", "advanced"]).default("beginner"),
+  tags: json("tags").$type<string[]>(),
+  // Usage stats
+  usageCount: int("usageCount").default(0).notNull(),
+  avgRating: decimal("avgRating", { precision: 3, scale: 2 }).default("0"),
+  // Flags
+  isFeatured: boolean("isFeatured").default(false),
+  isActive: boolean("isActive").default(true),
+  // Creator
+  createdBy: int("createdBy"), // admin user id
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type VideoTemplate = typeof videoTemplates.$inferSelect;
+export type InsertVideoTemplate = typeof videoTemplates.$inferInsert;
+
+// User saved/customized templates
+export const userVideoTemplates = mysqlTable("user_video_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  templateId: int("templateId").notNull(), // reference to videoTemplates
+  customImagePrompt: text("customImagePrompt"),
+  customVideoPrompt: text("customVideoPrompt"),
+  customSettings: json("customSettings").$type<Record<string, string>>(),
+  name: varchar("name", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type UserVideoTemplate = typeof userVideoTemplates.$inferSelect;
+export type InsertUserVideoTemplate = typeof userVideoTemplates.$inferInsert;

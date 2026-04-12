@@ -1202,3 +1202,16 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Daily metric collection (users, revenue, generations, messages)
 - [x] Snapshot history API
 - [x] Manual snapshot trigger
+
+
+## Video Templates Integration (@chalkleyvisuals Workflows)
+- [x] Create videoTemplates table in schema (name, category, prompt, style, tools, settings, thumbnail)
+- [x] Seed 17 video templates based on @chalkleyvisuals workflows
+- [x] Video Templates Gallery page with categories and search
+- [x] Template detail view with prompt, settings, and one-click generate
+- [x] Template categories: Cinematic Ads, Emotional/Atmospheric, Action/Adventure, Dark/Moody, Timelapse, VFX, Character Animation, Scene Transformation
+- [x] Integration with existing video generation (Studio redirect)
+- [x] Template customization (edit prompt before generating)
+- [x] Backend API for CRUD operations on templates
+- [x] Admin can add/edit templates, users can browse and use
+- [x] 28 vitest tests passing

@@ -6,6 +6,7 @@ import {
   fanCrmRouter, messageTemplateRouter, automationRouter, campaignRouter,
   vaultRouter, ppvOptimizerRouter, teamRouter, socialTrafficRouter, snapshotRouter
 } from "./creatorToolsRouter";
+import { videoTemplatesRouter } from "./videoTemplatesRouter";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { 
@@ -156,6 +157,9 @@ export const appRouter = router({
   team: teamRouter,
   socialTraffic: socialTrafficRouter,
   snapshot: snapshotRouter,
+
+  // Video Templates (@chalkleyvisuals workflows)
+  videoTemplates: videoTemplatesRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

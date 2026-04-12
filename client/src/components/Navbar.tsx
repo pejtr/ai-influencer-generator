@@ -48,6 +48,7 @@ export default function Navbar() {
     { href: "/gallery", label: "Gallery", icon: Image },
     { href: "/companions", label: "AI Chat", icon: MessageCircle },
     { href: "/earn", label: "Earn", icon: DollarSign },
+    { href: "/video-templates", label: "Templates", icon: Palette },
     { href: "/pricing", label: "Pricing", icon: CreditCard },
   ];
 

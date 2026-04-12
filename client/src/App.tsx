@@ -34,6 +34,7 @@ import AttributionModels from "./pages/AttributionModels";
 import CostTracking from "./pages/CostTracking";
 import UnifiedDashboard from "./pages/UnifiedDashboard";
 import CreatorTools from "./pages/CreatorTools";
+import VideoTemplates from "./pages/VideoTemplates";
 import PredictiveLtv from "./pages/PredictiveLtv";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/admin/analytics-dashboard" component={UnifiedDashboard} />
       <Route path="/admin/predictive-ltv" component={PredictiveLtv} />
       <Route path="/creator/tools" component={CreatorTools} />
+      <Route path="/video-templates" component={VideoTemplates} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
