@@ -1300,3 +1300,21 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Founder Dashboard (/agency) — high-level 2-4h/day view (revenue, team performance, alerts)
 - [x] OFM Best Practices panel — Infrastructure First, Golden Ratio targets, EOS checklist
 - [x] Common mistakes warnings ("One More Creator" fallacy, bottleneck, manual ops)
+
+## Premium Sales & Visual Upgrades (YouTube: Q-5jvGZWsfs)
+- [x] Hero section: animated gradient background + strong UVP headline + Oswald font
+- [x] Trust bar below hero: user count, generations, star rating, active creators
+- [x] Sticky CTA bar on scroll (appears after hero leaves viewport)
+- [x] Social proof section: testimonials with photos, star ratings
+- [x] Scarcity elements: limited spots counter, live activity indicator
+- [x] Pricing page: anchor pricing (competitors charge $49+), installment option, most popular badge
+- [x] Upgrade typography: Oswald (display) + Playfair Display (serif) for headings
+- [x] Gold/champagne accent color (#D4AF37) for premium CTAs and highlights
+- [x] Alternating dark sections on homepage for visual rhythm
+- [x] Guarantees section: money-back, free trial, no credit card
+- [x] Team/creator section to humanize brand
+- [x] Micro-animations: fade-in on scroll, number counters, hover effects
+- [x] Premium glassmorphism cards with gold border glow
+- [x] Final CTA section at bottom of homepage
+- [x] Navbar: gold logo, gold credits badge, gold CTA button
+- [x] Pricing page: premium dark cards, gold price highlights, gold CTAs

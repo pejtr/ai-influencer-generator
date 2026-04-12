@@ -153,22 +153,26 @@ export default function Pricing() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black text-white">
       <Navbar />
       
       <main className="container py-16">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <Star className="h-4 w-4" />
+          <div className="trust-badge mx-auto mb-6 inline-flex">
+            <Star className="h-3.5 w-3.5" />
             Flexible Pricing for Every Creator
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Pay Your Way: <span className="text-primary">Subscribe</span> or <span className="text-purple-500">Buy Credits</span>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 uppercase tracking-tight" style={{ fontFamily: "'Oswald', sans-serif" }}>
+            Pay Your Way: <span className="gold-gradient-text">Subscribe</span> or <span className="text-white/60">Buy Credits</span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-white/50 max-w-2xl mx-auto">
             Choose a subscription for consistent monthly credits, or buy credit packs when you need them. Mix and match for maximum flexibility.
           </p>
+          {/* Anchor pricing — show crossed-out value */}
+          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20">
+            <span className="text-green-400 text-sm font-semibold">🎉 Limited: Save up to 40% vs competitors</span>
+          </div>
         </div>
 
         {/* Current Balance */}
@@ -242,16 +246,16 @@ export default function Pricing() {
                   <div
                     key={tier.id}
                     className={cn(
-                      "relative flex flex-col rounded-2xl border bg-card p-6 transition-all duration-300",
-                      isPro && "border-primary shadow-lg shadow-primary/20 scale-105",
-                      isCreator && "border-purple-500 shadow-lg shadow-purple-500/20",
-                      isCurrentTier && "ring-2 ring-primary"
+                      "relative flex flex-col rounded-2xl p-6 transition-all duration-300",
+                      isPro ? "premium-card gold-glow scale-105" : "bg-white/[0.03] border border-white/[0.08] hover:border-white/20",
+                      isCreator && "bg-white/[0.04] border border-purple-500/30 hover:border-purple-500/60",
+                      isCurrentTier && "ring-2 ring-amber-500/50"
                     )}
                   >
                     {/* Popular Badge */}
                     {isPro && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span className="px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase">
+                        <span className="px-4 py-1 rounded-full text-black text-xs font-bold uppercase btn-gold">
                           Most Popular
                         </span>
                       </div>
@@ -267,18 +271,22 @@ export default function Pricing() {
                     {/* Tier Header */}
                     <div className="mb-6">
                       <div className={cn("inline-flex p-3 rounded-xl mb-4", 
-                        tier.id === "free" && "bg-secondary",
-                        tier.id === "pro" && "bg-primary/10",
+                        tier.id === "free" && "bg-white/10",
+                        tier.id === "pro" && "bg-amber-500/15",
                         tier.id === "creator" && "bg-purple-500/10"
                       )}>
-                        <Icon className={cn("h-6 w-6", colorClass)} />
+                        <Icon className={cn("h-6 w-6", isPro ? "gold-text" : colorClass)} />
                       </div>
-                      <h3 className="text-xl font-bold uppercase">{tier.name}</h3>
-                      <div className="mt-2">
-                        <span className="text-4xl font-bold">${tier.price}</span>
-                        {tier.price > 0 && <span className="text-muted-foreground">/month</span>}
+                      <h3 className="text-xl font-bold uppercase tracking-wide" style={{ fontFamily: "'Oswald', sans-serif" }}>{tier.name}</h3>
+                      <div className="mt-2 flex items-baseline gap-1">
+                        <span className={cn("text-4xl font-bold", isPro && "gold-gradient-text")}>${tier.price}</span>
+                        {tier.price > 0 && <span className="text-white/40">/month</span>}
+                        {tier.price === 0 && <span className="text-white/40">forever</span>}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2">
+                      {/* Anchor: show what it would cost elsewhere */}
+                      {isPro && <p className="text-xs text-green-400 mt-1">Competitors charge $49+/mo for this</p>}
+                      {isCreator && <p className="text-xs text-purple-400 mt-1">Competitors charge $99+/mo for this</p>}
+                      <p className="text-sm text-white/40 mt-2">
                         {tier.description}
                       </p>
                     </div>
@@ -287,8 +295,8 @@ export default function Pricing() {
                     <div className="flex-1 space-y-3 mb-6">
                       {features.map((feature, i) => (
                         <div key={i} className="flex items-start gap-2">
-                          <Check className={cn("h-5 w-5 mt-0.5 shrink-0", colorClass)} />
-                          <span className="text-sm">{feature}</span>
+                          <Check className={cn("h-5 w-5 mt-0.5 shrink-0", isPro ? "gold-text" : "text-green-400")} />
+                          <span className="text-sm text-white/70">{feature}</span>
                         </div>
                       ))}
                     </div>
@@ -296,22 +304,22 @@ export default function Pricing() {
                     {/* CTA Button */}
                     <Button
                       className={cn(
-                        "w-full",
-                        isPro && "bg-primary hover:bg-primary/90",
-                        isCreator && "bg-purple-500 hover:bg-purple-600"
+                        "w-full font-bold",
+                        isPro && "btn-gold text-black",
+                        isCreator && "bg-purple-500 hover:bg-purple-600 text-white",
+                        tier.id === "free" && "border border-white/20 text-white hover:bg-white/10 bg-transparent"
                       )}
-                      variant={tier.id === "free" ? "outline" : "default"}
                       onClick={() => handleSubscribe(tier.id)}
                       disabled={isCurrentTier || subscriptionCheckout.isPending}
                     >
                       {subscriptionCheckout.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : isCurrentTier ? (
-                        "Current Plan"
+                        "✓ Current Plan"
                       ) : tier.id === "free" ? (
                         "Get Started Free"
                       ) : (
-                        `Upgrade to ${tier.name}`
+                        `Upgrade to ${tier.name} →`
                       )}
                     </Button>
                   </div>
@@ -348,32 +356,32 @@ export default function Pricing() {
                   <div
                     key={pack.id}
                     className={cn(
-                      "relative flex flex-col rounded-2xl border bg-card p-6 transition-all duration-300",
-                      pack.popular && "border-primary shadow-lg shadow-primary/20 scale-105"
+                      "relative flex flex-col rounded-2xl p-6 transition-all duration-300",
+                      pack.popular ? "premium-card gold-glow scale-105" : "bg-white/[0.03] border border-white/[0.08] hover:border-white/20"
                     )}
                   >
                     {pack.popular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span className="px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase">
+                        <span className="px-4 py-1 rounded-full btn-gold text-black text-xs font-bold uppercase">
                           Best Value
                         </span>
                       </div>
                     )}
 
                     <div className="mb-6">
-                      <div className="inline-flex p-3 rounded-xl bg-primary/10 mb-4">
-                        <CreditCard className="h-6 w-6 text-primary" />
+                      <div className={cn("inline-flex p-3 rounded-xl mb-4", pack.popular ? "bg-amber-500/15" : "bg-white/10")}>
+                        <CreditCard className={cn("h-6 w-6", pack.popular ? "gold-text" : "text-white/60")} />
                       </div>
-                      <h3 className="text-xl font-bold">{pack.name}</h3>
-                      <div className="mt-2">
-                        <span className="text-4xl font-bold">${pack.price}</span>
-                        <span className="text-muted-foreground"> one-time</span>
+                      <h3 className="text-xl font-bold uppercase tracking-wide" style={{ fontFamily: "'Oswald', sans-serif" }}>{pack.name}</h3>
+                      <div className="mt-2 flex items-baseline gap-1">
+                        <span className={cn("text-4xl font-bold", pack.popular && "gold-gradient-text")}>${pack.price}</span>
+                        <span className="text-white/40"> one-time</span>
                       </div>
                     </div>
 
                     <div className="flex-1 space-y-3 mb-6">
                       <div className="flex items-center gap-2">
-                        <Check className="h-5 w-5 text-primary" />
+                        <Check className={cn("h-5 w-5", pack.popular ? "gold-text" : "text-green-400")} />
                         <span className="text-lg font-semibold">{pack.credits} credits</span>
                       </div>
                       {pack.bonus > 0 && (
@@ -404,17 +412,16 @@ export default function Pricing() {
 
                     <Button
                       className={cn(
-                        "w-full",
-                        pack.popular && "bg-primary hover:bg-primary/90"
+                        "w-full font-bold",
+                        pack.popular ? "btn-gold text-black" : "border border-white/20 text-white hover:bg-white/10 bg-transparent"
                       )}
-                      variant={pack.popular ? "default" : "outline"}
                       onClick={() => handleBuyCredits(pack.id)}
                       disabled={creditPackCheckout.isPending}
                     >
                       {creditPackCheckout.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        `Buy ${pack.credits + pack.bonus} Credits`
+                        `Buy ${pack.credits + pack.bonus} Credits →`
                       )}
                     </Button>
                   </div>
@@ -442,32 +449,32 @@ export default function Pricing() {
 
         {/* FAQ Section */}
         <div className="mt-20 max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+          <h2 className="text-2xl font-bold text-center mb-8 uppercase tracking-wide" style={{ fontFamily: "'Oswald', sans-serif" }}>Frequently Asked Questions</h2>
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-card border border-border">
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-amber-500/20 transition-colors">
               <h4 className="font-semibold mb-2">How do credits work?</h4>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/50">
                 Each AI generation costs 1 credit. You get 5 free credits daily (reset at midnight UTC). 
                 Subscription credits are added monthly. Purchased credits never expire.
               </p>
             </div>
-            <div className="p-4 rounded-xl bg-card border border-border">
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-amber-500/20 transition-colors">
               <h4 className="font-semibold mb-2">Which credits are used first?</h4>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/50">
                 Credits are used in this order: Free daily credits → Subscription credits → Purchased credits. 
                 This ensures your purchased credits last as long as possible.
               </p>
             </div>
-            <div className="p-4 rounded-xl bg-card border border-border">
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-amber-500/20 transition-colors">
               <h4 className="font-semibold mb-2">Can I combine subscription and credit packs?</h4>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/50">
                 Yes! You can have a subscription AND buy credit packs. They stack together. 
                 Great for when you need extra credits for a big project.
               </p>
             </div>
-            <div className="p-4 rounded-xl bg-card border border-border">
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-amber-500/20 transition-colors">
               <h4 className="font-semibold mb-2">Do unused subscription credits roll over?</h4>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/50">
                 Subscription credits reset each billing cycle and don't roll over. 
                 However, purchased credit packs never expire and are always available.
               </p>

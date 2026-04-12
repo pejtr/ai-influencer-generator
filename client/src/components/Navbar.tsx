@@ -60,15 +60,15 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 glass">
+      <nav className="fixed top-0 left-0 right-0 z-50" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(212,175,55,0.15)' }}>
         <div className="container">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center neon-glow">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #D4AF37, #F5D76E)' }}>
+                <Sparkles className="w-5 h-5 text-black" />
               </div>
-              <span className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+              <span className="text-xl font-bold tracking-wide" style={{ fontFamily: "'Oswald', sans-serif", background: 'linear-gradient(135deg, #D4AF37, #F5D76E)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 AI Influencer
               </span>
             </Link>
@@ -78,8 +78,9 @@ export default function Navbar() {
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href}>
                   <Button
-                    variant={isActive(link.href) ? "secondary" : "ghost"}
-                    className={`${isActive(link.href) ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                    variant="ghost"
+                    className={`text-sm font-medium transition-all duration-200 ${isActive(link.href) ? "gold-gradient-text" : "text-white/50 hover:text-white/90"}`}
+                    style={isActive(link.href) ? { fontFamily: "'Oswald', sans-serif" } : {}}
                   >
                     {link.label}
                   </Button>
@@ -92,9 +93,9 @@ export default function Navbar() {
               {isAuthenticated ? (
                 <>
                   {/* Credits display */}
-                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border">
-                    <Sparkles className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">{userCredits?.credits ?? 0} credits</span>
+                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)' }}>
+                    <Sparkles className="w-4 h-4 gold-text" style={{ color: '#D4AF37' }} />
+                    <span className="text-sm font-medium" style={{ color: '#D4AF37' }}>{userCredits?.credits ?? 0} credits</span>
                   </div>
 
                   {/* Notifications */}
@@ -211,11 +212,11 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Button variant="ghost" asChild className="hidden sm:inline-flex">
+                  <Button variant="ghost" asChild className="hidden sm:inline-flex text-white/60 hover:text-white">
                     <a href={getLoginUrl()}>Log in</a>
                   </Button>
-                  <Button asChild className="gradient-primary neon-glow">
-                    <a href={getLoginUrl()}>Get Started Free</a>
+                  <Button asChild className="btn-gold text-black font-bold">
+                    <a href={getLoginUrl()}>Get Started Free →</a>
                   </Button>
                 </>
               )}
