@@ -33,6 +33,7 @@ import FunnelAlerts from "./pages/FunnelAlerts";
 import AttributionModels from "./pages/AttributionModels";
 import CostTracking from "./pages/CostTracking";
 import UnifiedDashboard from "./pages/UnifiedDashboard";
+import CreatorTools from "./pages/CreatorTools";
 import PredictiveLtv from "./pages/PredictiveLtv";
 import MobileBottomNav from "./components/MobileBottomNav";
 import { useServiceWorker } from "./hooks/useServiceWorker";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/admin/costs" component={CostTracking} />
       <Route path="/admin/analytics-dashboard" component={UnifiedDashboard} />
       <Route path="/admin/predictive-ltv" component={PredictiveLtv} />
+      <Route path="/creator/tools" component={CreatorTools} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

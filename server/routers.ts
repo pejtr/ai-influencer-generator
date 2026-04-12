@@ -2,6 +2,10 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import {
+  fanCrmRouter, messageTemplateRouter, automationRouter, campaignRouter,
+  vaultRouter, ppvOptimizerRouter, teamRouter, socialTrafficRouter, snapshotRouter
+} from "./creatorToolsRouter";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { 
@@ -141,6 +145,17 @@ function requireTier(userTier: string, requiredTiers: string[]) {
 
 export const appRouter = router({
   system: systemRouter,
+
+  // Creator Tools (Supercreator + ChatPersona + FlirtFlow + CreatorHero + OnlyMonster)
+  fanCrm: fanCrmRouter,
+  messageTemplate: messageTemplateRouter,
+  automation: automationRouter,
+  campaign: campaignRouter,
+  vault: vaultRouter,
+  ppvOptimizer: ppvOptimizerRouter,
+  team: teamRouter,
+  socialTraffic: socialTrafficRouter,
+  snapshot: snapshotRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

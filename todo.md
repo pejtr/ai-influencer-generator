@@ -1120,3 +1120,85 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] tRPC endpoints: predictive.getLtvPredictions, predictive.getBudgetReallocation, dashboard.getSummary
 - [x] Routes + admin dashboard navigation (Analytics Command Center as primary CTA)
 - [x] Unit tests (18 new tests, 555 total passing)
+
+## Seedance 2.0 Video Generation Integration
+- [ ] Research MiniMax/Seedance 2.0 API capabilities via MCP
+- [ ] Server-side video generation endpoint with Seedance 2.0
+- [ ] Video prompt builder with 3 sections: scene direction, movement, dialogue
+- [ ] Reference image upload and tagging system (@image1, @image2)
+- [ ] Video settings: duration (8-15s), resolution selection
+- [ ] Dialogue timing validation (match dialogue length to video duration)
+- [ ] Multi-step wizard UI: Scene Image → References → Prompt → Settings → Generate
+- [ ] Video generation status tracking and preview
+- [ ] Integration with existing influencer generation workflow
+- [ ] Route and navigation updates
+- [ ] Unit tests
+
+
+## Creator Tools Integration (Supercreator + ChatPersona + FlirtFlow + CreatorHero + OnlyMonster)
+
+### Fan CRM & Scoring System (Supercreator + OnlyMonster)
+- [x] Create fanProfiles table (engagement score, spending tier, timezone, preferences, last active)
+- [x] Fan scoring algorithm (engagement frequency, spending amount, response rate, tip frequency)
+- [x] Fan segmentation: whale, regular, casual, dormant, new
+- [x] Fan profile cards with engagement history
+- [x] Fan list with sorting/filtering in Creator Tools
+- [x] Spending prediction (high-value fan detection)
+
+### Mass Messaging & Automations (Supercreator + CreatorHero)
+- [x] Create messageTemplates table (name, content, variables, category)
+- [x] Create messageAutomations table (trigger, template, audience, schedule, status)
+- [x] Create messageCampaigns table (name, template, recipients, sent/opened/clicked stats)
+- [x] Welcome message automation (new subscriber → auto greeting)
+- [x] Follow-up sequences (drip campaigns with delay intervals)
+- [x] Mass messaging UI with audience targeting (by fan score, tier, last active)
+- [x] Message scheduling (send at optimal time per fan timezone)
+- [x] Campaign analytics (open rate, response rate, revenue generated)
+
+### PPV Price Optimizer (Supercreator)
+- [x] PPV pricing algorithm (fan spending history, content type, time of day, engagement level)
+- [x] Price recommendation per fan per content
+- [x] PPV price history tracking with acceptance rates
+- [ ] A/B test different price points automatically
+- [ ] Revenue impact dashboard for pricing changes
+
+### Content Vault (Supercreator + CreatorHero)
+- [x] Create contentVault table (title, type, url, tags, category, stats)
+- [x] Content organization with folders/categories
+- [x] Tag system for easy search
+- [x] Content performance metrics (views, sales, revenue per item)
+- [ ] Quick-send from vault to fan/mass message
+- [ ] Content scheduling from vault
+
+### Multi-language AI Chat Enhancement (ChatPersona + OnlyMonster)
+- [ ] Real-time message translation (detect fan language, translate AI response)
+- [x] Persona presets already exist (flirty, mysterious, playful, sophisticated, bold, friendly)
+- [x] Persona customization wizard exists in Creator Dashboard
+- [ ] Chat memory enhancement (total recall - remember every detail)
+- [ ] Conversation context window expansion
+
+### Fan Win-back System (CreatorHero)
+- [x] Dormant fan detection (isAtRisk flag in fan profiles)
+- [x] Win-back campaign templates (winback category in message templates)
+- [x] Automated win-back triggers (inactive_days automation trigger)
+- [x] Win-back success tracking (winbackCount in fan profiles)
+- [ ] Expiring subscriber alerts
+
+### Team/Chatter Performance (CreatorHero + OnlyMonster)
+- [x] Create teamMembers table (userId, role, permissions, performance metrics)
+- [x] Chatter performance dashboard (messages sent, revenue generated, response time)
+- [ ] Activity logs per team member
+- [x] Role-based access (owner, manager, chatter, viewer)
+- [x] Performance leaderboard in Team tab
+
+### Social Traffic Analytics (CreatorHero)
+- [x] Track traffic source per visitor (TikTok, Instagram, Twitter, YouTube, direct)
+- [x] Conversion rate per social platform
+- [ ] Best performing content per platform
+- [ ] Social media posting schedule recommendations
+- [x] Cross-platform analytics dashboard in Creator Tools
+
+### Daily Metric Snapshots
+- [x] Daily metric collection (users, revenue, generations, messages)
+- [x] Snapshot history API
+- [x] Manual snapshot trigger

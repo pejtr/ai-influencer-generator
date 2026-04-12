@@ -147,6 +147,12 @@ export default function Navbar() {
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
+                            <Link href="/creator/tools" className="flex items-center gap-2 cursor-pointer">
+                              <Zap className="w-4 h-4" />
+                              <span>Creator Tools</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
                             <Link href="/fanvue" className="flex items-center gap-2 cursor-pointer">
                               <Link2 className="w-4 h-4" />
                               <span>Fanvue Connect</span>

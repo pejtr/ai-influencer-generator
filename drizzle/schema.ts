@@ -723,3 +723,241 @@ export const userTouchpoints = mysqlTable("user_touchpoints", {
 });
 export type UserTouchpoint = typeof userTouchpoints.$inferSelect;
 export type InsertUserTouchpoint = typeof userTouchpoints.$inferInsert;
+
+
+// ============================================================
+// CREATOR TOOLS INTEGRATION (Supercreator + ChatPersona + FlirtFlow + CreatorHero + OnlyMonster)
+// ============================================================
+
+// Fan CRM & Scoring (Supercreator + OnlyMonster)
+export const fanProfiles = mysqlTable("fan_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  fanUserId: int("fanUserId").notNull(),
+  creatorUserId: int("creatorUserId").notNull(),
+  // Scoring
+  engagementScore: int("engagementScore").default(0).notNull(), // 0-100
+  spendingTier: mysqlEnum("spendingTier", ["whale", "regular", "casual", "dormant", "new"]).default("new").notNull(),
+  lifetimeSpend: decimal("lifetimeSpend", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  // Engagement metrics
+  totalMessages: int("totalMessages").default(0).notNull(),
+  totalTips: int("totalTips").default(0).notNull(),
+  totalPurchases: int("totalPurchases").default(0).notNull(),
+  avgResponseTime: int("avgResponseTime").default(0).notNull(), // seconds
+  lastActiveAt: timestamp("lastActiveAt"),
+  // Preferences
+  timezone: varchar("timezone", { length: 50 }),
+  preferredLanguage: varchar("preferredLanguage", { length: 10 }),
+  interests: json("interests").$type<string[]>(),
+  notes: text("notes"), // Creator's private notes about this fan
+  // Tags for segmentation
+  tags: json("tags").$type<string[]>(),
+  // Win-back tracking
+  isAtRisk: boolean("isAtRisk").default(false).notNull(),
+  lastWinbackAt: timestamp("lastWinbackAt"),
+  winbackCount: int("winbackCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FanProfile = typeof fanProfiles.$inferSelect;
+export type InsertFanProfile = typeof fanProfiles.$inferInsert;
+
+// Message Templates (Supercreator + CreatorHero)
+export const messageTemplates = mysqlTable("message_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorUserId: int("creatorUserId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  content: text("content").notNull(),
+  category: mysqlEnum("category", ["welcome", "followup", "promotion", "winback", "ppv", "custom"]).default("custom").notNull(),
+  variables: json("variables").$type<string[]>(), // e.g. ["fanName", "contentTitle"]
+  isActive: boolean("isActive").default(true).notNull(),
+  usageCount: int("usageCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MessageTemplate = typeof messageTemplates.$inferSelect;
+export type InsertMessageTemplate = typeof messageTemplates.$inferInsert;
+
+// Message Automations / Drip Campaigns (Supercreator + CreatorHero)
+export const messageAutomations = mysqlTable("message_automations", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorUserId: int("creatorUserId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  trigger: mysqlEnum("trigger", ["new_subscriber", "inactive_days", "purchase", "tip", "birthday", "custom"]).notNull(),
+  triggerValue: varchar("triggerValue", { length: 100 }), // e.g. "7" for 7 days inactive
+  templateId: int("templateId"), // Optional: use a template
+  messageContent: text("messageContent"), // Or direct content
+  // Targeting
+  audienceFilter: json("audienceFilter").$type<{
+    spendingTier?: string[];
+    minEngagementScore?: number;
+    tags?: string[];
+  }>(),
+  // Schedule
+  delayMinutes: int("delayMinutes").default(0).notNull(), // Delay after trigger
+  sendAtOptimalTime: boolean("sendAtOptimalTime").default(false).notNull(), // Use fan timezone
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  totalSent: int("totalSent").default(0).notNull(),
+  totalOpened: int("totalOpened").default(0).notNull(),
+  totalRevenue: decimal("totalRevenue", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MessageAutomation = typeof messageAutomations.$inferSelect;
+export type InsertMessageAutomation = typeof messageAutomations.$inferInsert;
+
+// Mass Message Campaigns
+export const messageCampaigns = mysqlTable("message_campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorUserId: int("creatorUserId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  templateId: int("templateId"),
+  messageContent: text("messageContent").notNull(),
+  // Targeting
+  audienceFilter: json("audienceFilter").$type<{
+    spendingTier?: string[];
+    minEngagementScore?: number;
+    tags?: string[];
+    lastActiveWithinDays?: number;
+  }>(),
+  // PPV attachment
+  attachedContentId: int("attachedContentId"), // Optional PPV content
+  ppvPrice: decimal("ppvPrice", { precision: 10, scale: 2 }),
+  // Stats
+  totalRecipients: int("totalRecipients").default(0).notNull(),
+  totalSent: int("totalSent").default(0).notNull(),
+  totalOpened: int("totalOpened").default(0).notNull(),
+  totalClicked: int("totalClicked").default(0).notNull(),
+  totalRevenue: decimal("totalRevenue", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  // Schedule
+  scheduledAt: timestamp("scheduledAt"),
+  sentAt: timestamp("sentAt"),
+  status: mysqlEnum("status", ["draft", "scheduled", "sending", "sent", "cancelled"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MessageCampaign = typeof messageCampaigns.$inferSelect;
+export type InsertMessageCampaign = typeof messageCampaigns.$inferInsert;
+
+// Content Vault (Supercreator + CreatorHero)
+export const contentVault = mysqlTable("content_vault", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorUserId: int("creatorUserId").notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  contentType: mysqlEnum("contentType", ["image", "video", "gallery", "audio"]).default("image").notNull(),
+  url: text("url").notNull(),
+  thumbnailUrl: text("thumbnailUrl"),
+  // Organization
+  folder: varchar("folder", { length: 200 }),
+  tags: json("tags").$type<string[]>(),
+  category: varchar("category", { length: 100 }),
+  // PPV settings
+  defaultPpvPrice: decimal("defaultPpvPrice", { precision: 10, scale: 2 }),
+  isExclusive: boolean("isExclusive").default(false).notNull(),
+  // Stats
+  viewCount: int("viewCount").default(0).notNull(),
+  salesCount: int("salesCount").default(0).notNull(),
+  totalRevenue: decimal("totalRevenue", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  timesSent: int("timesSent").default(0).notNull(),
+  // Metadata
+  fileSize: int("fileSize"), // bytes
+  duration: int("duration"), // seconds for video/audio
+  width: int("width"),
+  height: int("height"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ContentVaultItem = typeof contentVault.$inferSelect;
+export type InsertContentVaultItem = typeof contentVault.$inferInsert;
+
+// PPV Price History & Optimization (Supercreator)
+export const ppvPriceHistory = mysqlTable("ppv_price_history", {
+  id: int("id").autoincrement().primaryKey(),
+  contentId: int("contentId").notNull(),
+  fanUserId: int("fanUserId"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  wasAccepted: boolean("wasAccepted").default(false).notNull(),
+  suggestedByAi: boolean("suggestedByAi").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PpvPriceHistoryRecord = typeof ppvPriceHistory.$inferSelect;
+export type InsertPpvPriceHistory = typeof ppvPriceHistory.$inferInsert;
+
+// Team Members (CreatorHero + OnlyMonster)
+export const teamMembers = mysqlTable("team_members", {
+  id: int("id").autoincrement().primaryKey(),
+  creatorUserId: int("creatorUserId").notNull(), // Owner
+  memberUserId: int("memberUserId").notNull(), // Team member
+  role: mysqlEnum("role", ["manager", "chatter", "moderator", "viewer"]).default("chatter").notNull(),
+  permissions: json("permissions").$type<{
+    canChat: boolean;
+    canSendPpv: boolean;
+    canViewAnalytics: boolean;
+    canManageContent: boolean;
+    canManageTeam: boolean;
+  }>(),
+  // Performance
+  messagesSent: int("messagesSent").default(0).notNull(),
+  revenueGenerated: decimal("revenueGenerated", { precision: 10, scale: 2 }).default("0.00").notNull(),
+  avgResponseTime: int("avgResponseTime").default(0).notNull(), // seconds
+  activeConversations: int("activeConversations").default(0).notNull(),
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  lastActiveAt: timestamp("lastActiveAt"),
+  invitedAt: timestamp("invitedAt").defaultNow().notNull(),
+  joinedAt: timestamp("joinedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = typeof teamMembers.$inferInsert;
+
+// Social Traffic Analytics (CreatorHero)
+export const socialTrafficEvents = mysqlTable("social_traffic_events", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  platform: mysqlEnum("platform", ["tiktok", "instagram", "twitter", "youtube", "reddit", "pinterest", "other"]).notNull(),
+  referrerUrl: text("referrerUrl"),
+  landingPage: varchar("landingPage", { length: 500 }),
+  // Conversion tracking
+  didSignup: boolean("didSignup").default(false).notNull(),
+  didGenerate: boolean("didGenerate").default(false).notNull(),
+  didPurchase: boolean("didPurchase").default(false).notNull(),
+  purchaseAmount: decimal("purchaseAmount", { precision: 10, scale: 2 }),
+  // Session info
+  sessionDuration: int("sessionDuration"), // seconds
+  pageViews: int("pageViews").default(1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SocialTrafficEvent = typeof socialTrafficEvents.$inferSelect;
+export type InsertSocialTrafficEvent = typeof socialTrafficEvents.$inferInsert;
+
+// Daily Metric Snapshots (for historical comparison in Analytics Command Center)
+export const dailyMetricSnapshots = mysqlTable("daily_metric_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+  // User metrics
+  totalUsers: int("totalUsers").default(0).notNull(),
+  newUsers: int("newUsers").default(0).notNull(),
+  activeUsers: int("activeUsers").default(0).notNull(),
+  // Revenue metrics
+  totalRevenue: int("totalRevenue").default(0).notNull(), // cents
+  subscriptionRevenue: int("subscriptionRevenue").default(0).notNull(), // cents
+  creditPackRevenue: int("creditPackRevenue").default(0).notNull(), // cents
+  ppvRevenue: int("ppvRevenue").default(0).notNull(), // cents
+  tipRevenue: int("tipRevenue").default(0).notNull(), // cents
+  // Generation metrics
+  totalGenerations: int("totalGenerations").default(0).notNull(),
+  imageGenerations: int("imageGenerations").default(0).notNull(),
+  videoGenerations: int("videoGenerations").default(0).notNull(),
+  // Engagement metrics
+  totalMessages: int("totalMessages").default(0).notNull(),
+  totalConversations: int("totalConversations").default(0).notNull(),
+  // Conversion metrics
+  signupRate: int("signupRate").default(0).notNull(), // * 100 for 2 decimal precision
+  paidConversionRate: int("paidConversionRate").default(0).notNull(), // * 100
+  churnRate: int("churnRate").default(0).notNull(), // * 100
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DailyMetricSnapshot = typeof dailyMetricSnapshots.$inferSelect;
+export type InsertDailyMetricSnapshot = typeof dailyMetricSnapshots.$inferInsert;
