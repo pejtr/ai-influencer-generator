@@ -1351,3 +1351,24 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Analytics dashboard (trigger count, DM sent, conversion rate per campaign)
 - [x] Add /funnel route to App.tsx
 - [x] Write vitest tests for commentFunnelRouter (25 tests passing)
+
+## Reel Integrations + POV Rebuild (Apr 13)
+
+### From dreamfall.art Reel (DXAG-EsCO6w)
+- [x] Monetization Hub page (/monetize) — 3-stream income model: freelance services, educational products, brand collaborations
+- [x] Income calculator (freelance rate × hours + course sales + brand deal value = monthly MRR)
+- [x] "Comment COURSE" funnel template pre-built in Comment Funnel page
+
+### From drcintas Reel (DW_qcdsDTK0) — Higgsfield × Claude Code automation
+- [x] Claude+Higgsfield Automation Guide section in WorkflowBuilder
+- [x] Playwright automation workflow instructions (connect Higgsfield to Claude Code)
+- [x] "Comment VIDEO" funnel template pre-built in Comment Funnel page
+
+### POV Scene Rebuild Feature
+- [x] POV Rebuild page (/pov-rebuild) — AI scene reconstruction from character's POV
+- [x] Character selector (protagonist, antagonist, bystander, camera operator, custom)
+- [x] Scene input (text description or import from Workflow Builder)
+- [x] POV prompt generator — rewrites scene with chosen perspective + camera style
+- [x] Emotional context layer (fear, excitement, curiosity, determination)
+- [x] Output: ready-to-use Higgsfield/Kling prompt with POV framing
+- [x] Save/export rebuilt scenes to Workflow Builder projects

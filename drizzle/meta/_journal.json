@@ -36,6 +36,13 @@
       "when": 1776064430860,
       "tag": "0004_spooky_lightspeed",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1776066850093,
+      "tag": "0005_bored_blue_shield",
+      "breakpoints": true
     }
   ]
 }

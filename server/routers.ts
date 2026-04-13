@@ -12,6 +12,7 @@ import { affiliateTrackingRouter } from "./affiliateTrackingRouter";
 import { workflowBuilderRouter } from "./workflowBuilderRouter";
 import { commentFunnelRouter } from "./commentFunnelRouter";
 import { instagramRouter } from "./instagramRouter";
+import { povRebuildRouter } from "./povRebuildRouter";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { 
@@ -176,6 +177,7 @@ export const appRouter = router({
   // Comment-to-DM Funnel System
   commentFunnel: commentFunnelRouter,
   instagram: instagramRouter,
+  povRebuild: povRebuildRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

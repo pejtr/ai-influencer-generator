@@ -1273,3 +1273,18 @@ export const instagramDmLogs = mysqlTable("instagram_dm_logs", {
 });
 export type InstagramDmLog = typeof instagramDmLogs.$inferSelect;
 export type InsertInstagramDmLog = typeof instagramDmLogs.$inferInsert;
+
+// ── POV Scene Rebuild History ─────────────────────────────────────────────────
+export const povRebuildHistory = mysqlTable("pov_rebuild_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  sceneDescription: text("sceneDescription").notNull(),
+  characterId: varchar("characterId", { length: 64 }).notNull(),
+  customCharacter: text("customCharacter"),
+  emotion: varchar("emotion", { length: 64 }).notNull(),
+  targetModel: varchar("targetModel", { length: 64 }).notNull().default("higgsfield"),
+  generatedPrompt: text("generatedPrompt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PovRebuildHistory = typeof povRebuildHistory.$inferSelect;
+export type InsertPovRebuildHistory = typeof povRebuildHistory.$inferInsert;

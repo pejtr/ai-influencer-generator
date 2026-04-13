@@ -41,6 +41,8 @@ import CoursePage from "./pages/CoursePage";
 import AffiliateTracking from "./pages/AffiliateTracking";
 import WorkflowBuilder from "./pages/WorkflowBuilder";
 import CommentFunnel from "./pages/CommentFunnel";
+import PovRebuild from "@/pages/PovRebuild";
+import MonetizeHub from "@/pages/MonetizeHub";
 import InstagramConnect from "./pages/InstagramConnect";
 import AgencyDashboard from "./pages/AgencyDashboard";
 import PredictiveLtv from "./pages/PredictiveLtv";
@@ -95,6 +97,8 @@ function Router() {
       <Route path="/video-workflow" component={WorkflowBuilder} />
       <Route path="/funnel" component={CommentFunnel} />
       <Route path="/instagram-connect" component={InstagramConnect} />
+          <Route path="/pov-rebuild" component={PovRebuild} />
+          <Route path="/monetize" component={MonetizeHub} />
       <Route path="/agency" component={AgencyDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
