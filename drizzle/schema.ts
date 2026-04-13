@@ -1223,3 +1223,53 @@ export const funnelEvents = mysqlTable("funnel_events", {
 });
 export type FunnelEvent = typeof funnelEvents.$inferSelect;
 export type InsertFunnelEvent = typeof funnelEvents.$inferInsert;
+
+// ============================================================
+// INSTAGRAM INTEGRATION TABLES
+// ============================================================
+
+// Stores Instagram Page access tokens per user
+export const instagramConnections = mysqlTable("instagram_connections", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  // Facebook Page ID linked to Instagram professional account
+  pageId: varchar("pageId", { length: 64 }).notNull(),
+  pageName: varchar("pageName", { length: 200 }),
+  // Instagram professional account ID
+  instagramAccountId: varchar("instagramAccountId", { length: 64 }),
+  instagramUsername: varchar("instagramUsername", { length: 200 }),
+  // Long-lived Page Access Token (60 days, auto-refreshed)
+  pageAccessToken: text("pageAccessToken").notNull(),
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
+  // Webhook subscription status
+  webhookSubscribed: boolean("webhookSubscribed").default(false).notNull(),
+  webhookVerifyToken: varchar("webhookVerifyToken", { length: 128 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type InstagramConnection = typeof instagramConnections.$inferSelect;
+export type InsertInstagramConnection = typeof instagramConnections.$inferInsert;
+
+// Logs every Instagram DM sent via Private Replies API
+export const instagramDmLogs = mysqlTable("instagram_dm_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  campaignId: int("campaignId").notNull(),
+  // Instagram comment ID that triggered the DM
+  commentId: varchar("commentId", { length: 128 }).notNull(),
+  commentText: text("commentText"),
+  commenterUsername: varchar("commenterUsername", { length: 200 }),
+  commenterInstagramId: varchar("commenterInstagramId", { length: 64 }),
+  // DM details
+  triggerKeyword: varchar("triggerKeyword", { length: 100 }),
+  dmContent: text("dmContent"),
+  // Meta API response
+  messageId: varchar("messageId", { length: 256 }),
+  recipientId: varchar("recipientId", { length: 128 }),
+  status: mysqlEnum("status", ["sent", "failed", "skipped"]).default("sent").notNull(),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type InstagramDmLog = typeof instagramDmLogs.$inferSelect;
+export type InsertInstagramDmLog = typeof instagramDmLogs.$inferInsert;

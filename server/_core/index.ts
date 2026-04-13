@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleStripeWebhook } from "../stripe/webhook";
+import { registerInstagramWebhookRoutes } from "../instagramWebhook";
 import { registerSeoRoutes } from "../seo";
 import { generateAndSendWeeklyReport } from "../weeklyReportGenerator";
 
@@ -74,6 +75,10 @@ async function startServer() {
     handleStripeWebhook
   );
   
+  // Instagram webhook routes (GET for verification, POST for comment events)
+  // Must be registered BEFORE json body parser to handle raw body correctly
+  registerInstagramWebhookRoutes(app);
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
