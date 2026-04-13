@@ -5,7 +5,8 @@ import { Link, useLocation } from "wouter";
 import { 
   Sparkles, Menu, X, User, LogOut, CreditCard, LayoutDashboard, 
   Image, Calendar, Zap, Link2, MessageCircle, Users,
-  Home, Palette, DollarSign, ArrowRight, BookOpen, Crown, BarChart3
+  Home, Palette, DollarSign, ArrowRight, BookOpen, Crown, BarChart3,
+  Film, TrendingUp, Eye, Instagram, ChevronDown
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
@@ -53,6 +54,17 @@ export default function Navbar() {
     { href: "/pricing", label: "Pricing", icon: CreditCard },
   ];
 
+  // Creator tool pages — shown in a "Tools" dropdown in desktop nav
+  const creatorToolLinks = [
+    { href: "/video-workflow", label: "Workflow Builder", icon: Film },
+    { href: "/pov-rebuild", label: "POV Rebuild", icon: Eye },
+    { href: "/funnel", label: "Comment Funnel", icon: Zap },
+    { href: "/monetize", label: "Monetize Hub", icon: TrendingUp },
+    { href: "/instagram-connect", label: "Instagram Connect", icon: Instagram },
+  ];
+
+  const isCreatorToolActive = creatorToolLinks.some((l) => location.startsWith(l.href));
+
   const isActive = (href: string) => {
     if (href === "/") return location === "/";
     return location.startsWith(href);
@@ -86,6 +98,31 @@ export default function Navbar() {
                   </Button>
                 </Link>
               ))}
+              {/* Creator Tools dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={`text-sm font-medium transition-all duration-200 flex items-center gap-1 ${isCreatorToolActive ? "gold-gradient-text" : "text-white/50 hover:text-white/90"}`}
+                    style={isCreatorToolActive ? { fontFamily: "'Oswald', sans-serif" } : {}}
+                  >
+                    Tools <ChevronDown className="w-3.5 h-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-52">
+                  {creatorToolLinks.map((tool) => {
+                    const Icon = tool.icon;
+                    return (
+                      <DropdownMenuItem key={tool.href} asChild>
+                        <Link href={tool.href} className="flex items-center gap-2 cursor-pointer">
+                          <Icon className="w-4 h-4" />
+                          <span>{tool.label}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Right side */}
@@ -340,6 +377,25 @@ export default function Navbar() {
                     </Link>
                   </>
                 )}
+
+                {/* Creator Tools section in mobile menu */}
+                <div className="h-px bg-border my-3 mx-4" />
+                <p className="text-xs text-muted-foreground px-4 mb-1 uppercase tracking-wider">Creator Tools</p>
+                {creatorToolLinks.map((tool) => {
+                  const Icon = tool.icon;
+                  const active = isActive(tool.href);
+                  return (
+                    <Link key={tool.href} href={tool.href} onClick={() => setMobileMenuOpen(false)}>
+                      <div className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all active:scale-[0.98] ${
+                        active ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted/50'
+                      }`}>
+                        <Icon className={`w-5 h-5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <span className="text-base font-medium">{tool.label}</span>
+                        {active && <div className="ml-auto w-2 h-2 rounded-full bg-primary" />}
+                      </div>
+                    </Link>
+                  );
+                })}
 
                 {user?.role === "admin" && (
                   <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>

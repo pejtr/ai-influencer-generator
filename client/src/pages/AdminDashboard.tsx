@@ -1,9 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { 
   Users, Image, DollarSign, TrendingUp, 
-  Loader2, AlertTriangle, BookOpen, BarChart3
+  Loader2, AlertTriangle, BookOpen, BarChart3,
+  Film, Zap, Eye, Send, RefreshCw, CheckCircle
 } from "lucide-react";
 import {
   Card,
@@ -35,6 +37,17 @@ export default function AdminDashboard() {
     { limit: 10, offset: 0 },
     { enabled: isAuthenticated && user?.role === "admin" }
   );
+  const { data: creatorStats, isLoading: statsLoading } = trpc.pwaAnalytics.getCreatorToolsStats.useQuery(
+    undefined,
+    { enabled: isAuthenticated && user?.role === "admin" }
+  );
+  const triggerReport = trpc.pwaAnalytics.triggerWeeklyReport.useMutation({
+    onSuccess: (data) => {
+      if (data.success) toast.success("Weekly report sent!", { description: "Check your Manus notifications." });
+      else toast.warning(data.message);
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   if (loading) {
     return (
@@ -256,6 +269,89 @@ export default function AdminDashboard() {
                     <p className="text-sm text-muted-foreground mt-2">
                       Based on 12-month avg retention
                     </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Creator Tools Stats + Weekly Report */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-primary" />
+                      Creator Tools — This Week
+                    </CardTitle>
+                    <CardDescription>
+                      {creatorStats?.period.start} — {creatorStats?.period.end}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {statsLoading ? (
+                      <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                          <div className="flex items-center gap-2">
+                            <Eye className="w-4 h-4 text-indigo-400" />
+                            <span className="text-sm font-medium">POV Rebuild</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-indigo-400">{creatorStats?.povRebuild.total ?? 0}</p>
+                            <p className="text-xs text-muted-foreground">{creatorStats?.povRebuild.uniqueUsers ?? 0} users</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                          <div className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-yellow-400" />
+                            <span className="text-sm font-medium">Comment Funnel</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-yellow-400">{creatorStats?.commentFunnel.dmsSent ?? 0}</p>
+                            <p className="text-xs text-muted-foreground">{creatorStats?.commentFunnel.triggers ?? 0} triggers</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                          <div className="flex items-center gap-2">
+                            <Film className="w-4 h-4 text-green-400" />
+                            <span className="text-sm font-medium">Workflow Builder</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-green-400">{creatorStats?.workflowBuilder.projects ?? 0}</p>
+                            <p className="text-xs text-muted-foreground">{creatorStats?.workflowBuilder.uniqueUsers ?? 0} users</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Send className="h-4 w-4 text-primary" />
+                      Weekly Analytics Report
+                    </CardTitle>
+                    <CardDescription>Auto-sends every Monday 8:00 UTC. Trigger manually anytime.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-3 rounded-lg bg-muted/20 border border-border text-sm text-muted-foreground space-y-1">
+                      <p className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-400" /> PWA metrics (installs, sessions)</p>
+                      <p className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-400" /> A/B test results &amp; significance</p>
+                      <p className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-400" /> AI generation success rate</p>
+                      <p className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-400" /> Creator Tools usage stats</p>
+                      <p className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-400" /> Strategic recommendations</p>
+                    </div>
+                    <Button
+                      onClick={() => triggerReport.mutate()}
+                      disabled={triggerReport.isPending}
+                      className="w-full"
+                    >
+                      {triggerReport.isPending ? (
+                        <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
+                      ) : (
+                        <><Send className="w-4 h-4 mr-2" /> Send Weekly Report Now</>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">Report delivered to your Manus notifications</p>
                   </CardContent>
                 </Card>
               </div>

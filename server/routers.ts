@@ -2682,6 +2682,47 @@ export const appRouter = router({
       }
       return { html: generateReportHTML(reportData), filename: `weekly-report-${reportData.period.start}-${reportData.period.end}.pdf` };
     }),
+    // Manually trigger weekly report (admin only)
+    triggerWeeklyReport: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const { generateAndSendWeeklyReport } = await import("./weeklyReportGenerator");
+      const sent = await generateAndSendWeeklyReport();
+      return { success: sent, message: sent ? "Weekly report sent successfully" : "Report generated but notification delivery failed" };
+    }),
+    // Creator Tools stats for weekly report enrichment (admin only)
+    getCreatorToolsStats: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const { getDb } = await import("./db");
+      const { povRebuildHistory, funnelCampaigns, workflowProjects } = await import("../drizzle/schema");
+      const { count, countDistinct, sum, gte: gteOp } = await import("drizzle-orm");
+      const rawDb = await getDb();
+      if (!rawDb) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const now = Date.now();
+      const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      const [povStats] = await rawDb.select({
+        total: count(),
+        uniqueUsers: countDistinct(povRebuildHistory.userId),
+      }).from(povRebuildHistory).where(gteOp(povRebuildHistory.createdAt, weekAgo));
+      const [funnelStats] = await rawDb.select({
+        campaigns: count(),
+        triggers: sum(funnelCampaigns.triggerCount),
+        dmsSent: sum(funnelCampaigns.dmSentCount),
+      }).from(funnelCampaigns).where(gteOp(funnelCampaigns.createdAt, weekAgo));
+      const [workflowStats] = await rawDb.select({
+        projects: count(),
+        uniqueUsers: countDistinct(workflowProjects.userId),
+      }).from(workflowProjects).where(gteOp(workflowProjects.createdAt, weekAgo));
+      return {
+        period: { start: weekAgo.toISOString().split("T")[0], end: new Date(now).toISOString().split("T")[0] },
+        povRebuild: { total: Number(povStats?.total) || 0, uniqueUsers: Number(povStats?.uniqueUsers) || 0 },
+        commentFunnel: { campaigns: Number(funnelStats?.campaigns) || 0, triggers: Number(funnelStats?.triggers) || 0, dmsSent: Number(funnelStats?.dmsSent) || 0 },
+        workflowBuilder: { projects: Number(workflowStats?.projects) || 0, uniqueUsers: Number(workflowStats?.uniqueUsers) || 0 },
+      };
+    }),
   }),
 
   // ============================================

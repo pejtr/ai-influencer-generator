@@ -1110,7 +1110,7 @@ export async function getPwaABTestByVariant(days: number = 30) {
   // Get per-variant stats from metadata JSON
   const rows = await db.select({
     eventType: pwaAnalytics.eventType,
-    metadata: pwaAnalytics.metadata,
+    metadata: sql<string>`MIN(${pwaAnalytics.metadata})`,
     count: sql<number>`COUNT(*)`,
   })
     .from(pwaAnalytics)
@@ -1175,7 +1175,7 @@ export async function getWeeklyReportData() {
 
   // Get page view data for top pages
   const pageViews = await db.select({
-    metadata: pwaAnalytics.metadata,
+    metadata: sql<string>`MIN(${pwaAnalytics.metadata})`,
     count: sql<number>`COUNT(*)`,
   })
     .from(pwaAnalytics)
@@ -1212,7 +1212,7 @@ export async function getABTestVariantStats() {
   // Get all-time variant stats for auto-optimization
   const rows = await db.select({
     eventType: pwaAnalytics.eventType,
-    metadata: pwaAnalytics.metadata,
+    metadata: sql<string>`MIN(${pwaAnalytics.metadata})`,
     count: sql<number>`COUNT(*)`,
   })
     .from(pwaAnalytics)

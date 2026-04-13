@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import {
   Eye,
   Zap,
@@ -32,6 +33,7 @@ import {
   Film,
   Clock,
   CheckCircle,
+  ExternalLink,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -89,6 +91,7 @@ function ResultCard({
   emotion,
   targetModel,
   wordCount,
+  onSendToWorkflow,
 }: {
   prompt: string;
   characterLabel: string;
@@ -96,6 +99,7 @@ function ResultCard({
   emotion: string;
   targetModel: string;
   wordCount?: number;
+  onSendToWorkflow?: (prompt: string) => void;
 }) {
   return (
     <div className="p-4 rounded-xl border border-border bg-muted/10 space-y-3">
@@ -113,7 +117,20 @@ function ResultCard({
             <span className="text-xs text-muted-foreground">{wordCount}w</span>
           )}
         </div>
-        <CopyBtn text={prompt} />
+        <div className="flex items-center gap-1">
+          <CopyBtn text={prompt} />
+          {onSendToWorkflow && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSendToWorkflow(prompt)}
+              className="h-7 px-2 text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10"
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1" />
+              Workflow
+            </Button>
+          )}
+        </div>
       </div>
       <p className="text-sm text-foreground leading-relaxed font-mono bg-background/50 rounded-lg p-3 border border-border">
         {prompt}
@@ -137,6 +154,17 @@ export default function PovRebuild() {
     metadata: { character: string; characterIcon: string; emotion: string; targetModel: string; wordCount: number };
   } | null>(null);
   const [batchResults, setBatchResults] = useState<Array<{ characterId: string; characterLabel: string; characterIcon: string; prompt: string }>>([]);
+  const [, navigate] = useLocation();
+
+  // Send a prompt to Workflow Builder — stores in sessionStorage, navigates to /video-workflow
+  const sendToWorkflow = (prompt: string) => {
+    sessionStorage.setItem("pov_to_workflow_prompt", prompt);
+    toast.success("Prompt sent to Workflow Builder!", {
+      description: "Opening Workflow Builder...",
+      action: { label: "Go now", onClick: () => navigate("/video-workflow") },
+    });
+    setTimeout(() => navigate("/video-workflow"), 1200);
+  };
 
   // Queries
   const { data: options } = trpc.povRebuild.getOptions.useQuery();
@@ -410,6 +438,7 @@ export default function PovRebuild() {
                     emotion={generatedResult.metadata.emotion}
                     targetModel={generatedResult.metadata.targetModel}
                     wordCount={generatedResult.metadata.wordCount}
+                    onSendToWorkflow={sendToWorkflow}
                   />
                 </CardContent>
               </Card>
@@ -433,6 +462,7 @@ export default function PovRebuild() {
                       characterIcon={result.characterIcon}
                       emotion={selectedEmotion}
                       targetModel={selectedModel}
+                      onSendToWorkflow={sendToWorkflow}
                     />
                   ))}
                 </CardContent>
