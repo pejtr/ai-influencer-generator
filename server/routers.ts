@@ -10,6 +10,7 @@ import { videoTemplatesRouter } from "./videoTemplatesRouter";
 import { courseRouter } from "./courseRouter";
 import { affiliateTrackingRouter } from "./affiliateTrackingRouter";
 import { workflowBuilderRouter } from "./workflowBuilderRouter";
+import { commentFunnelRouter } from "./commentFunnelRouter";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { 
@@ -171,6 +172,8 @@ export const appRouter = router({
   affiliateTracking: affiliateTrackingRouter,
   // Higgsfield Workflow Builder (Claude + Higgsfield + Cinematic AI)
   workflowBuilder: workflowBuilderRouter,
+  // Comment-to-DM Funnel System
+  commentFunnel: commentFunnelRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

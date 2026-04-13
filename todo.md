@@ -1338,3 +1338,16 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Add /video-workflow route to App.tsx
 - [x] Write vitest tests for workflowBuilder (11 tests passing)
 - [x] Full test suite passing (648 tests)
+
+## Comment-to-DM Funnel System
+- [x] Add funnelCampaigns, funnelKeywords, funnelMessages, funnelEvents tables to schema
+- [x] Run db:push for new tables
+- [x] Create commentFunnelRouter.ts with full CRUD + analytics procedures
+- [x] Build CommentFunnel.tsx frontend page (/funnel)
+- [x] Campaign manager (create/edit/delete campaigns with platform selector)
+- [x] Keyword trigger manager (add keywords per campaign, case-insensitive matching)
+- [x] DM message template editor (with variable placeholders: {name}, {keyword}, {link})
+- [x] Funnel simulation mode (test keyword matching and DM preview)
+- [x] Analytics dashboard (trigger count, DM sent, conversion rate per campaign)
+- [x] Add /funnel route to App.tsx
+- [x] Write vitest tests for commentFunnelRouter (25 tests passing)

@@ -1166,3 +1166,60 @@ export const workflowPrompts = mysqlTable("workflow_prompts", {
 });
 export type WorkflowPrompt = typeof workflowPrompts.$inferSelect;
 export type InsertWorkflowPrompt = typeof workflowPrompts.$inferInsert;
+
+// ============ COMMENT-TO-DM FUNNEL SYSTEM ============
+export const funnelCampaigns = mysqlTable("funnel_campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  platform: mysqlEnum("platform", ["instagram", "tiktok", "youtube", "facebook", "twitter"]).default("instagram").notNull(),
+  status: mysqlEnum("status", ["active", "paused", "draft"]).default("draft").notNull(),
+  description: text("description"),
+  triggerCount: int("triggerCount").default(0).notNull(),
+  dmSentCount: int("dmSentCount").default(0).notNull(),
+  conversionCount: int("conversionCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FunnelCampaign = typeof funnelCampaigns.$inferSelect;
+export type InsertFunnelCampaign = typeof funnelCampaigns.$inferInsert;
+
+export const funnelKeywords = mysqlTable("funnel_keywords", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaignId").notNull(),
+  userId: int("userId").notNull(),
+  keyword: varchar("keyword", { length: 100 }).notNull(),
+  matchType: mysqlEnum("matchType", ["exact", "contains", "starts_with"]).default("contains").notNull(),
+  caseSensitive: boolean("caseSensitive").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type FunnelKeyword = typeof funnelKeywords.$inferSelect;
+export type InsertFunnelKeyword = typeof funnelKeywords.$inferInsert;
+
+export const funnelMessages = mysqlTable("funnel_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaignId").notNull(),
+  userId: int("userId").notNull(),
+  messageType: mysqlEnum("messageType", ["initial_dm", "follow_up", "conversion"]).default("initial_dm").notNull(),
+  content: text("content").notNull(),
+  delayMinutes: int("delayMinutes").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FunnelMessage = typeof funnelMessages.$inferSelect;
+export type InsertFunnelMessage = typeof funnelMessages.$inferInsert;
+
+export const funnelEvents = mysqlTable("funnel_events", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaignId").notNull(),
+  userId: int("userId").notNull(),
+  eventType: mysqlEnum("eventType", ["comment_detected", "dm_sent", "link_clicked", "converted"]).notNull(),
+  commenterName: varchar("commenterName", { length: 200 }),
+  triggerKeyword: varchar("triggerKeyword", { length: 100 }),
+  messageId: int("messageId"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type FunnelEvent = typeof funnelEvents.$inferSelect;
+export type InsertFunnelEvent = typeof funnelEvents.$inferInsert;
