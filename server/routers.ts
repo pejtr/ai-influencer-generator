@@ -9,6 +9,7 @@ import {
 import { videoTemplatesRouter } from "./videoTemplatesRouter";
 import { courseRouter } from "./courseRouter";
 import { affiliateTrackingRouter } from "./affiliateTrackingRouter";
+import { workflowBuilderRouter } from "./workflowBuilderRouter";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { 
@@ -168,6 +169,8 @@ export const appRouter = router({
 
   // Affiliate Commission Tracking
   affiliateTracking: affiliateTrackingRouter,
+  // Higgsfield Workflow Builder (Claude + Higgsfield + Cinematic AI)
+  workflowBuilder: workflowBuilderRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

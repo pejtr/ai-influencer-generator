@@ -39,6 +39,7 @@ import AIFluencerStudio from "./pages/AIFluencerStudio";
 import NinaProfile from "./pages/NinaProfile";
 import CoursePage from "./pages/CoursePage";
 import AffiliateTracking from "./pages/AffiliateTracking";
+import WorkflowBuilder from "./pages/WorkflowBuilder";
 import AgencyDashboard from "./pages/AgencyDashboard";
 import PredictiveLtv from "./pages/PredictiveLtv";
 import MobileBottomNav from "./components/MobileBottomNav";
@@ -89,6 +90,7 @@ function Router() {
       <Route path="/profile/nina" component={NinaProfile} />
       <Route path="/course" component={CoursePage} />
       <Route path="/affiliate/tracking" component={AffiliateTracking} />
+      <Route path="/video-workflow" component={WorkflowBuilder} />
       <Route path="/agency" component={AgencyDashboard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

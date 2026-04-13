@@ -1135,3 +1135,34 @@ export const affiliateDailyStats = mysqlTable("affiliateDailyStats", {
 });
 export type AffiliateDailyStat = typeof affiliateDailyStats.$inferSelect;
 export type InsertAffiliateDailyStat = typeof affiliateDailyStats.$inferInsert;
+
+// ============ WORKFLOW BUILDER (Higgsfield + AI Video Production) ============
+export const workflowProjects = mysqlTable("workflow_projects", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  modelId: varchar("modelId", { length: 100 }).notNull().default("kling_3"),
+  genre: varchar("genre", { length: 100 }),
+  speedRamp: varchar("speedRamp", { length: 100 }),
+  cinematicBible: text("cinematicBible"),
+  totalScenes: int("totalScenes").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type WorkflowProject = typeof workflowProjects.$inferSelect;
+export type InsertWorkflowProject = typeof workflowProjects.$inferInsert;
+
+export const workflowPrompts = mysqlTable("workflow_prompts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  projectId: int("projectId"),
+  sceneNumber: int("sceneNumber").default(1).notNull(),
+  composition: text("composition"),
+  subject: text("subject"),
+  cameraMovement: varchar("cameraMovement", { length: 200 }),
+  mood: varchar("mood", { length: 200 }),
+  fullPrompt: text("fullPrompt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type WorkflowPrompt = typeof workflowPrompts.$inferSelect;
+export type InsertWorkflowPrompt = typeof workflowPrompts.$inferInsert;

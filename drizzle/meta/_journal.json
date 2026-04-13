@@ -15,6 +15,13 @@
       "when": 1769467941655,
       "tag": "0001_wandering_morlun",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1776060104109,
+      "tag": "0002_early_morlocks",
+      "breakpoints": true
     }
   ]
 }

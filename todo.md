@@ -1318,3 +1318,23 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Final CTA section at bottom of homepage
 - [x] Navbar: gold logo, gold credits badge, gold CTA button
 - [x] Pricing page: premium dark cards, gold price highlights, gold CTAs
+
+## Higgsfield + AI Video Workflow Builder (kayvon.ai Integration)
+- [x] Analyze @kayvon.ai Instagram Shorts and YouTube for VIP tips
+- [x] Create workflowBuilderRouter.ts with AI models, camera movements, prompt generation
+- [x] Create workflowBuilderDb.ts with project/prompt CRUD
+- [x] Add workflow_projects and workflow_prompts tables to schema
+- [x] Run db:push to create tables in database
+- [x] Build WorkflowBuilder.tsx frontend page (/video-workflow)
+- [x] 4-step JSON Prompt Builder (scene/camera/lighting/subject/audio/style)
+- [x] 8 Genre Presets (Action, Horror, Comedy, Noir, Drama, Epic, Commercial, Documentary)
+- [x] 15+ Camera Movement Library with click-to-apply
+- [x] AI Model Selector (Cinema Studio 3.0, Kling 3.0, Veo 3, Seedance 2.0)
+- [x] Motion Control Workflow guide (Kling 3.0 step-by-step)
+- [x] Cinematic Bible Generator (AI-powered character consistency)
+- [x] ElevenLabs Voiceover Script Generator
+- [x] VIP Tips panel (kayvon.ai best practices: budget trick, batch gen, start frames)
+- [x] Comment-to-DM Funnel Strategy guide
+- [x] Add /video-workflow route to App.tsx
+- [x] Write vitest tests for workflowBuilder (11 tests passing)
+- [x] Full test suite passing (648 tests)
