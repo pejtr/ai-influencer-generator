@@ -1288,3 +1288,75 @@ export const povRebuildHistory = mysqlTable("pov_rebuild_history", {
 });
 export type PovRebuildHistory = typeof povRebuildHistory.$inferSelect;
 export type InsertPovRebuildHistory = typeof povRebuildHistory.$inferInsert;
+
+// ============================================================
+// AI CONTENT SYSTEM — Nicola Urbini 4-Step Method
+// ============================================================
+
+// Brand Voice Documents
+export const brandVoiceDocs = mysqlTable("brandVoiceDocs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 100 }).notNull().default("My Brand Voice"),
+  tone: text("tone").notNull().default(""),
+  vocabulary: text("vocabulary").notNull().default(""),
+  doNotSay: text("doNotSay").notNull().default(""),
+  sampleScripts: text("sampleScripts").notNull().default(""),
+  isActive: boolean("isActive").notNull().default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type BrandVoiceDoc = typeof brandVoiceDocs.$inferSelect;
+export type InsertBrandVoiceDoc = typeof brandVoiceDocs.$inferInsert;
+
+// Generated Scripts
+export const generatedScripts = mysqlTable("generatedScripts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  brandVoiceDocId: int("brandVoiceDocId"),
+  hook: text("hook").notNull(),
+  topic: text("topic").notNull(),
+  offerContext: text("offerContext").notNull().default(""),
+  variationA: text("variationA").notNull().default(""),
+  variationB: text("variationB").notNull().default(""),
+  variationC: text("variationC").notNull().default(""),
+  selectedVariation: varchar("selectedVariation", { length: 1 }),
+  status: varchar("status", { length: 20 }).notNull().default("draft"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type GeneratedScript = typeof generatedScripts.$inferSelect;
+export type InsertGeneratedScript = typeof generatedScripts.$inferInsert;
+
+// Hook Swipe File
+export const hookSwipeFile = mysqlTable("hookSwipeFile", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  hookText: text("hookText").notNull(),
+  sourceNiche: varchar("sourceNiche", { length: 100 }).notNull().default(""),
+  sourceUrl: text("sourceUrl").notNull().default(""),
+  engagementRate: decimal("engagementRate", { precision: 8, scale: 4 }).notNull().default("0"),
+  outlierScore: int("outlierScore").notNull().default(0),
+  tags: text("tags").notNull().default(""),
+  notes: text("notes").notNull().default(""),
+  timesUsed: int("timesUsed").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type HookSwipeFile = typeof hookSwipeFile.$inferSelect;
+export type InsertHookSwipeFile = typeof hookSwipeFile.$inferInsert;
+
+// Content Calendar Items
+export const contentCalendar = mysqlTable("contentCalendar", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  scriptId: int("scriptId"),
+  hookId: int("hookId"),
+  title: varchar("title", { length: 200 }).notNull(),
+  platform: varchar("platform", { length: 30 }).notNull().default("instagram"),
+  scheduledDate: timestamp("scheduledDate").notNull(),
+  pipelineStatus: varchar("pipelineStatus", { length: 20 }).notNull().default("idea"),
+  notes: text("notes").notNull().default(""),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type ContentCalendar = typeof contentCalendar.$inferSelect;
+export type InsertContentCalendar = typeof contentCalendar.$inferInsert;

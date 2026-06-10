@@ -43,6 +43,13 @@
       "when": 1776066850093,
       "tag": "0005_bored_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1781106794031,
+      "tag": "0006_lame_hydra",
+      "breakpoints": true
     }
   ]
 }

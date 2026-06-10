@@ -1372,3 +1372,111 @@ Based on video: https://www.youtube.com/watch?v=-mTYBgQLPOw
 - [x] Emotional context layer (fear, excitement, curiosity, determination)
 - [x] Output: ready-to-use Higgsfield/Kling prompt with POV framing
 - [x] Save/export rebuilt scenes to Workflow Builder projects
+
+## AI Content System (Nicola Urbini 4-Step Method) — IN PROGRESS
+
+### Step 1: Viral Idea Finder (/idea-finder)
+- [x] Hook swipe file manager (save/tag/search hooks by niche)
+- [x] Engagement rate calculator (comments/views ratio = Loop Detector)
+- [x] Outlier score filter (70+ = viral structure)
+- [x] Database tables: hooks, hook_tags
+- [x] Backend router: getAll, add, delete, incrementUsed, calculateEngagement
+- [x] Frontend UI: hook cards, calculator dialog, stats cards
+- [x] Integration: send hook to Script Studio button
+- [x] 716 tests passing
+
+### Step 2: AI Script Studio (/script-studio)
+- [x] Brand voice doc editor (tone, vocabulary, do-not-say list)
+- [x] Spoken-word rules enforcer (short sentences, no em dashes, periods=stops, commas=pauses)
+- [x] 3 script variations generator (narrative path 1/2/3)
+- [x] Script history with performance tracking
+- [x] Database tables: brandVoice, scripts, scriptVariations
+- [x] Backend router: getBrandVoice, createScript, getScripts, deleteScript
+- [x] Frontend UI: voice editor, script generator, variations display
+- [x] Integration: receive hook from Idea Finder
+
+### Step 3–4: Content Calendar (/content-calendar)
+- [x] 4-step pipeline tracker (Idea → Scripted → Recorded → Edited → Published)
+- [x] Daily publishing schedule with status per post
+- [x] AI Week Plan generator (7-day content plan with hooks)
+- [x] Database tables: calendarItems
+- [x] Backend router: getItems, addItem, updateStatus, delete, generateWeekPlan
+- [x] Frontend UI: pipeline overview, calendar cards, AI generator dialog
+- [x] Platform selector (Instagram, TikTok, YouTube, LinkedIn, Twitter, Facebook)
+- [x] Status progression (drag/click to advance through pipeline)
+
+### Navigation & Integration
+- [x] Add "Creator Tools" dropdown to Navbar with all 3 pages
+- [x] Add "Send to Workflow Builder" button on POV Rebuild results
+- [x] Add "Use in Script Studio" button on hook cards
+- [x] Add "Use in Content Calendar" button on script results
+- [x] Add weekly analytics report widget to Admin Dashboard
+- [x] Activate Weekly Analytics Report scheduler (Monday 8:00 UTC)
+- [x] Creator Tools stats in weekly report (POV Rebuild, Comment Funnel, Workflow Builder metrics)
+
+### Testing & Quality
+- [x] Write vitest tests for contentSystemRouter (all CRUD + LLM procedures)
+- [x] Full test suite: 716 tests passing
+- [x] TypeScript: clean, no errors
+- [x] MySQL GROUP BY fixes (3 queries fixed)
+
+
+## Next Phase: Development Handoff to Claude Code
+
+### Immediate Next Steps (Priority Order)
+- [ ] A/B Testing for DM Templates in Comment Funnel (track variant performance)
+- [ ] Stripe Paywall on Creator Tools (POV Rebuild, Workflow Builder: 5 free/day then upgrade)
+- [ ] Onboarding Wizard (3-step: choose niche → connect Instagram → create first funnel)
+- [ ] Multi-Page Instagram Selector (if user has multiple Facebook Pages with Instagram accounts)
+- [ ] Real Webhook Testing (use ngrok + test Instagram comment triggers)
+- [ ] Lupa AI Upscaling Integration (add upscale button on generated images)
+- [ ] n8n Automation Guide (step-by-step to connect Claude + Higgsfield + n8n)
+
+### Performance Marketing Features (Hormozi Principles)
+- [ ] Daily Performance Report (email + dashboard: top POV characters, best hooks, funnel conversion)
+- [ ] Funnel Optimization Suggestions (AI analyzes data: "Your 'FIRE' keyword has 0% conversion, try 'SYSTEM'")
+- [ ] Split Testing Framework (A/B test hooks, scripts, CTAs with statistical significance)
+- [ ] ROI Calculator (track credits spent vs content generated vs estimated revenue)
+- [ ] Batch Export to Repurposing Tools (export scripts to CapCut, Descript, etc.)
+
+### Creator Economy Features
+- [ ] Creator Profile Pages (public portfolio of generated content)
+- [ ] Showcase Gallery (best-performing POV Rebuilds, Scripts, Videos)
+- [ ] Affiliate Links in Content Calendar (auto-insert tracking links)
+- [ ] Email Sequence Builder (auto-send DM follow-ups from Comment Funnel)
+- [ ] Discord Bot Integration (notify users of new features, weekly reports)
+
+### Infrastructure & DevOps
+- [ ] GitHub Actions CI/CD (auto-run tests on push, deploy on main)
+- [ ] Sentry Error Tracking (monitor production errors)
+- [ ] Database Backups (automated daily backups)
+- [ ] Rate Limiting (prevent abuse of LLM/API endpoints)
+- [ ] Caching Layer (Redis for frequently accessed data)
+
+### Analytics & Insights
+- [ ] Heatmap Tracking (which Creator Tools pages get most engagement)
+- [ ] Feature Usage Analytics (which features drive retention)
+- [ ] Cohort Analysis (segment users by signup date, tier, activity)
+- [ ] Churn Prediction (identify at-risk users before they cancel)
+- [ ] LTV Optimization (which features correlate with higher lifetime value)
+
+### Quality & Testing
+- [ ] E2E Tests (Playwright: full user flows)
+- [ ] Load Testing (k6: stress test under 1000 concurrent users)
+- [ ] Security Audit (OWASP Top 10, SQL injection, XSS, CSRF)
+- [ ] Accessibility Audit (WCAG 2.1 AA compliance)
+- [ ] Mobile Testing (iOS Safari, Android Chrome)
+
+### Documentation
+- [ ] API Documentation (OpenAPI/Swagger for all endpoints)
+- [ ] User Guides (Creator Tools workflows, best practices)
+- [ ] Admin Guides (manage campaigns, view analytics, troubleshoot)
+- [ ] Developer Setup Guide (local dev environment, testing, deployment)
+- [ ] Changelog (version history, breaking changes)
+
+### Production Readiness
+- [ ] Environment Variables Documentation (.env.example)
+- [ ] Secrets Rotation Policy (API keys, database passwords)
+- [ ] Disaster Recovery Plan (backup/restore procedures)
+- [ ] Monitoring & Alerting (uptime checks, error rate alerts)
+- [ ] SLA Documentation (uptime guarantees, support response times)

@@ -12,7 +12,8 @@ import { affiliateTrackingRouter } from "./affiliateTrackingRouter";
 import { workflowBuilderRouter } from "./workflowBuilderRouter";
 import { commentFunnelRouter } from "./commentFunnelRouter";
 import { instagramRouter } from "./instagramRouter";
-import { povRebuildRouter } from "./povRebuildRouter";
+import { povRebuildRouter } from './povRebuildRouter';
+import { contentSystemRouter } from './contentSystemRouter';
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { 
@@ -151,6 +152,7 @@ function requireTier(userTier: string, requiredTiers: string[]) {
 }
 
 export const appRouter = router({
+  contentSystem: contentSystemRouter,
   system: systemRouter,
 
   // Creator Tools (Supercreator + ChatPersona + FlirtFlow + CreatorHero + OnlyMonster)
